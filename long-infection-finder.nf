@@ -64,6 +64,7 @@ workflow {
 	GET_DESIGNATION_DATES ( )
 
 
+	// NCBI/GENBANK BRANCH:
 	// Pull NCBI metadata and, if params.search_genbank_seqs = true,
 	// download sequences as well and use those to find long
 	// infection candidates
@@ -88,7 +89,18 @@ workflow {
 		PULL_NCBI_SEQUENCES.out
 	)
 
+	FIND_NCBI_LONG_INFECTIONS ( 
+		GET_DESIGNATION_DATES.out,
+		RECLASSIFY_NCBI_SEQUENCES.out
+	)
 
+	SEARCH_NCBI_METADATA ( 
+		FILTER_NCBI_METADATA.out,
+		GET_DESIGNATION_DATES.out
+	)
+
+
+	// LOCAL DATABASE BRANCH:
 	// Search for long infection candidates in FASTAs from a local
 	// database. 
 	RECLASSIFY_LOCAL_SEQS (
@@ -96,7 +108,21 @@ workflow {
 		ch_local_seqs
 	)
 
+	FIND_LOCAL_LONG_INFECTIONS (
+		GET_DESIGNATION_DATES.out,
+		RECLASSIFY_LOCAL_SEQS.out,
+	)
+	
+	CONCAT_LOCAL_LONG_INFECTIONS (
+		FIND_LOCAL_LONG_INFECTIONS.out.collect()
+	)
 
+	SEARCH_DHOLAB_METADATA ( 
+		GET_DESIGNATION_DATES.out
+	)
+
+
+	// GISAID BRANCH:
 	// This branch of the workflow filters the full GISAID metadata 
 	// down to the date range and geography specified in nextflow.config.
 	// It then reclassify GISAID EpiCov FASTA sequences with pangolin, 
@@ -110,23 +136,6 @@ workflow {
 		ch_gisaid_seqs,
 		FILTER_GISAID_METADATA.out
 	)
-	
-
-	// Find long infection candidates in any new pangolin reports
-	FIND_LOCAL_LONG_INFECTIONS (
-		GET_DESIGNATION_DATES.out,
-		RECLASSIFY_LOCAL_SEQS.out,
-	)
-	
-	CONCAT_LOCAL_LONG_INFECTIONS (
-		FIND_LOCAL_LONG_INFECTIONS.out.collect()
-	)
-
-	FIND_NCBI_LONG_INFECTIONS ( 
-		GET_DESIGNATION_DATES.out,
-		FILTER_NCBI_METADATA.out,
-		RECLASSIFY_NCBI_SEQUENCES.out
-	)
 
 	FIND_GISAID_LONG_INFECTIONS ( 
 		GET_DESIGNATION_DATES.out,
@@ -134,23 +143,12 @@ workflow {
 		RECLASSIFY_GISAID_SEQS.out
 	)
 	
-
-	// Find long infection candidates the metadata for each data source
-	SEARCH_NCBI_METADATA ( 
-		FILTER_NCBI_METADATA.out,
-		GET_DESIGNATION_DATES.out
-	)
-
 	SEARCH_GISAID_METADATA (
 		FILTER_GISAID_METADATA.out,
 		GET_DESIGNATION_DATES.out
 	)
-
-	SEARCH_DHOLAB_METADATA ( 
-		GET_DESIGNATION_DATES.out
-	)
-
 	
+
 }
 // --------------------------------------------------------------- //
 
@@ -196,6 +194,8 @@ process GET_DESIGNATION_DATES {
 	"""
 }
 
+
+// NCBI/GENBANK PROCESSES:
 process PULL_NCBI_METADATA {
 
 	when:
@@ -249,7 +249,7 @@ process PULL_NCBI_SEQUENCES {
 	tuple val(accession), val(date), val(loc), val(pango)
 	
 	output:
-	tuple val(accession), path("*.fasta")
+	tuple val(accession), val(date), path("*.fasta")
 	
 	when:
 	params.search_genbank_seqs == true
@@ -270,6 +270,9 @@ process RECLASSIFY_NCBI_SEQUENCES {
 	tag "${accession}"
 	
 	cpus 1
+	time { 5.minutes * task.attempt }
+	errorStrategy 'retry'
+	maxRetries 4
 	
 	input:
 	each cue
@@ -288,6 +291,46 @@ process RECLASSIFY_NCBI_SEQUENCES {
 
 }
 
+process FIND_NCBI_LONG_INFECTIONS {
+
+	publishDir params.ncbi_results, mode: 'copy'
+
+	input:
+	each path(lineage_dates)
+	tuple path(lineage_csv), val(accession), val(date)
+
+	output:
+	path "*putative_long_infections_ncbi*.csv"
+
+	script:
+	"""
+	ncbi_long_infection_finder.R ${lineage_dates} ${metadata} ${lineage_csv} ${date} ${params.days_of_infection}
+	"""
+}
+
+process SEARCH_NCBI_METADATA {
+
+	publishDir params.ncbi_results, mode: 'copy'
+
+	input:
+	path metadata
+	path lineage_dates
+
+	output:
+	path "*.csv"
+
+	when:
+	params.search_genbank_metadata == true
+		
+	script:
+	"""
+	
+	"""
+
+}
+
+
+// LOCAL DATABASE PROCESSES
 process RECLASSIFY_LOCAL_SEQS {
 	
 	// This process identifies lineages for all samples in every local
@@ -319,31 +362,6 @@ process RECLASSIFY_LOCAL_SEQS {
 	"${fasta}"
 	"""
 	
-}
-
-process FILTER_GISAID_METADATA {
-
-	input:
-	path tsv
-
-	output:
-	path "*.csv"
-
-	when:
-	params.search_gisaid_metadata == true
-
-	script:
-	"""
-	filter_gisaid_metadata.R ${tsv} ${params.min_date} ${params.max_date} ${params.geography}
-	"""
-
-}
-
-process RECLASSIFY_GISAID_SEQS {
-
-	when:
-	params.search_gisaid_seqs == true
-
 }
 
 process FIND_LOCAL_LONG_INFECTIONS {
@@ -394,22 +412,51 @@ process CONCAT_LOCAL_LONG_INFECTIONS {
 	
 }
 
-process FIND_NCBI_LONG_INFECTIONS {
+process SEARCH_DHOLAB_METADATA {
 
-	publishDir params.ncbi_results, mode: 'copy'
+	publishDir params.local_results, mode: 'copy'
 
 	input:
-	each path(lineage_dates)
-	path metadata
-	path lineage_csv
+	path lineage_dates
 
 	output:
-	path "*putative_long_infections_ncbi*.csv"
+	path "*.csv"
+
+	when:
+	params.search_metadata == true
+		
+	script:
+	"""
+	
+	"""
+	
+}
+
+
+// GISAID PROCESSES
+process FILTER_GISAID_METADATA {
+
+	input:
+	path tsv
+
+	output:
+	path "*.csv"
+
+	when:
+	params.search_gisaid_metadata == true
 
 	script:
 	"""
-	ncbi_long_infection_finder.R ${lineage_dates} ${metadata} ${lineage_csv} ${params.days_of_infection}
+	filter_gisaid_metadata.R ${tsv} ${params.min_date} ${params.max_date} ${params.geography}
 	"""
+
+}
+
+process RECLASSIFY_GISAID_SEQS {
+
+	when:
+	params.search_gisaid_seqs == true
+
 }
 
 process FIND_GISAID_LONG_INFECTIONS {
@@ -427,27 +474,6 @@ process FIND_GISAID_LONG_INFECTIONS {
 	script:
 	"""
 	ncbi_long_infection_finder.R ${lineage_dates} ${metadata} ${lineage_csv} ${params.days_of_infection}
-	"""
-
-}
-
-process SEARCH_NCBI_METADATA {
-
-	publishDir params.ncbi_results, mode: 'copy'
-
-	input:
-	path metadata
-	path lineage_dates
-
-	output:
-	path "*.csv"
-
-	when:
-	params.search_genbank_metadata == true
-		
-	script:
-	"""
-	
 	"""
 
 }
@@ -473,23 +499,4 @@ process SEARCH_GISAID_METADATA {
 
 }
 
-process SEARCH_DHOLAB_METADATA {
-
-	publishDir params.local_results, mode: 'copy'
-
-	input:
-	path lineage_dates
-
-	output:
-	path "*.csv"
-
-	when:
-	params.search_metadata == true
-		
-	script:
-	"""
-	
-	"""
-	
-}
 // --------------------------------------------------------------- //
