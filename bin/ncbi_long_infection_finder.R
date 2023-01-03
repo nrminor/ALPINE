@@ -1,14 +1,13 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 
-# reading in pango lineages, filtered NCBI metadata, and designation dates
-lineage_csv <- read.csv(args[1])
-metadata <- read.csv(args[2])
-dates <- read.csv(args[3])
-collection_date <- as.Date(args[4])
+# reading in pango lineages and designation dates
+dates <- read.csv(args[1])
+lineage_csv <- read.csv(args[2])
+collection_date <- as.Date(args[3])
 
 # defining number of days past designation to consider an infection prolonged
-days_infected = as.numeric(args[5])
+days_infected = as.numeric(args[4])
 
 # preparing a data frame to hold long infection data, if detected
 long_infections <- data.frame(sample = NA,
@@ -33,8 +32,6 @@ if (nrow(lineage_csv) != 0){
     if ( is.na(designation_date) ) {
       designation_date <- as.Date("2021-02-18")
     }
-    
-    collection_date <- metadata[metadata$]
     
     # diff <- c(diff, as.numeric(experiment_date - designation_date))
     # mean(diff) ; hist(diff, breaks = 20)
@@ -65,14 +62,14 @@ if (nrow(lineage_csv) != 0){
 if (nrow(long_infections)==1 &&
     is.na(long_infections[1, "sample"])){
   
-  long_infections[1,1] <- paste("No putative long infections were identified in experiment",
-                                experiment_name, "on", Sys.Date(), sep = " ")
+  long_infections[1,1] <- paste("No putative long infections were identified in",
+                                lineage, "on", Sys.Date(), sep = " ")
   
 }
 
 write.csv(long_infections,
           paste(fasta_basename,
-                "_putative_long_infections_",
+                "_putative_long_infections_ncbi",
                 Sys.Date(), 
                 ".csv", sep = ""),
           row.names = F, quote = F, na = "")

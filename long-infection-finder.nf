@@ -19,7 +19,7 @@ if( params.local_metadata.isEmpty() ){
 }
 
 if( params.gisaid_seqs.isEmpty() ){
-	params.gisaid_seqs = launchDir + "/sequences_fasta*"
+	params.gisaid_seqs = launchDir + "/sequences.fasta"
 }
 
 is( params.gisaid_metadata.isEmpty() ){
@@ -53,6 +53,7 @@ workflow {
 		.fromPath( params.gisaid_metadata )
 	
 	
+
 	// Before anything else, make sure pangolin is up to date
 	UPDATE_PANGO_CONTAINER ( )
 	
@@ -92,6 +93,10 @@ workflow {
 	FIND_NCBI_LONG_INFECTIONS ( 
 		GET_DESIGNATION_DATES.out,
 		RECLASSIFY_NCBI_SEQUENCES.out
+	)
+
+	CONCAT_NCBI_LONG_INFECTIONS (
+		FIND_NCBI_LONG_INFECTIONS.out.collect()
 	)
 
 	SEARCH_NCBI_METADATA ( 
@@ -141,6 +146,10 @@ workflow {
 		GET_DESIGNATION_DATES.out,
 		FILTER_GISAID_METADATA.out,
 		RECLASSIFY_GISAID_SEQS.out
+	)
+
+	CONCAT_GISAID_LONG_INFECTIONS (
+		FIND_GISAID_LONG_INFECTIONS.out.collect()
 	)
 	
 	SEARCH_GISAID_METADATA (
@@ -304,7 +313,7 @@ process FIND_NCBI_LONG_INFECTIONS {
 
 	script:
 	"""
-	ncbi_long_infection_finder.R ${lineage_dates} ${metadata} ${lineage_csv} ${date} ${params.days_of_infection}
+	ncbi_long_infection_finder.R ${lineage_dates} ${lineage_csv} ${date} ${params.days_of_infection}
 	"""
 }
 
@@ -324,7 +333,7 @@ process SEARCH_NCBI_METADATA {
 		
 	script:
 	"""
-	
+	search_ncbi_metadata.R ${metadata} ${lineage_dates} ${params.days_of_infection}
 	"""
 
 }
@@ -427,7 +436,7 @@ process SEARCH_DHOLAB_METADATA {
 		
 	script:
 	"""
-	
+	search_local_metadata.R
 	"""
 	
 }
@@ -465,15 +474,14 @@ process FIND_GISAID_LONG_INFECTIONS {
 
 	input:
 	each path(lineage_dates)
-	path metadata
-	path lineage_csv
+	tuple path(lineage_csv), val(accession), val(date)
 
 	output:
 	path "*putative_long_infections_gisaid*.csv"
 
 	script:
 	"""
-	ncbi_long_infection_finder.R ${lineage_dates} ${metadata} ${lineage_csv} ${params.days_of_infection}
+	gisaid_long_infection_finder.R ${lineage_dates} ${lineage_csv} ${date} ${params.days_of_infection}
 	"""
 
 }
