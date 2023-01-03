@@ -1,0 +1,13 @@
+results/variant_tables/
+results/*_pangolin_reports/
+results/*_sample_vcfs/
+work/
+.nextflow/
+data_sources/
+
+results/report.html*
+results/lineage_designation_dates.csv
+results/pango_consensus_sequences.fasta
+.nextflow.log*
+.DS_Store
+._*
