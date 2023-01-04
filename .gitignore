@@ -4,6 +4,7 @@ results/*_sample_vcfs/
 work/
 .nextflow/
 data_sources/
+resources/
 
 results/report.html*
 results/lineage_designation_dates.csv

@@ -77,7 +77,7 @@ workflow {
 
 	PULL_NCBI_SEQUENCES ( 
 		FILTER_NCBI_METADATA.out
-			.splitCsv ( header: true )
+			.splitCsv ( header: true, sep: "\t" )
 			.map {row -> tuple(row.accession, row.date, row.location, row.pango)}
 	)
 	
@@ -170,7 +170,7 @@ process UPDATE_PANGO_CONTAINER {
 	env(version), emit: cue
 	
 	when:
-	workflow.profile == 'standard' || workflow.profile == 'docker' || workflow.profile == 'singularity'
+	(workflow.profile == 'standard' || workflow.profile == 'docker' || workflow.profile == 'singularity') && (params.search_gisaid_seqs == true || params.search_genbank_seqs == true || !params.local_input_path.isEmpty() )
 	
 	script:
 	"""
@@ -207,7 +207,7 @@ process PULL_NCBI_METADATA {
 	"""
 	datasets summary virus genome taxon sars-cov-2 \
 	--as-json-lines | dataformat tsv virus-genome \
-	--fields accession,geo-location,geo-region,isolate-collection-date,virus-pangolin,virus-name,sra-accs,submitter-affiliation,submitter-country,submitter-names,update-date \
+	--fields accession,isolate-lineage,isolate-lineage-source,geo-location,geo-region,isolate-collection-date,virus-pangolin,virus-name,sra-accs,submitter-affiliation,submitter-country,submitter-names,update-date \
 	> sarscov2-metadata.tsv
 	"""
 
@@ -215,11 +215,13 @@ process PULL_NCBI_METADATA {
 
 process FILTER_NCBI_METADATA {
 
+	publishDir params.ncbi_results, mode: 'copy'
+
 	input:
 	path tsv
 
 	output:
-	path "*.csv"
+	path "*.tsv"
 
 	script:
 	"""

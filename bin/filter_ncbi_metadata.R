@@ -15,9 +15,14 @@ full_list <- full_list[full_list$Isolate.Collection.date >= min_date &
                          full_list$Isolate.Collection.date <= max_date,]
 full_list <- full_list[grepl(geography,full_list$Geographic.location),]
 
+# cleaning up pango lineages
+full_list <- full_list[!is.na(full_list$Virus.Pangolin.Classification),]
+full_list <- full_list[full_list$Virus.Pangolin.Classification!="",]
+full_list <- full_list[full_list$Virus.Pangolin.Classification!="unclassifiable",]
+
 # formatting and exporting include list
 include_list <- full_list[, c("Accession", "Isolate.Collection.date", "Geographic.location", "Virus.Pangolin.Classification")]
 colnames(include_list) <- c("accession", "date", "location", "pango")
 
-write.csv(include_list, file = "include_list.csv", 
-          quote = F, row.names = F)
+write.table(include_list, file = "include_list.tsv", 
+          sep = "\t", quote = F, quote = F, row.names = F)
