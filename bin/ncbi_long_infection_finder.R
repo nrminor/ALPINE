@@ -68,7 +68,7 @@ if (nrow(long_infections)==1 &&
 }
 
 write.csv(long_infections,
-          paste(fasta_basename,
+          paste(long_infection$sample[1],
                 "_putative_long_infections_ncbi",
                 Sys.Date(), 
                 ".csv", sep = ""),

@@ -22,8 +22,8 @@ if( params.gisaid_seqs.isEmpty() ){
 	params.gisaid_seqs = launchDir + "/sequences.fasta"
 }
 
-is( params.gisaid_metadata.isEmpty() ){
-	params.gisaid_metadata = launchDir + "metadata.tsv"
+if( params.gisaid_metadata.isEmpty() ){
+	params.gisaid_metadata = launchDir + "/metadata.tsv"
 }
 
 params.ncbi_results = params.results + "/GenBank"
@@ -39,18 +39,18 @@ workflow {
 	
 	
 	// input channels for consensus sequences 
-	ch_local_seqs = Channel
-		.fromPath( params.local_input_path )
-		.filter { !it.toString().contains(" copy") }
-		.map { fasta -> tuple( file(fasta), fasta.getParent(), fasta.getSimpleName() ) }
+	// ch_local_seqs = Channel
+	// 	.fromPath( params.local_input_path )
+	// 	.filter { !it.toString().contains(" copy") }
+	// 	.map { fasta -> tuple( file(fasta), fasta.getParent(), fasta.getSimpleName() ) }
 	
-	ch_gisaid_seqs = Channel
-		.fromPath( params.gisaid_seqs )
-		.splitFasta( record: [id: true, text: true ] )
-		.map { record -> tuple( record.id, record.text ) }
+	// ch_gisaid_seqs = Channel
+	// 	.fromPath( params.gisaid_seqs )
+	// 	.splitFasta( record: [id: true, text: true ] )
+	// 	.map { record -> tuple( record.id, record.text ) }
 	
-	ch_gisaid_metadata = Channel
-		.fromPath( params.gisaid_metadata )
+	// ch_gisaid_metadata = Channel
+	// 	.fromPath( params.gisaid_metadata )
 	
 	
 
@@ -71,12 +71,8 @@ workflow {
 	// infection candidates
 	PULL_NCBI_METADATA ( )
 
-	REFORMAT_NCBI_METADATA (
-		PULL_NCBI_METADATA.out
-	)
-
 	FILTER_NCBI_METADATA (
-		REFORMAT_NCBI_METADATA.out
+		PULL_NCBI_METADATA.out
 	)
 
 	PULL_NCBI_SEQUENCES ( 
@@ -108,23 +104,23 @@ workflow {
 	// LOCAL DATABASE BRANCH:
 	// Search for long infection candidates in FASTAs from a local
 	// database. 
-	RECLASSIFY_LOCAL_SEQS (
-		UPDATE_PANGO_CONTAINER.out.cue,
-		ch_local_seqs
-	)
+	// RECLASSIFY_LOCAL_SEQS (
+	// 	UPDATE_PANGO_CONTAINER.out.cue,
+	// 	ch_local_seqs
+	// )
 
-	FIND_LOCAL_LONG_INFECTIONS (
-		GET_DESIGNATION_DATES.out,
-		RECLASSIFY_LOCAL_SEQS.out,
-	)
+	// FIND_LOCAL_LONG_INFECTIONS (
+	// 	GET_DESIGNATION_DATES.out,
+	// 	RECLASSIFY_LOCAL_SEQS.out,
+	// )
 	
-	CONCAT_LOCAL_LONG_INFECTIONS (
-		FIND_LOCAL_LONG_INFECTIONS.out.collect()
-	)
+	// CONCAT_LOCAL_LONG_INFECTIONS (
+	// 	FIND_LOCAL_LONG_INFECTIONS.out.collect()
+	// )
 
-	SEARCH_DHOLAB_METADATA ( 
-		GET_DESIGNATION_DATES.out
-	)
+	// SEARCH_DHOLAB_METADATA ( 
+	// 	GET_DESIGNATION_DATES.out
+	// )
 
 
 	// GISAID BRANCH:
@@ -132,30 +128,30 @@ workflow {
 	// down to the date range and geography specified in nextflow.config.
 	// It then reclassify GISAID EpiCov FASTA sequences with pangolin, 
 	// if they have been made available with params.gisaid_seqs
-	FILTER_GISAID_METADATA (
-		ch_gisaid_metadata
-	)
+	// FILTER_GISAID_METADATA (
+	// 	ch_gisaid_metadata
+	// )
 
-	RECLASSIFY_GISAID_SEQS (
-		UPDATE_PANGO_CONTAINER.out.cue,
-		ch_gisaid_seqs,
-		FILTER_GISAID_METADATA.out
-	)
+	// RECLASSIFY_GISAID_SEQS (
+	// 	UPDATE_PANGO_CONTAINER.out.cue,
+	// 	ch_gisaid_seqs,
+	// 	FILTER_GISAID_METADATA.out
+	// )
 
-	FIND_GISAID_LONG_INFECTIONS ( 
-		GET_DESIGNATION_DATES.out,
-		FILTER_GISAID_METADATA.out,
-		RECLASSIFY_GISAID_SEQS.out
-	)
+	// FIND_GISAID_LONG_INFECTIONS ( 
+	// 	GET_DESIGNATION_DATES.out,
+	// 	FILTER_GISAID_METADATA.out,
+	// 	RECLASSIFY_GISAID_SEQS.out
+	// )
 
-	CONCAT_GISAID_LONG_INFECTIONS (
-		FIND_GISAID_LONG_INFECTIONS.out.collect()
-	)
+	// CONCAT_GISAID_LONG_INFECTIONS (
+	// 	FIND_GISAID_LONG_INFECTIONS.out.collect()
+	// )
 	
-	SEARCH_GISAID_METADATA (
-		FILTER_GISAID_METADATA.out,
-		GET_DESIGNATION_DATES.out
-	)
+	// SEARCH_GISAID_METADATA (
+	// 	FILTER_GISAID_METADATA.out,
+	// 	GET_DESIGNATION_DATES.out
+	// )
 	
 
 }
@@ -170,11 +166,11 @@ process UPDATE_PANGO_CONTAINER {
 	
 	// This process builds a new docker image with the latest available pangolin version
 	
+	output:
+	env(version), emit: cue
+	
 	when:
 	workflow.profile == 'standard' || workflow.profile == 'docker' || workflow.profile == 'singularity'
-	
-	output:
-	env version, emit: cue
 	
 	script:
 	"""
@@ -191,9 +187,6 @@ process GET_DESIGNATION_DATES {
 	
 	publishDir params.resources, mode: 'copy'
 	
-	when:
-	params.identify_long_infections == true
-	
 	output:
 	path "*.csv"
 	
@@ -207,31 +200,17 @@ process GET_DESIGNATION_DATES {
 // NCBI/GENBANK PROCESSES:
 process PULL_NCBI_METADATA {
 
-	when:
-	params.search_genbank_metadata == true
+	output:
+	path "*.tsv"
 
 	script:
 	"""
 	datasets summary virus genome taxon sars-cov-2 \
-	--as-json-lines > sarscov2-metadata.jsonl
+	--as-json-lines | dataformat tsv virus-genome \
+	--fields accession,geo-location,geo-region,isolate-collection-date,virus-pangolin,virus-name,sra-accs,submitter-affiliation,submitter-country,submitter-names,update-date \
+	> sarscov2-metadata.tsv
 	"""
 
-}
-
-process REFORMAT_NCBI_METADATA {
-
-	input:
-	path jsonl
-
-	output:
-	path "sarscov2-metadata.tsv"
-
-	script:
-	"""
-	dataformat tsv virus-genome \
-	--fields accession,bioprojects,biosample-acc,geo-location,geo-region,isolate-collection-date,virus-pangolin,virus-strain,virus-tax-id \
-	--inputfile ${jsonl} > sarscov2-metadata.tsv
-	"""
 }
 
 process FILTER_NCBI_METADATA {
@@ -314,6 +293,22 @@ process FIND_NCBI_LONG_INFECTIONS {
 	script:
 	"""
 	ncbi_long_infection_finder.R ${lineage_dates} ${lineage_csv} ${date} ${params.days_of_infection}
+	"""
+}
+
+process CONCAT_NCBI_LONG_INFECTIONS {
+
+	publishDir params.results, mode: 'copy'
+
+	input:
+	path file_list, stageAs: 'infections??.csv'
+
+	output:
+	path "*.csv"
+
+	script:
+	"""
+	concat_long_infections.R ${params.days_of_infection}
 	"""
 }
 
@@ -461,12 +456,12 @@ process FILTER_GISAID_METADATA {
 
 }
 
-process RECLASSIFY_GISAID_SEQS {
+// process RECLASSIFY_GISAID_SEQS {
 
-	when:
-	params.search_gisaid_seqs == true
+// 	when:
+// 	params.search_gisaid_seqs == true
 
-}
+// }
 
 process FIND_GISAID_LONG_INFECTIONS {
 
