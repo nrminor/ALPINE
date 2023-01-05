@@ -453,7 +453,9 @@ process FILTER_GISAID_METADATA {
 
 	script:
 	"""
-	filter_gisaid_metadata.R ${tsv} ${params.min_date} ${params.max_date} ${params.geography}
+	cut -f 1,5,6,7,14,15 ${tsv} > gisaid_metadata_reduced.tsv && \
+	filter_gisaid_metadata.R gisaid_metadata_reduced.tsv \ 
+	${params.min_date} ${params.max_date} ${params.geography}
 	"""
 
 }

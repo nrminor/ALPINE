@@ -8,7 +8,6 @@ infection_cutoff <- as.numeric(args[3])
 
 # cutting out any rows that don't have pango classifications from NCBI
 metadata <- metadata[!is.na(metadata$pango),]
-metadata <- metadata[metadata$pango!="",]
 
 # ensuring dates are properly formatted
 metadata$date <- as.Date(metadata$date)
@@ -24,6 +23,7 @@ for (i in 1:nrow(metadata)){
   metadata$infection_duration[i] <- as.numeric(metadata$date[i] - metadata$lineage_designation[i])
   
 }
+metadata <- metadata[!is.na(metadata$lineage_designation),]
 
 # filtering down to long infection candidates
 long_infections <- metadata[metadata$infection_duration >= infection_cutoff,]

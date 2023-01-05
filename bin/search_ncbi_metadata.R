@@ -8,7 +8,6 @@ infection_cutoff <- as.numeric(args[3])
 
 # cutting out any rows that don't have pango classifications from NCBI
 metadata <- metadata[!is.na(metadata$pango),]
-metadata <- metadata[metadata$pango!="",]
 
 # ensuring dates are properly formatted
 metadata$date <- as.Date(metadata$date)
