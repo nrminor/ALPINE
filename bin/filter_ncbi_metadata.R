@@ -30,10 +30,12 @@ if (geography == "USA"){
 # cleaning up pango lineages
 full_list <- full_list[!is.na(full_list$Virus.Pangolin.Classification),]
 full_list <- full_list[full_list$Virus.Pangolin.Classification!="unclassifiable",]
+rownames(full_list) <- NULL
 
 # formatting and exporting include list
 include_list <- full_list[, c("Accession", "Isolate.Collection.date", "Geographic.Location", "Virus.Pangolin.Classification")]
+rownames(include_list) <- NULL ; remove(full_list)
 colnames(include_list) <- c("accession", "date", "location", "pango")
 
 write.table(include_list, file = "include_list.tsv", 
-          sep = "\t", quote = F, quote = F, row.names = F)
+          sep = "\t", quote = F, row.names = F)

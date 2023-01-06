@@ -15,15 +15,15 @@ if( params.local_database == "/Volumes/GoogleDrive/Shared drives/2019-nCoV open 
 }
 
 if( params.local_metadata.isEmpty() ){
-	params.local_metadata = launchDir + "covid*"
+	params.local_metadata = launchDir
 }
 
-if( params.gisaid_seqs.isEmpty() ){
-	params.gisaid_seqs = launchDir + "/sequences.fasta"
+if( params.gisaid_seq_dir.isEmpty() ){
+	params.gisaid_seq_dir = launchDir
 }
 
-if( params.gisaid_metadata.isEmpty() ){
-	params.gisaid_metadata = launchDir + "/metadata.tsv"
+if( params.gisaid_metadata_dir.isEmpty() ){
+	params.gisaid_metadata_dir = launchDir
 }
 
 params.ncbi_results = params.results + "/GenBank"
@@ -39,18 +39,18 @@ workflow {
 	
 	
 	// input channels for consensus sequences 
-	// ch_local_seqs = Channel
-	// 	.fromPath( params.local_input_path )
-	// 	.filter { !it.toString().contains(" copy") }
-	// 	.map { fasta -> tuple( file(fasta), fasta.getParent(), fasta.getSimpleName() ) }
+	ch_local_seqs = Channel
+		.fromPath( params.local_input_path )
+		.filter { !it.toString().contains(" copy") }
+		.map { fasta -> tuple( file(fasta), fasta.getParent(), fasta.getSimpleName() ) }
 	
-	// ch_gisaid_seqs = Channel
-	// 	.fromPath( params.gisaid_seqs )
-	// 	.splitFasta( record: [id: true, text: true ] )
-	// 	.map { record -> tuple( record.id, record.text ) }
+	ch_gisaid_seqs = Channel
+		.fromPath( "${params.gisaid_seq_dir}/*sequences*.fasta" )
+		.splitFasta( record: [id: true, text: true ] )
+		.map { record -> tuple( record.id, record.text ) }
 	
-	// ch_gisaid_metadata = Channel
-	// 	.fromPath( params.gisaid_metadata )
+	ch_gisaid_metadata = Channel
+		.fromPath( "${params.gisaid_metadata_dir}/*metadata*.tsv" )
 	
 	
 
@@ -127,31 +127,31 @@ workflow {
 	// This branch of the workflow filters the full GISAID metadata 
 	// down to the date range and geography specified in nextflow.config.
 	// It then reclassify GISAID EpiCov FASTA sequences with pangolin, 
-	// if they have been made available with params.gisaid_seqs
-	// FILTER_GISAID_METADATA (
-	// 	ch_gisaid_metadata
-	// )
+	// if they have been made available with params.gisaid_seq_dir
+	FILTER_GISAID_METADATA (
+		ch_gisaid_metadata
+	)
 
-	// RECLASSIFY_GISAID_SEQS (
-	// 	UPDATE_PANGO_CONTAINER.out.cue,
-	// 	ch_gisaid_seqs,
-	// 	FILTER_GISAID_METADATA.out
-	// )
+	RECLASSIFY_GISAID_SEQS (
+		UPDATE_PANGO_CONTAINER.out.cue,
+		ch_gisaid_seqs,
+		FILTER_GISAID_METADATA.out
+	)
 
-	// FIND_GISAID_LONG_INFECTIONS ( 
-	// 	GET_DESIGNATION_DATES.out,
-	// 	FILTER_GISAID_METADATA.out,
-	// 	RECLASSIFY_GISAID_SEQS.out
-	// )
+	FIND_GISAID_LONG_INFECTIONS ( 
+		GET_DESIGNATION_DATES.out,
+		FILTER_GISAID_METADATA.out,
+		RECLASSIFY_GISAID_SEQS.out
+	)
 
-	// CONCAT_GISAID_LONG_INFECTIONS (
-	// 	FIND_GISAID_LONG_INFECTIONS.out.collect()
-	// )
+	CONCAT_GISAID_LONG_INFECTIONS (
+		FIND_GISAID_LONG_INFECTIONS.out.collect()
+	)
 	
-	// SEARCH_GISAID_METADATA (
-	// 	FILTER_GISAID_METADATA.out,
-	// 	GET_DESIGNATION_DATES.out
-	// )
+	SEARCH_GISAID_METADATA (
+		FILTER_GISAID_METADATA.out,
+		GET_DESIGNATION_DATES.out
+	)
 	
 
 }
@@ -185,7 +185,7 @@ process GET_DESIGNATION_DATES {
 	// from Cornelius Roemer's GitHub. These dates represent when each lineage was
 	// added to pangolin, after which point sequences could be classified as such 
 	
-	publishDir params.resources, mode: 'copy'
+	publishDir params.resources, mode: 'copy', overwrite: true
 	
 	output:
 	path "*.csv"
@@ -318,6 +318,8 @@ process SEARCH_NCBI_METADATA {
 
 	publishDir params.ncbi_results, mode: 'copy'
 
+	cpus 7
+
 	input:
 	path metadata
 	path lineage_dates
@@ -330,7 +332,7 @@ process SEARCH_NCBI_METADATA {
 		
 	script:
 	"""
-	search_ncbi_metadata.R ${metadata} ${lineage_dates} ${params.days_of_infection}
+	search_ncbi_metadata.R ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus}
 	"""
 
 }
@@ -489,6 +491,8 @@ process SEARCH_GISAID_METADATA {
 
 	publishDir params.gisaid_results, mode: 'copy'
 
+	cpus 7
+
 	input:
 	path metadata
 	path lineage_dates
@@ -501,7 +505,7 @@ process SEARCH_GISAID_METADATA {
 		
 	script:
 	"""
-	
+	search_gisaid_metadata.R ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus}
 	"""
 
 }
