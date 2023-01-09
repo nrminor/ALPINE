@@ -44,8 +44,8 @@ rownames(long_infections) <- NULL
 long_infections <- long_infections[!is.na(long_infections$accession),]
 
 # exporting CSV of long infection candidates
-write.csv(long_infections,
+write.table(long_infections,
           paste("long_infections_gisaid_metadata_",
                 Sys.Date(), 
-                ".csv", sep = ""),
-          row.names = F, quote = F, na = "")
+                ".tsv", sep = ""),
+          row.names = F, quote = F, na = "", sep = "\t")

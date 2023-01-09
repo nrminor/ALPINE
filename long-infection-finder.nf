@@ -50,7 +50,7 @@ workflow {
 		.map { record -> tuple( record.id, record.text ) }
 	
 	ch_gisaid_metadata = Channel
-		.fromPath( "${params.gisaid_metadata_dir}/*metadata*.tsv" )
+		.fromPath( "${params.gisaid_metadata_dir}/*metadata.tsv" )
 	
 	
 
@@ -128,30 +128,30 @@ workflow {
 	// down to the date range and geography specified in nextflow.config.
 	// It then reclassify GISAID EpiCov FASTA sequences with pangolin, 
 	// if they have been made available with params.gisaid_seq_dir
-	FILTER_GISAID_METADATA (
-		ch_gisaid_metadata
-	)
+	// FILTER_GISAID_METADATA (
+	// 	ch_gisaid_metadata
+	// )
 
-	RECLASSIFY_GISAID_SEQS (
-		UPDATE_PANGO_CONTAINER.out.cue,
-		ch_gisaid_seqs,
-		FILTER_GISAID_METADATA.out
-	)
+	// RECLASSIFY_GISAID_SEQS (
+	// 	UPDATE_PANGO_CONTAINER.out.cue,
+	// 	ch_gisaid_seqs,
+	// 	FILTER_GISAID_METADATA.out
+	// )
 
-	FIND_GISAID_LONG_INFECTIONS ( 
-		GET_DESIGNATION_DATES.out,
-		FILTER_GISAID_METADATA.out,
-		RECLASSIFY_GISAID_SEQS.out
-	)
+	// FIND_GISAID_LONG_INFECTIONS ( 
+	// 	GET_DESIGNATION_DATES.out,
+	// 	FILTER_GISAID_METADATA.out,
+	// 	RECLASSIFY_GISAID_SEQS.out
+	// )
 
-	CONCAT_GISAID_LONG_INFECTIONS (
-		FIND_GISAID_LONG_INFECTIONS.out.collect()
-	)
+	// CONCAT_GISAID_LONG_INFECTIONS (
+	// 	FIND_GISAID_LONG_INFECTIONS.out.collect()
+	// )
 	
-	SEARCH_GISAID_METADATA (
-		FILTER_GISAID_METADATA.out,
-		GET_DESIGNATION_DATES.out
-	)
+	// SEARCH_GISAID_METADATA (
+	// 	FILTER_GISAID_METADATA.out,
+	// 	GET_DESIGNATION_DATES.out
+	// )
 	
 
 }
@@ -325,7 +325,7 @@ process SEARCH_NCBI_METADATA {
 	path lineage_dates
 
 	output:
-	path "*.csv"
+	path "*.tsv"
 
 	when:
 	params.search_genbank_metadata == true
@@ -448,7 +448,7 @@ process FILTER_GISAID_METADATA {
 	path tsv
 
 	output:
-	path "*.csv"
+	path "*.tsv"
 
 	when:
 	params.search_gisaid_metadata == true
@@ -456,7 +456,7 @@ process FILTER_GISAID_METADATA {
 	script:
 	"""
 	cut -f 1,5,6,7,14,15 ${tsv} > gisaid_metadata_reduced.tsv && \
-	filter_gisaid_metadata.R gisaid_metadata_reduced.tsv \ 
+	filter_gisaid_metadata.R gisaid_metadata_reduced.tsv \
 	${params.min_date} ${params.max_date} ${params.geography}
 	"""
 
@@ -478,7 +478,7 @@ process FIND_GISAID_LONG_INFECTIONS {
 	tuple path(lineage_csv), val(accession), val(date)
 
 	output:
-	path "*putative_long_infections_gisaid*.csv"
+	path "*putative_long_infections_gisaid*.tsv"
 
 	script:
 	"""
@@ -498,7 +498,7 @@ process SEARCH_GISAID_METADATA {
 	path lineage_dates
 
 	output:
-	path "*.csv"
+	path "*.tsv"
 
 	when:
 	params.search_gisaid_metadata == true
