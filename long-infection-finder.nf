@@ -26,9 +26,9 @@ if( params.gisaid_metadata_dir.isEmpty() ){
 	params.gisaid_metadata_dir = launchDir
 }
 
-params.ncbi_results = params.results + "/GenBank"
-params.gisaid_results = params.results + "/GISAID"
-params.local_results = params.results + "/local_database"
+params.ncbi_results = params.results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
+params.gisaid_results = params.results + "/GISAID_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
+params.local_results = params.results + "/local_database_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
 // --------------------------------------------------------------- //
 
 
@@ -46,8 +46,7 @@ workflow {
 	
 	ch_gisaid_seqs = Channel
 		.fromPath( "${params.gisaid_seq_dir}/*sequences*.fasta" )
-		.splitFasta( record: [id: true, text: true ] )
-		.map { record -> tuple( record.id, record.text ) }
+		.splitFasta( by: 1 )
 	
 	ch_gisaid_metadata = Channel
 		.fromPath( "${params.gisaid_metadata_dir}/*metadata.tsv" )
@@ -100,6 +99,16 @@ workflow {
 		GET_DESIGNATION_DATES.out
 	)
 
+	PULL_NCBI_CANDIDATES (
+		SEARCH_NCBI_METADATA.out
+			.splitCsv( header: true, sep: "\t" )
+			.map { row -> row.accession }
+	)
+
+	CONCAT_NCBI_CANDIDATES (
+		PULL_NCBI_CANDIDATES.out.collect()
+	)
+
 
 	// LOCAL DATABASE BRANCH:
 	// Search for long infection candidates in FASTAs from a local
@@ -128,30 +137,34 @@ workflow {
 	// down to the date range and geography specified in nextflow.config.
 	// It then reclassify GISAID EpiCov FASTA sequences with pangolin, 
 	// if they have been made available with params.gisaid_seq_dir
-	// FILTER_GISAID_METADATA (
-	// 	ch_gisaid_metadata
-	// )
+	FILTER_GISAID_METADATA (
+		ch_gisaid_metadata
+	)
 
-	// RECLASSIFY_GISAID_SEQS (
-	// 	UPDATE_PANGO_CONTAINER.out.cue,
-	// 	ch_gisaid_seqs,
-	// 	FILTER_GISAID_METADATA.out
-	// )
+	DATE_FASTAS (
+		ch_gisaid_seqs
+	)
 
-	// FIND_GISAID_LONG_INFECTIONS ( 
-	// 	GET_DESIGNATION_DATES.out,
-	// 	FILTER_GISAID_METADATA.out,
-	// 	RECLASSIFY_GISAID_SEQS.out
-	// )
+	RECLASSIFY_GISAID_SEQS (
+		UPDATE_PANGO_CONTAINER.out.cue,
+		DATE_FASTAS.out
+			.splitCsv( header: false )
+			.map { row -> tuple( file(row[0]), row[1], row[2] ) }
+	)
 
-	// CONCAT_GISAID_LONG_INFECTIONS (
-	// 	FIND_GISAID_LONG_INFECTIONS.out.collect()
-	// )
+	FIND_GISAID_LONG_INFECTIONS ( 
+		GET_DESIGNATION_DATES.out,
+		RECLASSIFY_GISAID_SEQS.out
+	)
+
+	CONCAT_GISAID_LONG_INFECTIONS (
+		FIND_GISAID_LONG_INFECTIONS.out.collect()
+	)
 	
-	// SEARCH_GISAID_METADATA (
-	// 	FILTER_GISAID_METADATA.out,
-	// 	GET_DESIGNATION_DATES.out
-	// )
+	SEARCH_GISAID_METADATA (
+		FILTER_GISAID_METADATA.out,
+		GET_DESIGNATION_DATES.out
+	)
 	
 
 }
@@ -200,6 +213,8 @@ process GET_DESIGNATION_DATES {
 // NCBI/GENBANK PROCESSES:
 process PULL_NCBI_METADATA {
 
+	publishDir params.ncbi_results, mode: 'copy'
+
 	output:
 	path "*.tsv"
 
@@ -214,8 +229,6 @@ process PULL_NCBI_METADATA {
 }
 
 process FILTER_NCBI_METADATA {
-
-	publishDir params.ncbi_results, mode: 'copy'
 
 	input:
 	path tsv
@@ -335,6 +348,50 @@ process SEARCH_NCBI_METADATA {
 	search_ncbi_metadata.R ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus}
 	"""
 
+}
+
+process PULL_NCBI_CANDIDATES {
+
+	tag "${accession}"
+
+	errorStrategy 'retry'
+	maxRetries 4
+
+	input:
+	val accession
+
+	output:
+	path "*.fasta"
+
+	script:
+	"""
+	datasets download virus genome accession "${accession}" && \
+	unzip ncbi_dataset.zip
+	mv ncbi_dataset/data/genomic.fna ./"${accession}".fasta
+	rm -rf ncbi_dataset/
+	"""
+
+}
+
+process CONCAT_NCBI_CANDIDATES {
+
+	publishDir params.ncbi_results, mode: 'copy'
+
+	input:
+	path fasta_list
+
+	output:
+	path "*.fasta"
+
+	script:
+	"""
+	find . -name "*.fasta" > fasta.list
+
+	for i in `cat fasta.list`;
+	do
+		cat \$i >> ncbi_long_infection_candidates.fasta
+	done
+	"""
 }
 
 
@@ -462,12 +519,47 @@ process FILTER_GISAID_METADATA {
 
 }
 
-// process RECLASSIFY_GISAID_SEQS {
+process DATE_FASTAS {
 
-// 	when:
-// 	params.search_gisaid_seqs == true
+	input:
+	path fasta
 
-// }
+	output:
+	path "*.csv"
+
+	script:
+	"""
+	date_fastas.R ${fasta}
+	"""
+	
+}
+
+process RECLASSIFY_GISAID_SEQS {
+	
+	cpus 1
+	time { 5.minutes * task.attempt }
+	errorStrategy 'retry'
+	maxRetries 4
+
+	input:
+	each cue
+	tuple path(fasta), val(accession), val(date)
+
+	output:
+	tuple path("*.csv"), val(accession), val(date)
+
+	when:
+	params.search_gisaid_seqs == true
+
+	script:
+	"""
+	pangolin \
+	--threads ${task.cpus} \
+	--outfile ${accession}_lineages_updated_${params.date}.csv \
+	"${fasta}"
+	"""
+
+}
 
 process FIND_GISAID_LONG_INFECTIONS {
 
@@ -485,6 +577,19 @@ process FIND_GISAID_LONG_INFECTIONS {
 	gisaid_long_infection_finder.R ${lineage_dates} ${lineage_csv} ${date} ${params.days_of_infection}
 	"""
 
+}
+
+process CONCAT_GISAID_LONG_INFECTIONS {
+
+	input:
+	path file_list
+
+	output:
+
+	script:
+	"""
+	concat_long_infections.R ${params.days_of_infection}
+	"""
 }
 
 process SEARCH_GISAID_METADATA {

@@ -4,7 +4,7 @@ args = commandArgs(trailingOnly=TRUE)
 library(parallel)
 
 # reading in filtered metadata and pango lineage dates
-metadata <- read.csv(args[1], na.strings = c("NA", ""))
+metadata <- read.delim(args[1], na.strings = c("NA", ""))
 dates <- read.csv(args[2])
 infection_cutoff <- as.numeric(args[3])
 cores <- as.numeric(args[4])
@@ -39,8 +39,9 @@ metadata <- metadata[!is.na(metadata$lineage_designation),]
 # filtering down to long infection candidates
 long_infections <- metadata[metadata$infection_duration >= infection_cutoff &
                               metadata$date > as.Date("2021-02-18"),]
-rownames(long_infections) <- NULL
+long_infections <- long_infections[order(long_infections$infection_duration, decreasing = T),]
 long_infections <- long_infections[!is.na(long_infections$accession),]
+rownames(long_infections) <- NULL
 
 # exporting CSV of long infection candidates
 write.table(long_infections,
