@@ -26,9 +26,16 @@ if( params.gisaid_metadata_dir.isEmpty() ){
 	params.gisaid_metadata_dir = launchDir
 }
 
-params.ncbi_results = params.results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
-params.gisaid_results = params.results + "/GISAID_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
-params.local_results = params.results + "/local_database_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
+if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.isEmpty() ){
+	params.ncbi_results = params.results + "/GenBank"
+	params.gisaid_results = params.results + "/GISAID"
+	params.local_results = params.results + "/local_database"
+} else {
+	params.ncbi_results = params.results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
+	params.gisaid_results = params.results + "/GISAID_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
+	params.local_results = params.results + "/local_database_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
+}
+
 // --------------------------------------------------------------- //
 
 
@@ -354,6 +361,8 @@ process PULL_NCBI_CANDIDATES {
 
 	tag "${accession}"
 
+	cpus 1
+	time { 2.minutes * task.attempt }
 	errorStrategy 'retry'
 	maxRetries 4
 
