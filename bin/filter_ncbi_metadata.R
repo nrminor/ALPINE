@@ -6,18 +6,14 @@ full_list <- read.delim(args[1], quote = "",
                         row.names = NULL, 
                         stringsAsFactors = FALSE,
                         na.strings = c("NA", ""))
-if (!is.na(args[2])){
+if (length(args)==4){
   min_date <- as.Date(args[2])
-} else {
-  min_date <- as.Date("2019-10-31")
 }
-if (!is.na(args[3])){
+if (length(args)==4){
   max_date <- as.Date(args[3])
-} else {
-  max_date <- as.Date(Sys.Date())
 }
-if (!is.na(args[4])){
-  geography <- args[4]
+if (length(args)>1 & !grepl("-", args[length(args)]) ){
+  geography <- args[length(args)]
 }
 
 # bringing in US State names/territories & abbreviations
@@ -44,13 +40,11 @@ full_list$Isolate.Collection.date <- as.Date(full_list$Isolate.Collection.date)
 full_list <- full_list[!is.na(full_list$Isolate.Collection.date),]
 
 # filtering
-if (!is.na(args[2])){
-  full_list <- full_list[full_list$Isolate.Collection.date >= min_date,]
+if (exists("min_date") & exists("max_date")){
+  full_list <- full_list[full_list$Isolate.Collection.date >= min_date &
+                         full_list$Isolate.Collection.date <= max_date,]
 }
-if (!is.na(args[3])){
-  full_list <- full_list[full_list$Isolate.Collection.date <= max_date,]
-}
-if(!is.na(args[4])){
+if(exists("geography")){
   if (geography == "USA"){
     usa <- paste(geography, ": ", sep = "")
     full_list <- full_list[grepl(usa,full_list$Geographic.Location),]
