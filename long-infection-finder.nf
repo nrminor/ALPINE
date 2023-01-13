@@ -109,7 +109,8 @@ workflow {
 	PULL_NCBI_CANDIDATES (
 		SEARCH_NCBI_METADATA.out
 			.splitCsv( header: true, sep: "\t" )
-			.map { row -> row.accession }
+			.map { row -> tuple( row.accession, row.infection_duration ) }
+			.filter  { it[1] >= params.duration_of_interest }
 	)
 
 	CONCAT_NCBI_CANDIDATES (
@@ -362,7 +363,7 @@ process PULL_NCBI_CANDIDATES {
 	tag "${accession}"
 
 	cpus 1
-	time { 2.minutes * task.attempt }
+	// time { 1.minute * task.attempt }
 	errorStrategy 'retry'
 	maxRetries 4
 
@@ -375,8 +376,8 @@ process PULL_NCBI_CANDIDATES {
 	script:
 	"""
 	datasets download virus genome accession "${accession}" && \
-	unzip ncbi_dataset.zip
-	mv ncbi_dataset/data/genomic.fna ./"${accession}".fasta
+	unzip ncbi_dataset.zip && \
+	mv ncbi_dataset/data/genomic.fna ./"${accession}".fasta && \
 	rm -rf ncbi_dataset/
 	"""
 
@@ -390,7 +391,7 @@ process CONCAT_NCBI_CANDIDATES {
 	path fasta_list
 
 	output:
-	path "*.fasta"
+	path "*.fasta.xz"
 
 	script:
 	"""
@@ -400,6 +401,8 @@ process CONCAT_NCBI_CANDIDATES {
 	do
 		cat \$i >> ncbi_long_infection_candidates.fasta
 	done
+
+	xz -9 ncbi_long_infection_candidates.fasta
 	"""
 }
 
