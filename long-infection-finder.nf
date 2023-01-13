@@ -110,7 +110,7 @@ workflow {
 		SEARCH_NCBI_METADATA.out
 			.splitCsv( header: true, sep: "\t" )
 			.map { row -> tuple( row.accession, row.infection_duration ) }
-			.filter  { it[1] >= params.duration_of_interest }
+			.filter  { it[1].toInteger() >= params.duration_of_interest }
 	)
 
 	CONCAT_NCBI_CANDIDATES (
@@ -363,12 +363,12 @@ process PULL_NCBI_CANDIDATES {
 	tag "${accession}"
 
 	cpus 1
-	// time { 1.minute * task.attempt }
+	time { 1.minute * task.attempt }
 	errorStrategy 'retry'
 	maxRetries 4
 
 	input:
-	val accession
+	tuple val(accession), val(duration)
 
 	output:
 	path "*.fasta"
@@ -395,14 +395,12 @@ process CONCAT_NCBI_CANDIDATES {
 
 	script:
 	"""
-	find . -name "*.fasta" > fasta.list
-
+	find . -name "*.fasta" > fasta.list && \
 	for i in `cat fasta.list`;
 	do
-		cat \$i >> ncbi_long_infection_candidates.fasta
-	done
-
-	xz -9 ncbi_long_infection_candidates.fasta
+		cat \$i >> ncbi_long_infection_candidates_${params.date}.fasta
+	done && \
+	xz -9 ncbi_long_infection_candidates_${params.date}.fasta
 	"""
 }
 
