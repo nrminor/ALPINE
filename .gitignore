@@ -10,3 +10,8 @@ results/pango_consensus_sequences.fasta
 .nextflow.log*
 .DS_Store
 ._*
+chtc.config
+dhogal.config
+dhogal2.config
+imac_arm.config
+imac_x86.config
