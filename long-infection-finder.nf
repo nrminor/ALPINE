@@ -230,7 +230,7 @@ process PULL_NCBI_METADATA {
 	"""
 	datasets summary virus genome taxon sars-cov-2 \
 	--as-json-lines | dataformat tsv virus-genome \
-	--fields accession,isolate-lineage,isolate-lineage-source,geo-location,geo-region,isolate-collection-date,virus-pangolin,virus-name,sra-accs,submitter-affiliation,submitter-country,submitter-names,update-date \
+	--fields accession,isolate-lineage,isolate-lineage-source,geo-location,geo-region,isolate-collection-date,release-date,virus-pangolin,virus-name,sra-accs,submitter-affiliation,submitter-country,submitter-names,update-date \
 	> sarscov2-metadata.tsv
 	"""
 
