@@ -6,6 +6,7 @@ nextflow.enable.dsl = 2
 
 // DERIVATIVE PARAMETER SPECIFICATION
 // --------------------------------------------------------------- //
+// handling the case where no local fasa path is provided
 if( params.local_database == "/Volumes/GoogleDrive/Shared drives/2019-nCoV open research team/Sequencing Data"){
 	params.local_input_path = params.local_database + "/DHO*/gisaid/*.fasta"
 } else if( params.local_database.isEmpty() ){
@@ -14,18 +15,22 @@ if( params.local_database == "/Volumes/GoogleDrive/Shared drives/2019-nCoV open 
 	params.local_input_path = params.local_database + "/**/*.fasta"
 }
 
+// handling the case where no local metadata path is provided
 if( params.local_metadata.isEmpty() ){
 	params.local_metadata = launchDir
 }
 
+// handling the case where no GISAID fasta path is provided
 if( params.gisaid_seq_dir.isEmpty() ){
 	params.gisaid_seq_dir = launchDir
 }
 
+// handling the case where no GISAID metadata path is provided
 if( params.gisaid_metadata_dir.isEmpty() ){
 	params.gisaid_metadata_dir = launchDir
 }
 
+// handling the case where no geography or date filters are provided
 if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.isEmpty() ){
 	params.ncbi_results = params.results + "/GenBank"
 	params.gisaid_results = params.results + "/GISAID"
@@ -35,6 +40,12 @@ if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.i
 	params.gisaid_results = params.results + "/GISAID_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
 	params.local_results = params.results + "/local_database_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
 }
+
+// creating results subfolders for the three orthogonal anachronistic
+// sequence search methods
+params.high_distance_candidates = params.ncbi_results + "/high_distance_cluster"
+params.anachronistic_candidates = params.ncbi_results + "/anachronistic_candidates"
+params.metadata_candidates = params.ncbi_results + "/metadata_candidates"
 
 // --------------------------------------------------------------- //
 
@@ -68,53 +79,92 @@ workflow {
 	
 
 	// Download the latest Pangolin designation dates from GitHub
-	GET_DESIGNATION_DATES ( )
+	// GET_DESIGNATION_DATES ( )
 
 
 	// NCBI/GENBANK BRANCH:
-	// Pull NCBI metadata and, if params.search_genbank_seqs = true,
-	// download sequences as well and use those to find long
-	// infection candidates
-	PULL_NCBI_METADATA ( )
+	/* Here we use three orthogonal methods for identifying prolonged
+	infection candidates:
+		1 - Creating a distance matrix of nucleotide differences between
+		consensus sequences, run a clustering algorithm on those distances,
+		and identify candidates in the highest-distance cluster.
+		2 - Reclassifying sequences using with the most up-to-date version
+		of Pangolin and comparing each isolate's collection date with 
+		lineage prevalence estimates from outbreak.info
+		3 - The fastest option: trusting pango lineages in the metadata 
+		as being mostly up-to-date and comparing those lineage's collection 
+		dates with outbreak.info prevalence estimates.
+	We suggest users run all of these methods (see nextflow.config) and 
+	cross reference the results from each.
+	*/
+	DOWNLOAD_SC2_PACKAGE ( )
+
+	PREP_FOR_CLUSTERING (
+		DOWNLOAD_SC2_PACKAGE.out.fasta
+	)
+
+	CLUSTER_BY_DISTANCE (
+		PREP_FOR_CLUSTERING.out.fasta,
+		DOWNLOAD_SC2_PACKAGE.out.metadata
+	)
+
+	COLLATE_CLUSTER_METADATA (
+		CLUSTER_BY_DISTANCE.out,
+		DOWNLOAD_SC2_PACKAGE.out.metadata
+	)
 
 	FILTER_NCBI_METADATA (
-		PULL_NCBI_METADATA.out
+		DOWNLOAD_SC2_PACKAGE.out.metadata
 	)
 
-	PULL_NCBI_SEQUENCES ( 
-		FILTER_NCBI_METADATA.out
-			.splitCsv ( header: true, sep: "\t" )
-			.map {row -> tuple(row.accession, row.date, row.location, row.pango)}
-	)
+	// PULL_NCBI_SEQUENCES ( 
+	// 	FILTER_NCBI_METADATA.out
+	// 		.splitCsv ( header: true, sep: "\t" )
+	// 		.map {row -> tuple(row.accession, row.date, row.location, row.pango)}
+	// )
+
+	// ALIGN_NCBI_SEQUENCES ()
+
+	// SEQUENCE_DISTANCE_MATRIX ()
 	
-	RECLASSIFY_NCBI_SEQUENCES ( 
+	HIGH_THROUGHPUT_PANGOLIN ( 
 		UPDATE_PANGO_CONTAINER.out.cue,
-		PULL_NCBI_SEQUENCES.out
+		DOWNLOAD_SC2_PACKAGE.out.fasta
+			.splitFasta( by: 5000, file: true )
 	)
 
-	FIND_NCBI_LONG_INFECTIONS ( 
+	CONCAT_PANGOLIN_REPORTS (
+		HIGH_THROUGHPUT_PANGOLIN.out.collect()
+	)
+
+	FIND_CANDIDATE_LINEAGES_BY_DATE ( 
 		GET_DESIGNATION_DATES.out,
-		RECLASSIFY_NCBI_SEQUENCES.out
+		HIGH_THROUGHPUT_PANGOLIN.out
 	)
 
-	CONCAT_NCBI_LONG_INFECTIONS (
-		FIND_NCBI_LONG_INFECTIONS.out.collect()
-	)
+	// FIND_CANDIDATE_LINEAGES_BY_DATE ( 
+	// 	GET_DESIGNATION_DATES.out,
+	// 	HIGH_THROUGHPUT_PANGOLIN.out
+	// )
+
+	// CONCAT_DATE_BASED_CANDIDATES (
+	// 	FIND_CANDIDATE_LINEAGES_BY_DATE.out.collect()
+	// )
 
 	SEARCH_NCBI_METADATA ( 
 		FILTER_NCBI_METADATA.out,
 		GET_DESIGNATION_DATES.out
 	)
 
-	PULL_NCBI_CANDIDATES (
+	PULL_NCBI_METADATA_CANDIDATES (
 		SEARCH_NCBI_METADATA.out
 			.splitCsv( header: true, sep: "\t" )
 			.map { row -> tuple( row.accession, row.infection_duration ) }
 			.filter  { it[1].toInteger() >= params.duration_of_interest }
 	)
 
-	CONCAT_NCBI_CANDIDATES (
-		PULL_NCBI_CANDIDATES.out.collect()
+	CONCAT_NCBI_METADATA_CANDIDATES (
+		PULL_NCBI_METADATA_CANDIDATES.out.collect()
 	)
 
 
@@ -145,34 +195,34 @@ workflow {
 	// down to the date range and geography specified in nextflow.config.
 	// It then reclassify GISAID EpiCov FASTA sequences with pangolin, 
 	// if they have been made available with params.gisaid_seq_dir
-	FILTER_GISAID_METADATA (
-		ch_gisaid_metadata
-	)
+	// FILTER_GISAID_METADATA (
+	// 	ch_gisaid_metadata
+	// )
 
-	DATE_FASTAS (
-		ch_gisaid_seqs
-	)
+	// DATE_FASTAS (
+	// 	ch_gisaid_seqs
+	// )
 
-	RECLASSIFY_GISAID_SEQS (
-		UPDATE_PANGO_CONTAINER.out.cue,
-		DATE_FASTAS.out
-			.splitCsv( header: false )
-			.map { row -> tuple( file(row[0]), row[1], row[2] ) }
-	)
+	// RECLASSIFY_GISAID_SEQS (
+	// 	UPDATE_PANGO_CONTAINER.out.cue,
+	// 	DATE_FASTAS.out
+	// 		.splitCsv( header: false )
+	// 		.map { row -> tuple( file(row[0]), row[1], row[2] ) }
+	// )
 
-	FIND_GISAID_LONG_INFECTIONS ( 
-		GET_DESIGNATION_DATES.out,
-		RECLASSIFY_GISAID_SEQS.out
-	)
+	// FIND_GISAID_LONG_INFECTIONS ( 
+	// 	GET_DESIGNATION_DATES.out,
+	// 	RECLASSIFY_GISAID_SEQS.out
+	// )
 
-	CONCAT_GISAID_LONG_INFECTIONS (
-		FIND_GISAID_LONG_INFECTIONS.out.collect()
-	)
+	// CONCAT_GISAID_LONG_INFECTIONS (
+	// 	FIND_GISAID_LONG_INFECTIONS.out.collect()
+	// )
 	
-	SEARCH_GISAID_METADATA (
-		FILTER_GISAID_METADATA.out,
-		GET_DESIGNATION_DATES.out
-	)
+	// SEARCH_GISAID_METADATA (
+	// 	FILTER_GISAID_METADATA.out,
+	// 	GET_DESIGNATION_DATES.out
+	// )
 	
 
 }
@@ -219,24 +269,114 @@ process GET_DESIGNATION_DATES {
 
 
 // NCBI/GENBANK PROCESSES:
-process PULL_NCBI_METADATA {
+process DOWNLOAD_SC2_PACKAGE {
 
-	publishDir params.ncbi_results, mode: 'copy'
+	/*
+	Here we download two, large files from NCBI: the FASTA of all 
+	SARS-CoV-2 consensus sequences in GenBank, and a tab-delimited
+	table of metadata for all those sequences. Depending on the 
+	settings specified in nextflow.config, various processing
+	will be performed on these files downstream.
+	*/
+
+	cpus 3
 
 	output:
-	path "*.tsv"
+	path "*.fasta", emit: fasta
+	path "*.tsv", emit: metadata
 
 	script:
 	"""
-	datasets summary virus genome taxon sars-cov-2 \
-	--as-json-lines | dataformat tsv virus-genome \
-	--fields accession,isolate-lineage,isolate-lineage-source,geo-location,geo-region,isolate-collection-date,release-date,virus-pangolin,virus-name,sra-accs,submitter-affiliation,submitter-country,submitter-names,update-date \
-	> sarscov2-metadata.tsv
+
+	datasets download virus genome taxon SARS-CoV-2 \
+	--complete-only \
+	--filename ${params.date}.zip && \
+	unzip ${params.date}.zip
+
+	mv ncbi_dataset/data/genomic.fna ./genbank_sc2_${params.date}.fasta
+
+	mv ncbi_dataset/data/data_report.jsonl ./genbank_sc2_${params.date}.jsonl && \
+	dataformat tsv virus-genome genbank_sc2_${params.date}.jsonl | \
+	genbank_sc2_${params.date}.tsv
+
+	rm -rf ${params.date}/
 	"""
 
 }
 
+process PREP_FOR_CLUSTERING {
+
+	/*
+	In this process, we replace all dashes in the NCBI FASTA with
+	"N's", effectively converting them into masked bases instead of
+	gaps. We also sort the FASTA by sequence length in descending order,
+	which will make the clustering algorithm run faster.
+	*/
+
+	input:
+	path metadata
+
+	output:
+
+	when:
+	params.make_distance_matrix == true
+
+	script:
+	"""
+	"""
+	
+}
+
+process CLUSTER_BY_DISTANCE {
+
+	/*
+	Here we run a version of Robert Edgar's UCLUST algorithm that 
+	is part of the open-source VSEARCH package. This step may take 
+	a large amount of time and RAM, and thus may be better suited 
+	for a high-RAM cluster environment.
+	*/
+
+	cpus ${params.max_cpus}
+
+	input:
+	path fasta
+
+	output:
+	
+	script:
+	"""
+	"""
+	
+}
+
+process COLLATE_CLUSTER_METADATA {
+
+	/*
+	In this process, the clustering results are combined with metadata
+	to provide as much information as possible with the candidate
+	evolutionarily advanced sequences. We recommend users visually 
+	inspect these candidates and compare them with candidates from
+	the two additional methods used in this pipeline.
+	*/
+
+	publishDir params.high_distance_candidates, mode: 'copy'
+
+	input:
+	path clusters
+	path metadata
+}
+
 process FILTER_NCBI_METADATA {
+
+	/* 
+	In parallel with the distance matrix method, this pipeline also pans
+	the GenBank metadata for anachronistic sequences, which may have come
+	from evolutionarily advanced virus lineages in prolonged infections.
+	NCBI's pre-classified pango lineages, which come with the metadata,
+	are what make this method possible. In this process, we tee off this
+	method by filtering NCBI metadata for all rows with correctly formatted
+	dates and pango lineages.
+	*/
 
 	input:
 	path tsv
@@ -246,94 +386,144 @@ process FILTER_NCBI_METADATA {
 
 	script:
 	"""
-	filter_ncbi_metadata.R ${tsv} ${params.min_date} ${params.max_date} ${params.geography}
+	filter_ncbi_metadata.R ${tsv} \
+	${params.min_date} ${params.max_date} \
+	${params.geography}
 	"""
 }
 
-process PULL_NCBI_SEQUENCES {
+// process PULL_NCBI_SEQUENCES {
 	
-	tag "${accession}"
+// 	tag "${accession}"
 	
-	cpus 1
+// 	cpus 1
 	
-	input:
-	tuple val(accession), val(date), val(loc), val(pango)
+// 	input:
+// 	tuple val(accession), val(date), val(loc), val(pango)
 	
-	output:
-	tuple val(accession), val(date), path("*.fasta")
+// 	output:
+// 	tuple val(accession), val(date), path("*.fasta")
 	
-	when:
-	params.search_genbank_seqs == true
+// 	when:
+// 	params.search_genbank_seqs == true
 
-	script:
-	"""
-	datasets download virus genome accession "${accession}" \
-	--exclude-cds --exclude-protein
-	unzip ncbi_dataset.zip
-	mv ncbi_dataset/data/genomic.fna ./"${accession}".fasta
-	rm -rf ncbi_dataset/
-	"""
+// 	script:
+// 	"""
+// 	datasets download virus genome accession "${accession}" \
+// 	--exclude-cds --exclude-protein
+// 	unzip ncbi_dataset.zip
+// 	mv ncbi_dataset/data/genomic.fna ./"${accession}".fasta
+// 	rm -rf ncbi_dataset/
+// 	"""
 
-}
+// }
 
-process RECLASSIFY_NCBI_SEQUENCES {
+// process ALIGN_NCBI_SEQUENCES {
+
+// 	cpus ${params.max_cpus}
+
+// 	input:
+// 	path fasta
+
+// 	output:
+// 	path "*.fasta"
+
+// 	script:
+// 	"""
+// 	muscle -align seqs.fa -output aln.afa
+// 	"""
+
+// }
+
+// process SEQUENCE_DISTANCE_MATRIX {}
+
+process HIGH_THROUGHPUT_PANGOLIN {
 	
-	tag "${accession}"
-	
-	cpus 1
-	time { 5.minutes * task.attempt }
+	cpus 4
 	errorStrategy 'retry'
-	maxRetries 4
+	maxRetries 1
 	
 	input:
 	each cue
-	tuple val(accession), val(date), path(fasta)
+	path fasta
 	
 	output:
-	tuple path("*.csv"), val(accession), val(date)
+	path "*.csv"
 
 	script:
 	"""
 	pangolin \
+	--skip-scorpio --skip-designation-cache \
 	--threads ${task.cpus} \
-	--outfile ${accession}_lineages_updated_${date}.csv \
+	--outfile lineage_report.csv \
 	"${fasta}"
 	"""
 
 }
 
-process FIND_NCBI_LONG_INFECTIONS {
+process CONCAT_PANGOLIN_REPORTS {
+
+	input:
+	path lineage_report, stageAs: 'report??.csv'
+
+	output:
+	path csv
+
+	script:
+	"""
+	"""
+}
+
+process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	publishDir params.ncbi_results, mode: 'copy'
 
+	cpus ${params.max_cpus}
+
 	input:
-	each path(lineage_dates)
-	tuple path(lineage_csv), val(accession), val(date)
+	path csv
 
 	output:
 	path "*putative_long_infections_ncbi*.csv"
 
 	script:
 	"""
-	ncbi_long_infection_finder.R ${lineage_dates} ${lineage_csv} ${date} ${params.days_of_infection}
+	compare_lineage_prevalences.R ${csv} ${task.cpus}
 	"""
 }
 
-process CONCAT_NCBI_LONG_INFECTIONS {
+// process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
-	publishDir params.results, mode: 'copy'
+// 	publishDir params.ncbi_results, mode: 'copy'
 
-	input:
-	path file_list, stageAs: 'infections??.csv'
+// 	input:
+// 	each path(lineage_dates)
+// 	tuple path(lineage_csv), val(accession), val(date)
 
-	output:
-	path "*.csv"
+// 	output:
+// 	path "*putative_long_infections_ncbi*.csv"
 
-	script:
-	"""
-	concat_long_infections.R ${params.days_of_infection}
-	"""
-}
+// 	script:
+// 	"""
+// 	ncbi_long_infection_finder.R ${lineage_dates} ${lineage_csv} ${date} ${params.days_of_infection}
+// 	"""
+// }
+
+// process CONCAT_DATE_BASED_CANDIDATES {
+
+// 	publishDir params.results, mode: 'copy'
+
+// 	input:
+// 	path file_list, stageAs: 'infections??.csv'
+
+// 	output:
+// 	path "*.csv"
+
+// 	script:
+// 	"""
+// 	concat_long_infections.R ${params.days_of_infection}
+// 	"""
+// }
 
 process SEARCH_NCBI_METADATA {
 
@@ -358,7 +548,7 @@ process SEARCH_NCBI_METADATA {
 
 }
 
-process PULL_NCBI_CANDIDATES {
+process PULL_NCBI_METADATA_CANDIDATES {
 
 	tag "${accession}"
 
@@ -383,7 +573,7 @@ process PULL_NCBI_CANDIDATES {
 
 }
 
-process CONCAT_NCBI_CANDIDATES {
+process CONCAT_NCBI_METADATA_CANDIDATES {
 
 	publishDir params.ncbi_results, mode: 'copy'
 
