@@ -22,7 +22,6 @@ workflow {
 
 	GET_DESIGNATION_DATES ( )
 
-
 	// NCBI/GENBANK BRANCH:
 	/* Here we use three orthogonal methods for identifying prolonged
 	infection candidates:
@@ -88,15 +87,8 @@ workflow {
 		GET_DESIGNATION_DATES.out
 	)
 
-	PULL_NCBI_METADATA_CANDIDATES (
+	COLLATE_NCBI_METADATA_CANDIDATES (
 		SEARCH_NCBI_METADATA.out
-			.splitCsv( header: true, sep: "\t" )
-			.map { row -> tuple( row.accession, row.infection_duration ) }
-			.filter  { it[1].toInteger() >= params.duration_of_interest }
-	)
-
-	CONCAT_NCBI_METADATA_CANDIDATES (
-		PULL_NCBI_METADATA_CANDIDATES.out.collect()
 	)
 	
 
@@ -295,6 +287,7 @@ process CLUSTER_BY_DISTANCE {
 
 	input:
 	path fasta
+	each path(metadata)
 
 	output:
 	path "*.uc", emit: cluster_table
@@ -455,14 +448,7 @@ process SEARCH_NCBI_METADATA {
 
 }
 
-process PULL_NCBI_METADATA_CANDIDATES {
-
-	tag "${accession}"
-
-	cpus 1
-	time { 1.minute * task.attempt }
-	errorStrategy 'retry'
-	maxRetries 4
+process COLLATE_NCBI_METADATA_CANDIDATES {
 
 	input:
 	tuple val(accession), val(duration)
@@ -472,33 +458,8 @@ process PULL_NCBI_METADATA_CANDIDATES {
 
 	script:
 	"""
-	datasets download virus genome accession "${accession}" && \
-	unzip ncbi_dataset.zip && \
-	mv ncbi_dataset/data/genomic.fna ./"${accession}".fasta && \
-	rm -rf ncbi_dataset/
 	"""
 
-}
-
-process CONCAT_NCBI_METADATA_CANDIDATES {
-
-	publishDir params.metadata_candidates, mode: 'copy'
-
-	input:
-	path fasta_list
-
-	output:
-	path "*.fasta.xz"
-
-	script:
-	"""
-	find . -name "*.fasta" > fasta.list && \
-	for i in `cat fasta.list`;
-	do
-		cat \$i >> ncbi_long_infection_candidates_${params.date}.fasta
-	done && \
-	xz -9 ncbi_long_infection_candidates_${params.date}.fasta
-	"""
 }
 
 
