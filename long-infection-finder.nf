@@ -36,10 +36,13 @@ workflow {
 	We suggest users run all of these methods (see nextflow.config) and 
 	cross reference the results from each.
 	*/
+
+	// Data setup steps
 	DOWNLOAD_NCBI_PACKAGE ( )
 
 	DOWNLOAD_REFSEQ ( )
 
+	// Distance matrix clustering steps
 	REMOVE_FASTA_GAPS ( 
 		DOWNLOAD_NCBI_PACKAGE.out.fasta
 	)
@@ -62,11 +65,8 @@ workflow {
 		CLUSTER_BY_DISTANCE.out.centroid_fasta,
 		DOWNLOAD_REFSEQ.out
 	)
-
-	FILTER_NCBI_METADATA (
-		DOWNLOAD_NCBI_PACKAGE.out.metadata
-	)
 	
+	// Steps for re-running pangolin and comparing dates
 	HIGH_THROUGHPUT_PANGOLIN ( 
 		UPDATE_PANGO_CONTAINER.out.cue,
 		DOWNLOAD_NCBI_PACKAGE.out.fasta
@@ -77,19 +77,14 @@ workflow {
 		HIGH_THROUGHPUT_PANGOLIN.out.collect()
 	)
 
-	FIND_CANDIDATE_LINEAGES_BY_DATE ( 
-		GET_DESIGNATION_DATES.out,
+	FIND_CANDIDATE_LINEAGES_BY_DATE (
 		HIGH_THROUGHPUT_PANGOLIN.out
 	)
 
-	// FIND_CANDIDATE_LINEAGES_BY_DATE ( 
-	// 	GET_DESIGNATION_DATES.out,
-	// 	HIGH_THROUGHPUT_PANGOLIN.out
-	// )
-
-	// CONCAT_DATE_BASED_CANDIDATES (
-	// 	FIND_CANDIDATE_LINEAGES_BY_DATE.out.collect()
-	// )
+	// Steps for inspecting NCBI metadata
+	FILTER_NCBI_METADATA (
+		DOWNLOAD_NCBI_PACKAGE.out.metadata
+	)
 
 	SEARCH_NCBI_METADATA ( 
 		FILTER_NCBI_METADATA.out,
@@ -282,9 +277,6 @@ process SEPARATE_BY_MONTH {
 	output:
 	path "*.fasta"
 
-	when:
-	params.make_distance_matrix == true
-
 	script:
 	"""
 	separate_by_year-month.py ${fasta}
@@ -361,35 +353,6 @@ process COLLATE_CLUSTER_METADATA {
 	path metadata
 }
 
-process FILTER_NCBI_METADATA {
-
-	/* 
-	In parallel with the distance matrix method, this pipeline also pans
-	the GenBank metadata for anachronistic sequences, which may have come
-	from evolutionarily advanced virus lineages in prolonged infections.
-	NCBI's pre-classified pango lineages, which come with the metadata,
-	are what make this method possible. In this process, we tee off this
-	method by filtering NCBI metadata for all rows with correctly formatted
-	dates and pango lineages.
-	*/
-
-	input:
-	path tsv
-
-	output:
-	path "*.tsv"
-
-	when:
-	params.inspect_ncbi_metadata == true
-
-	script:
-	"""
-	filter_ncbi_metadata.R ${tsv} \
-	${params.min_date} ${params.max_date} \
-	${params.geography}
-	"""
-}
-
 process HIGH_THROUGHPUT_PANGOLIN {
 	
 	cpus 4
@@ -429,7 +392,7 @@ process CONCAT_PANGOLIN_REPORTS {
 
 process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
-	publishDir params.ncbi_results, mode: 'copy'
+	publishDir params.anachronistic_candidates, mode: 'copy'
 
 	cpus ${params.max_cpus}
 
@@ -445,38 +408,34 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	"""
 }
 
-// process FIND_CANDIDATE_LINEAGES_BY_DATE {
+process FILTER_NCBI_METADATA {
 
-// 	publishDir params.ncbi_results, mode: 'copy'
+	/* 
+	In parallel with the distance matrix method, this pipeline also pans
+	the GenBank metadata for anachronistic sequences, which may have come
+	from evolutionarily advanced virus lineages in prolonged infections.
+	NCBI's pre-classified pango lineages, which come with the metadata,
+	are what make this method possible. In this process, we tee off this
+	method by filtering NCBI metadata for all rows with correctly formatted
+	dates and pango lineages.
+	*/
 
-// 	input:
-// 	each path(lineage_dates)
-// 	tuple path(lineage_csv), val(accession), val(date)
+	input:
+	path tsv
 
-// 	output:
-// 	path "*putative_long_infections_ncbi*.csv"
+	output:
+	path "*.tsv"
 
-// 	script:
-// 	"""
-// 	ncbi_long_infection_finder.R ${lineage_dates} ${lineage_csv} ${date} ${params.days_of_infection}
-// 	"""
-// }
+	when:
+	params.inspect_ncbi_metadata == true && update_pango == false
 
-// process CONCAT_DATE_BASED_CANDIDATES {
-
-// 	publishDir params.results, mode: 'copy'
-
-// 	input:
-// 	path file_list, stageAs: 'infections??.csv'
-
-// 	output:
-// 	path "*.csv"
-
-// 	script:
-// 	"""
-// 	concat_long_infections.R ${params.days_of_infection}
-// 	"""
-// }
+	script:
+	"""
+	filter_ncbi_metadata.R ${tsv} \
+	${params.min_date} ${params.max_date} \
+	${params.geography}
+	"""
+}
 
 process SEARCH_NCBI_METADATA {
 
@@ -528,7 +487,7 @@ process PULL_NCBI_METADATA_CANDIDATES {
 
 process CONCAT_NCBI_METADATA_CANDIDATES {
 
-	publishDir params.ncbi_results, mode: 'copy'
+	publishDir params.metadata_candidates, mode: 'copy'
 
 	input:
 	path fasta_list
