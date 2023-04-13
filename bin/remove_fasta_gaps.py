@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 
 import sys
+import fcntl
 from Bio import SeqIO
 from Bio.Seq import Seq
-from multiprocessing import Pool, cpu_count, Lock
+from multiprocessing import Pool, cpu_count
 
 # Define a function to process a single sequence record
-def process_seq_record(seq_record, lock, out_handle):
+def process_seq_record(seq_record):
 	seq_str = str(seq_record.seq).replace("-", "N")
 	seq_record.seq = Seq(seq_str)
-	
-	# Acquire the lock to write to the output file
-	lock.acquire()
-	SeqIO.write(seq_record, out_handle, "fasta")
-	lock.release()
+	return seq_record
+
+# Define a function to write a sequence record to a file with a file lock
+def write_seq_record(record, file_handle):
+	fcntl.flock(file_handle, fcntl.LOCK_EX)
+	SeqIO.write(record, file_handle, "fasta")
+	fcntl.flock(file_handle, fcntl.LOCK_UN)
 
 # Get input and output file names from command line arguments
 input_file = sys.argv[1]
@@ -22,18 +25,16 @@ output_file = sys.argv[2]
 # Define the number of processes to use (default to number of CPU cores)
 num_processes = int(sys.argv[3])
 
-# Read in the input FASTA file
-with open(input_file, "r") as in_handle:
-	seq_records = list(SeqIO.parse(in_handle, "fasta"))
-
-# Process the sequence records in parallel
-lock = Lock()
+# Open the output file with a file lock
 with open(output_file, "w") as out_handle:
-	with Pool(processes=num_processes) as pool:
-		for seq_record in seq_records:
-			pool.apply_async(process_seq_record, (seq_record, lock, out_handle))
+	fcntl.flock(out_handle, fcntl.LOCK_EX)
 
-		# Wait for all the processes to finish before closing the output file
-		pool.close()
-		pool.join()
+	# Read in the input FASTA file
+	with open(input_file, "r") as in_handle:
+		# Process the sequence records in parallel
+		with Pool(processes=num_processes) as pool:
+			for processed_seq_record in pool.imap(process_seq_record, SeqIO.parse(in_handle, "fasta")):
+				# Write the record to the output file with a file lock
+				write_seq_record(processed_seq_record, out_handle)
 
+	fcntl.flock(out_handle, fcntl.LOCK_UN)
