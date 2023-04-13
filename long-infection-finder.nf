@@ -102,7 +102,7 @@ workflow {
 
 // Defining number of cpus to use base on execution environment
 if ( workflow.profile == "chtc" ){
-	params.max_cpus = 32
+	params.max_cpus = executor.cpus
 } else {
 	params.max_cpus = params.max_local_cpus
 }
