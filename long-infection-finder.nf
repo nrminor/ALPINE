@@ -4,26 +4,6 @@ nextflow.enable.dsl = 2
 
 
 
-// DERIVATIVE PARAMETER SPECIFICATION
-// --------------------------------------------------------------- //
-
-// handling the case where no geography or date filters are provided
-if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.isEmpty() ){
-	params.ncbi_results = params.results + "/GenBank"
-} else {
-	params.ncbi_results = params.results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
-}
-
-// creating results subfolders for the three orthogonal anachronistic
-// sequence search methods
-params.high_distance_candidates = params.ncbi_results + "/high_distance_cluster"
-params.anachronistic_candidates = params.ncbi_results + "/anachronistic_candidates"
-params.metadata_candidates = params.ncbi_results + "/metadata_candidates"
-
-// --------------------------------------------------------------- //
-
-
-
 // WORKFLOW SPECIFICATION
 // --------------------------------------------------------------- //
 workflow {
@@ -31,8 +11,10 @@ workflow {
 	// Before anything else, make sure pangolin is up to date
 	UPDATE_PANGO_CONTAINER ( )
 	
-	println "Pangolin updated to version:"
-	UPDATE_PANGO_CONTAINER.out.cue.view()
+	if ( update_pango == true ){
+		println "This workflow will use the following Pangolin version:"
+		UPDATE_PANGO_CONTAINER.out.cue.view()
+	}
 	
 
 	// Download the latest Pangolin designation dates from GitHub
@@ -54,39 +36,40 @@ workflow {
 	We suggest users run all of these methods (see nextflow.config) and 
 	cross reference the results from each.
 	*/
-	DOWNLOAD_SC2_PACKAGE ( )
+	DOWNLOAD_NCBI_PACKAGE ( )
 
-	PREP_FOR_CLUSTERING (
-		DOWNLOAD_SC2_PACKAGE.out.fasta
+	DOWNLOAD_REFSEQ ( )
+
+	REMOVE_FASTA_GAPS ( 
+		DOWNLOAD_NCBI_PACKAGE.out.fasta
+	)
+
+	SEPARATE_BY_MONTH (
+		REMOVE_FASTA_GAPS.out
 	)
 
 	CLUSTER_BY_DISTANCE (
-		PREP_FOR_CLUSTERING.out.fasta,
-		DOWNLOAD_SC2_PACKAGE.out.metadata
+		PREP_FOR_CLUSTERING.out.flatten(),
+		DOWNLOAD_NCBI_PACKAGE.out.metadata
 	)
 
 	COLLATE_CLUSTER_METADATA (
 		CLUSTER_BY_DISTANCE.out,
-		DOWNLOAD_SC2_PACKAGE.out.metadata
+		DOWNLOAD_NCBI_PACKAGE.out.metadata
+	)
+
+	BUILD_CENTROID_TREE (
+		CLUSTER_BY_DISTANCE.out.centroid_fasta,
+		DOWNLOAD_REFSEQ.out
 	)
 
 	FILTER_NCBI_METADATA (
-		DOWNLOAD_SC2_PACKAGE.out.metadata
+		DOWNLOAD_NCBI_PACKAGE.out.metadata
 	)
-
-	// PULL_NCBI_SEQUENCES ( 
-	// 	FILTER_NCBI_METADATA.out
-	// 		.splitCsv ( header: true, sep: "\t" )
-	// 		.map {row -> tuple(row.accession, row.date, row.location, row.pango)}
-	// )
-
-	// ALIGN_NCBI_SEQUENCES ()
-
-	// SEQUENCE_DISTANCE_MATRIX ()
 	
 	HIGH_THROUGHPUT_PANGOLIN ( 
 		UPDATE_PANGO_CONTAINER.out.cue,
-		DOWNLOAD_SC2_PACKAGE.out.fasta
+		DOWNLOAD_NCBI_PACKAGE.out.fasta
 			.splitFasta( by: 5000, file: true )
 	)
 
@@ -130,6 +113,27 @@ workflow {
 
 
 
+// DERIVATIVE PARAMETER SPECIFICATION
+// --------------------------------------------------------------- //
+
+// handling the case where no geography or date filters are provided
+if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.isEmpty() ){
+	params.ncbi_results = params.results + "/GenBank"
+} else {
+	params.ncbi_results = params.results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
+}
+
+// creating results subfolders for the three orthogonal anachronistic
+// sequence search methods
+params.clustering_results = params.ncbi_results + "/all_clustering_results"
+params.high_distance_candidates = params.ncbi_results + "/high_distance_cluster"
+params.anachronistic_candidates = params.ncbi_results + "/anachronistic_candidates"
+params.metadata_candidates = params.ncbi_results + "/metadata_candidates"
+
+// --------------------------------------------------------------- //
+
+
+
 // PROCESS SPECIFICATIONS
 // --------------------------------------------------------------- //
 
@@ -141,7 +145,7 @@ process UPDATE_PANGO_CONTAINER {
 	env(version), emit: cue
 	
 	when:
-	(workflow.profile == 'standard' || workflow.profile == 'docker' || workflow.profile == 'singularity') && (params.search_gisaid_seqs == true || params.search_genbank_seqs == true || !params.local_input_path.isEmpty() )
+	workflow.profile == 'standard' || workflow.profile == 'docker' || workflow.profile == 'singularity'
 	
 	script:
 	"""
@@ -169,7 +173,7 @@ process GET_DESIGNATION_DATES {
 
 
 // NCBI/GENBANK PROCESSES:
-process DOWNLOAD_SC2_PACKAGE {
+process DOWNLOAD_NCBI_PACKAGE {
 
 	/*
 	Here we download two, large files from NCBI: the FASTA of all 
@@ -186,45 +190,106 @@ process DOWNLOAD_SC2_PACKAGE {
 	path "*.tsv", emit: metadata
 
 	script:
-	"""
+	if ( params.geograpy != "" )
+		"""
 
-	datasets download virus genome taxon SARS-CoV-2 \
-	--complete-only \
-	--filename ${params.date}.zip && \
-	unzip ${params.date}.zip
+		datasets download virus genome taxon SARS-CoV-2 \
+		--complete-only \
+		--filename ${params.date}.zip \
+		--geo-location ${params.geography} && \
+		unzip ${params.date}.zip
 
-	mv ncbi_dataset/data/genomic.fna ./genbank_sc2_${params.date}.fasta
+		mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
 
-	mv ncbi_dataset/data/data_report.jsonl ./genbank_sc2_${params.date}.jsonl && \
-	dataformat tsv virus-genome genbank_sc2_${params.date}.jsonl | \
-	genbank_sc2_${params.date}.tsv
+		mv ncbi_dataset/data/data_report.jsonl ./genbank_${params.date}.jsonl && \
+		dataformat tsv virus-genome genbank_${params.date}.jsonl | \
+		genbank_${params.date}.tsv
 
-	rm -rf ${params.date}/
-	"""
+		rm -rf ${params.date}/
+		"""
+	else
+		"""
+
+		datasets download virus genome taxon SARS-CoV-2 \
+		--complete-only \
+		--filename ${params.date}.zip && \
+		unzip ${params.date}.zip
+
+		mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
+
+		mv ncbi_dataset/data/data_report.jsonl ./genbank_${params.date}.jsonl && \
+		dataformat tsv virus-genome genbank_${params.date}.jsonl | \
+		genbank_${params.date}.tsv
+
+		rm -rf ${params.date}/
+		"""	
 
 }
 
-process PREP_FOR_CLUSTERING {
+process DOWNLOAD_REFSEQ {
+
+	publishDir params.resources, mode: 'copy'
+
+	output:
+	path "refseq.fasta"
+
+	script:
+	"""
+	datasets download virus genome taxon SARS-CoV-2 \
+	--refseq && \
+	unzip ncbi_dataset.zip
+	mv ncbi_dataset/data/genomic.fna ./refseq.fasta
+	"""
+}
+
+process REMOVE_FASTA_GAPS {
 
 	/*
 	In this process, we replace all dashes in the NCBI FASTA with
 	"N's", effectively converting them into masked bases instead of
-	gaps. We also sort the FASTA by sequence length in descending order,
-	which will make the clustering algorithm run faster.
+	gaps.
 	*/
 
 	input:
-	path metadata
+	path fasta
 
 	output:
+	path "*.fasta"
 
 	when:
 	params.make_distance_matrix == true
 
 	script:
 	"""
+	remove_fasta_gaps.py ${fasta}
 	"""
 	
+}
+
+process SEPARATE_BY_MONTH {
+
+	/*
+	In this process, we get ready to parallelize by splitting the big
+	NCBI FASTA into one for each year-month combination. This will 
+	allow us to identify particularly advanced viruses in each 
+	month instead of simply flagging the newest variants as the 
+	most evolved (which, almost by definition, they are!)
+	*/
+
+	input:
+	path fasta
+
+	output:
+	path "*.fasta"
+
+	when:
+	params.make_distance_matrix == true
+
+	script:
+	"""
+	separate_by_year-month.py ${fasta}
+	"""
+
 }
 
 process CLUSTER_BY_DISTANCE {
@@ -236,17 +301,47 @@ process CLUSTER_BY_DISTANCE {
 	for a high-RAM cluster environment.
 	*/
 
+	tag "${yearmonth}"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
 	cpus ${params.max_cpus}
 
 	input:
 	path fasta
 
 	output:
+	path "*.uc", emit: cluster_table
+	tuple path("*centroids.fasta"), val(yearmonth), emit: centroid_fasta
+	path "*-cluster", emit: cluster_fastas
 	
 	script:
+	yearmonth = fasta.getSimpleName()
 	"""
+	vsearch --cluster_fast ${fasta} \
+	--id ${params.id_threshold} \
+	--centroids ${yearmonth}-centroids.fasta \
+	--uc ${yearmonth}-clusters.uc \
+	--clusters ${yearmonth}-cluster \
+	--threads ${task.cpus}
 	"""
 	
+}
+
+process BUILD_CENTROID_TREE {
+
+	tag "${yearmonth}"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	input:
+	tuple path(fasta), val(yearmonth)
+	path refseq
+
+	output:
+
+	script:
+	"""
+	iqtree -s ${fasta} -o \$(cat ${refseq}) -bb 1000 -nt AUTO
+	"""
 }
 
 process COLLATE_CLUSTER_METADATA {
@@ -284,6 +379,9 @@ process FILTER_NCBI_METADATA {
 	output:
 	path "*.tsv"
 
+	when:
+	params.inspect_ncbi_metadata == true
+
 	script:
 	"""
 	filter_ncbi_metadata.R ${tsv} \
@@ -291,51 +389,6 @@ process FILTER_NCBI_METADATA {
 	${params.geography}
 	"""
 }
-
-// process PULL_NCBI_SEQUENCES {
-	
-// 	tag "${accession}"
-	
-// 	cpus 1
-	
-// 	input:
-// 	tuple val(accession), val(date), val(loc), val(pango)
-	
-// 	output:
-// 	tuple val(accession), val(date), path("*.fasta")
-	
-// 	when:
-// 	params.search_genbank_seqs == true
-
-// 	script:
-// 	"""
-// 	datasets download virus genome accession "${accession}" \
-// 	--exclude-cds --exclude-protein
-// 	unzip ncbi_dataset.zip
-// 	mv ncbi_dataset/data/genomic.fna ./"${accession}".fasta
-// 	rm -rf ncbi_dataset/
-// 	"""
-
-// }
-
-// process ALIGN_NCBI_SEQUENCES {
-
-// 	cpus ${params.max_cpus}
-
-// 	input:
-// 	path fasta
-
-// 	output:
-// 	path "*.fasta"
-
-// 	script:
-// 	"""
-// 	muscle -align seqs.fa -output aln.afa
-// 	"""
-
-// }
-
-// process SEQUENCE_DISTANCE_MATRIX {}
 
 process HIGH_THROUGHPUT_PANGOLIN {
 	
@@ -439,7 +492,7 @@ process SEARCH_NCBI_METADATA {
 	path "*.tsv"
 
 	when:
-	params.search_genbank_metadata == true
+	params.inspect_ncbi_metadata == true
 		
 	script:
 	"""
