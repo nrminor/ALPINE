@@ -2,14 +2,28 @@
 
 import sys
 from Bio import SeqIO
+from Bio.Seq import Seq
+from multiprocessing import Pool, cpu_count
+
+# Define a function to process a single sequence record
+def process_seq_record(seq_record):
+	seq_str = str(seq_record.seq).replace("-", "N")
+	seq_record.seq = Seq(seq_str)
+	return seq_record
 
 # Get input and output file names from command line arguments
 input_file = sys.argv[1]
 output_file = sys.argv[2]
 
-# Replace "-" symbols with "N's" in each sequence record
-with open(input_file, "r") as in_handle, open(output_file, "w") as out_handle:
-		
-	for seq_record in SeqIO.parse(in_handle, "fasta"):
-		seq_record.seq = seq_record.seq.replace("-", "N")
-		SeqIO.write(seq_record, out_handle, "fasta")
+# Define the number of processes to use (default to number of CPU cores)
+num_processes = int(sys.argv[3])
+
+# Read in the input FASTA file
+with open(input_file, "r") as in_handle:
+	seq_records = list(SeqIO.parse(in_handle, "fasta"))
+
+# Process the sequence records in parallel
+with open(output_file, "w") as out_handle:
+	with Pool(processes=num_processes) as pool:
+		for processed_seq_record in pool.imap(process_seq_record, seq_records):
+			SeqIO.write(processed_seq_record, out_handle, "fasta")

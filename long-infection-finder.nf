@@ -100,6 +100,13 @@ workflow {
 // DERIVATIVE PARAMETER SPECIFICATION
 // --------------------------------------------------------------- //
 
+// Defining number of cpus to use base on execution environment
+if ( workflow.profile == "chtc" ){
+	params.max_cpus = 32
+} else {
+	params.max_cpus = params.max_local_cpus
+}
+
 // handling the case where no geography or date filters are provided
 if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.isEmpty() ){
 	params.ncbi_results = params.results + "/GenBank"
@@ -232,6 +239,8 @@ process REMOVE_FASTA_GAPS {
 	gaps.
 	*/
 
+	cpus params.max_cpus
+
 	input:
 	path fasta
 
@@ -243,7 +252,7 @@ process REMOVE_FASTA_GAPS {
 
 	script:
 	"""
-	remove_fasta_gaps.py ${fasta}
+	remove_fasta_gaps.py ${fasta} no_gaps.fasta ${params.max_cpus}
 	"""
 	
 }
@@ -258,6 +267,8 @@ process SEPARATE_BY_MONTH {
 	most evolved (which, almost by definition, they are!)
 	*/
 
+	cpus params.max_cpus
+
 	input:
 	path fasta
 
@@ -266,7 +277,7 @@ process SEPARATE_BY_MONTH {
 
 	script:
 	"""
-	separate_by_year-month.py ${fasta}
+	separate_by_year-month.py ${fasta} ${task.cpus}
 	"""
 
 }
