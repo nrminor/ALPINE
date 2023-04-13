@@ -8,17 +8,19 @@ nextflow.enable.dsl = 2
 // --------------------------------------------------------------- //
 workflow {
 
-	// Before anything else, make sure pangolin is up to date
 	UPDATE_PANGO_CONTAINER ( )
 	
 	if ( update_pango == true ){
 		println "This workflow will use the following Pangolin version:"
 		UPDATE_PANGO_CONTAINER.out.cue.view()
 	}
-	
 
-	// Download the latest Pangolin designation dates from GitHub
-	// GET_DESIGNATION_DATES ( )
+	// Data setup steps
+	DOWNLOAD_NCBI_PACKAGE ( )
+
+	DOWNLOAD_REFSEQ ( )
+
+	GET_DESIGNATION_DATES ( )
 
 
 	// NCBI/GENBANK BRANCH:
@@ -36,11 +38,6 @@ workflow {
 	We suggest users run all of these methods (see nextflow.config) and 
 	cross reference the results from each.
 	*/
-
-	// Data setup steps
-	DOWNLOAD_NCBI_PACKAGE ( )
-
-	DOWNLOAD_REFSEQ ( )
 
 	// Distance matrix clustering steps
 	REMOVE_FASTA_GAPS ( 
@@ -149,25 +146,6 @@ process UPDATE_PANGO_CONTAINER {
 	"""
 }
 
-process GET_DESIGNATION_DATES {
-	
-	// This process downloads a table of pangolin lineage designation dates
-	// from Cornelius Roemer's GitHub. These dates represent when each lineage was
-	// added to pangolin, after which point sequences could be classified as such 
-	
-	publishDir params.resources, mode: 'copy', overwrite: true
-	
-	output:
-	path "*.csv"
-	
-	script:
-	"""
-	curl -fsSL https://raw.githubusercontent.com/corneliusroemer/pango-designation-dates/main/data/lineage_designation_date.csv > lineage_designation_dates.csv
-	"""
-}
-
-
-// NCBI/GENBANK PROCESSES:
 process DOWNLOAD_NCBI_PACKAGE {
 
 	/*
@@ -234,6 +212,23 @@ process DOWNLOAD_REFSEQ {
 	--refseq && \
 	unzip ncbi_dataset.zip
 	mv ncbi_dataset/data/genomic.fna ./refseq.fasta
+	"""
+}
+
+process GET_DESIGNATION_DATES {
+	
+	// This process downloads a table of pangolin lineage designation dates
+	// from Cornelius Roemer's GitHub. These dates represent when each lineage was
+	// added to pangolin, after which point sequences could be classified as such 
+	
+	publishDir params.resources, mode: 'copy', overwrite: true
+	
+	output:
+	path "*.csv"
+	
+	script:
+	"""
+	curl -fsSL https://raw.githubusercontent.com/corneliusroemer/pango-designation-dates/main/data/lineage_designation_date.csv > lineage_designation_dates.csv
 	"""
 }
 
