@@ -20,7 +20,7 @@ workflow {
 
 	DOWNLOAD_REFSEQ ( )
 
-	GET_DESIGNATION_DATES ( )
+	// GET_DESIGNATION_DATES ( )
 
 	// NCBI/GENBANK BRANCH:
 	/* Here we use three orthogonal methods for identifying prolonged
