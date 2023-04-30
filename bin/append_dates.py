@@ -4,10 +4,6 @@ import sys
 import pandas as pd
 from Bio import SeqIO
 
-# parse command line arguments
-if len(sys.argv) != 3:
-    sys.exit("Usage: python3 append_dates.py <input_metadata.tsv> <input.fasta> <desired_output_filename.fasta>")
-
 # read in arguments
 metadata = sys.argv[1]
 fasta = sys.argv[2]
