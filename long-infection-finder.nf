@@ -65,8 +65,7 @@ workflow {
 		CLUSTER_BY_DISTANCE.out.cluster_table.collect(),
 		CLUSTER_BY_DISTANCE.out.cluster_fastas.collect(),
 		BUILD_CENTROID_TREE.out.collect(),
-		DOWNLOAD_NCBI_PACKAGE.out.metadata,
-		DOWNLOAD_REFSEQ.out
+		DOWNLOAD_NCBI_PACKAGE.out.metadata
 	)
 	
 	// Steps for re-running pangolin and comparing dates
@@ -392,12 +391,12 @@ process COLLATE_CLUSTER_METADATA {
 	path cluster_fastas
 	path cluster_trees
 	path metadata
-	path refseq
 
 	output:
 
 	script:
 	"""
+	generate_cluster_report.R ${metadata} ${refseq}
 	"""
 
 }
