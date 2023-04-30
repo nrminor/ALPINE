@@ -155,7 +155,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 
 	/*
 	Here we download two, large files from NCBI: the FASTA of all 
-	SARS-CoV-2 consensus sequences in GenBank, and a tab-delimited
+	pathogen consensus sequences in GenBank, and a tab-delimited
 	table of metadata for all those sequences. Depending on the 
 	settings specified in nextflow.config, various processing
 	will be performed on these files downstream.
@@ -171,7 +171,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	if ( params.geograpy != "" )
 		"""
 
-		datasets download virus genome taxon SARS-CoV-2 \
+		datasets download virus genome taxon ${params.pathogen} \
 		--complete-only \
 		--filename ${params.date}.zip \
 		--geo-location ${params.geography} && \
@@ -190,7 +190,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	else
 		"""
 
-		datasets download virus genome taxon SARS-CoV-2 \
+		datasets download virus genome taxon ${params.pathogen} \
 		--complete-only \
 		--filename ${params.date}.zip && \
 		unzip ${params.date}.zip
@@ -217,7 +217,7 @@ process DOWNLOAD_REFSEQ {
 
 	script:
 	"""
-	datasets download virus genome taxon SARS-CoV-2 \
+	datasets download virus genome taxon ${params.pathogen} \
 	--refseq && \
 	unzip ncbi_dataset.zip
 	mv ncbi_dataset/data/genomic.fna ./refseq.fasta
