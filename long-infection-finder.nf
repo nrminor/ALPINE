@@ -10,7 +10,7 @@ workflow {
 
 	UPDATE_PANGO_CONTAINER ( )
 	
-	if ( update_pango == true ){
+	if ( params.update_pango == true ){
 		println "This workflow will use the following Pangolin version:"
 		UPDATE_PANGO_CONTAINER.out.cue.view()
 	}
