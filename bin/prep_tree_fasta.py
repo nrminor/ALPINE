@@ -14,9 +14,27 @@ multi_seq_fasta = sys.argv[1]
 ref_seq_fasta = sys.argv[2]
 label = sys.argv[3]
 
-# Load the pre-aligned multi-sequence alignment and the reference sequence
-alignment = AlignIO.read(multi_seq_fasta, "fasta")
+# Load the multi-sequence FASTA and the reference sequence
+sequences = list(SeqIO.parse(multi_seq_fasta, "fasta"))
+# alignment = AlignIO.read(multi_seq_fasta, "fasta")
 ref_seq = SeqIO.read(ref_seq_fasta, "fasta")
+
+# Find the length of the longest sequence
+max_length = max(len(seq) for seq in sequences)
+
+# Loop through the sequences and add "n" symbols as needed
+for seq in sequences:
+    if len(seq) < max_length:
+        diff = max_length - len(seq)
+        n_before = diff // 2
+        n_after = diff - n_before
+        seq.seq = "n" * n_before + seq.seq + "n" * n_after
+
+# Write the updated sequences to a new FASTA file
+SeqIO.write(sequences, "samelength.fasta", "fasta")
+
+# import same length FASTA
+alignment = AlignIO.read("samelength.fasta", "fasta")
 
 # determine the length difference between the alignment and reference sequences
 align_len = len(alignment[0].seq)
