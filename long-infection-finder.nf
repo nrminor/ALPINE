@@ -506,7 +506,7 @@ process FILTER_NCBI_METADATA {
 	path "*.tsv"
 
 	when:
-	params.inspect_ncbi_metadata == true && update_pango == false
+	params.inspect_ncbi_metadata == true && params.update_pango == false
 
 	script:
 	"""
