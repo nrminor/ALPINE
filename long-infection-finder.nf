@@ -174,7 +174,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	path "*.tsv", emit: metadata
 
 	script:
-	if ( params.geograpy != "" )
+	if ( params.geography != "" )
 		"""
 
 		datasets download virus genome taxon ${params.pathogen} \
