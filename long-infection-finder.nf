@@ -58,7 +58,8 @@ workflow {
 	)
 
 	PREP_CENTROID_FASTAS (
-		CLUSTER_BY_DISTANCE.out.centroid_fasta
+		CLUSTER_BY_DISTANCE.out.centroid_fasta,
+		DOWNLOAD_REFSEQ.out
 	)
 
 	BUILD_CENTROID_TREE (
