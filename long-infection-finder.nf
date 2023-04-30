@@ -400,7 +400,7 @@ process BUILD_CENTROID_TREE {
 
 	script:
 	"""
-	ref_id=$(grep "^>" ${refseq} | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
+	ref_id=\$(grep "^>" ${refseq} | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	iqtree -s ${fasta} -o \${ref_id} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
 	"""
 }
