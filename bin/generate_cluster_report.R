@@ -7,22 +7,24 @@ library(ape)
 library(adephylo)
 
 # Bringing in NCBI metadata
-metadata <- read.csv(args[1])
+metadata <- read.delim(args[1])
 
 # creating list of year-month combinations to loop through
 yearmonths <- str_remove_all(list.files(path = ".", pattern = "*.treefile"), ".treefile")
 
 # make an empty data frame to store high distance FASTA sequences
-hist_dist_seqs <- data.frame("V1" = NA)
-colnames(hist_dist_seqs) <- NULL
+high_dist_seqs <- data.frame("V1" = as.character(NA))
+colnames(high_dist_seqs) <- NULL
+high_dist_seqs <- high_dist_seqs[NULL,]
 
 # make an empty data frame to store high distance metadata 
-hist_dist_meta <- matrix(ncol = ncol(metadata), nrow = 0)
-colname(hist_dist_meta) <- colnames(metadata)
-hist_dist_meta <- as.data.frame(hist_dist_meta)
+high_dist_meta <- matrix(ncol = ncol(metadata), nrow = 0)
+colnames(high_dist_meta) <- colnames(metadata)
+high_dist_meta <- as.data.frame(high_dist_meta)
 
 # looping through each year-month and adding the highest distance cluster to 
 # a final table of hits
+first_yearmonth = yearmonths[1]
 for (i in yearmonths){
   
   # read in the tree file
@@ -39,6 +41,7 @@ for (i in yearmonths){
   
   # compute total branch lengths from root to each tip
   roottotip <- distRoot(tree, tips = tree$tip.label, method = "patristic")
+  roottotip <- roottotip[names(roottotip)!="MN908947.3"]
   
   # finding max branch length sample
   max_distance <- roottotip[roottotip==max(roottotip)]
@@ -68,20 +71,34 @@ for (i in yearmonths){
   
   # add that FASTA to a growing FASTA object of all hits, which will be exported
   # after normalizing later
-  hist_dist_seqs <- rbind(hist_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
+  high_dist_seqs <- rbind(high_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
   
   # isolate the high distance cluster metadata from NCBI, and save it in its own
   # data frame that will be exported later
-  for (i in high_dist_cluster$V9){
+  first_accession <- high_dist_cluster$V9[1]
+  for (j in high_dist_cluster$V9){
     
-    ncbi_row <- metadata[metadata$accession==i,]
-    high_dist_meta <- rbind(high_dist_meta, ncbi_row)
+    ncbi_row <- metadata[metadata$Accession==j,]
+    
+    # Add in some useful columns from the vsearch --clust_fast results to the
+    # final metadata table
+    if (i == first_yearmonth & j == first_accession){
+      
+      high_dist_meta <- rbind(high_dist_meta, ncbi_row)
+      high_dist_meta <- cbind(high_dist_meta, high_dist_cluster[high_dist_cluster$V9==j, "root_to_tip_distance"])
+      colnames(high_dist_meta)[ncol(high_dist_meta)] <- "root_to_tip_distance"
+      high_dist_meta <- cbind(high_dist_meta, high_dist_cluster[high_dist_cluster$V9==j, "year_month"])
+      colnames(high_dist_meta)[ncol(high_dist_meta)] <- "year_month"
+      
+    } else {
+      
+      ncbi_row$root_to_tip_distance <- high_dist_cluster[high_dist_cluster$V9==j, "root_to_tip_distance"]
+      ncbi_row$year_month <- high_dist_cluster[high_dist_cluster$V9==j, "year_month"]
+      high_dist_meta <- rbind(high_dist_meta, ncbi_row)
+      
+    }
     
   }
-  
-  # Add in some useful columns from the vsearch --clust_fast results to the
-  # final metadata table
-  
   
 }
 
@@ -89,11 +106,12 @@ for (i in yearmonths){
 # long compared to all other year-months
 
 
+
 # writing candidate FASTA of high-distance sequences that passed normalization and 
 # filtering
-write.table(hist_dist_seqs, row.names = F, col.names = F, quote = F, sep = "\t")
+write.table(high_dist_seqs, "high_distance_candidates.fasta", row.names = F, col.names = F, quote = F, sep = "\t")
 
 # writing candidate metadata, which combines vsearch --clust_fast results with 
 # NCBI metadata and iqTree branch lengths
-hist_dist_meta <- hist_dist_meta[order(hist_dist_meta$root_to_tip_distance, decreasing = T),]
-write.table(hist_dist_meta, row.names = F, quote = F, sep = "\t")
+high_dist_meta <- high_dist_meta[order(high_dist_meta$root_to_tip_distance, decreasing = T),]
+write.table(high_dist_meta, "high_distance_candidates.tsv", row.names = F, quote = F, sep = "\t")
