@@ -53,7 +53,7 @@ workflow {
 	)
 
 	CLUSTER_BY_DISTANCE (
-		PREP_FOR_CLUSTERING.out.flatten(),
+		SEPARATE_BY_MONTH.out.flatten(),
 		DOWNLOAD_NCBI_PACKAGE.out.metadata
 	)
 
