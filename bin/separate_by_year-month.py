@@ -28,7 +28,7 @@ def process_seq_record(record):
 input_file = sys.argv[1]
 
 # Define the number of processes to use (default to number of CPU cores)
-num_processes = int(sys.argv[2]) if len(sys.argv) > 2 else cpu_count()
+num_processes = int(sys.argv[2]) if len(sys.argv) > 1 else cpu_count()
 
 # Read in the input FASTA file
 with open(input_file, "r") as in_handle:
