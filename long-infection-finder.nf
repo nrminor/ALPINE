@@ -52,13 +52,20 @@ workflow {
 		DOWNLOAD_NCBI_PACKAGE.out.metadata
 	)
 
-	COLLATE_CLUSTER_METADATA (
-		CLUSTER_BY_DISTANCE.out,
-		DOWNLOAD_NCBI_PACKAGE.out.metadata
+	PREP_CENTROID_FASTAS (
+		CLUSTER_BY_DISTANCE.out.centroid_fasta
 	)
 
 	BUILD_CENTROID_TREE (
-		CLUSTER_BY_DISTANCE.out.centroid_fasta,
+		PREP_CENTROID_FASTAS.out,
+		DOWNLOAD_REFSEQ.out
+	)
+
+	COLLATE_CLUSTER_METADATA (
+		CLUSTER_BY_DISTANCE.out.cluster_table.collect(),
+		CLUSTER_BY_DISTANCE.out.cluster_fastas.collect(),
+		BUILD_CENTROID_TREE.out.collect(),
+		DOWNLOAD_NCBI_PACKAGE.out.metadata,
 		DOWNLOAD_REFSEQ.out
 	)
 	
@@ -318,6 +325,28 @@ process CLUSTER_BY_DISTANCE {
 	
 }
 
+process PREP_CENTROID_FASTAS {
+
+	/*
+	In this process, we align centroid sequences to Wuhan-1, which
+	will be used as an outgroup, and replace "/" symbols with underscores
+	to keep iqTree happy.
+	*/
+
+	input:
+	tuple path(fasta), val(yearmonth)
+	path refseq
+
+	output:
+	tuple path("*.fasta"), val(yearmonth)
+
+	script:
+	"""
+	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
+	"""
+
+}
+
 process BUILD_CENTROID_TREE {
 
 	tag "${yearmonth}"
@@ -325,13 +354,14 @@ process BUILD_CENTROID_TREE {
 
 	input:
 	tuple path(fasta), val(yearmonth)
-	path refseq
 
 	output:
+	path "*"
 
 	script:
 	"""
-	iqtree -s ${fasta} -o \$(cat ${refseq}) -bb 1000 -nt AUTO
+	ref_id=$(grep "^>" ${refseq} | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
+	iqtree -s ${fasta} -o \${ref_id} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
 	"""
 }
 
@@ -348,8 +378,18 @@ process COLLATE_CLUSTER_METADATA {
 	publishDir params.high_distance_candidates, mode: 'copy'
 
 	input:
-	path clusters
+	path cluster_tables
+	path cluster_fastas
+	path cluster_trees
 	path metadata
+	path refseq
+
+	output:
+
+	script:
+	"""
+	"""
+
 }
 
 process HIGH_THROUGHPUT_PANGOLIN {
