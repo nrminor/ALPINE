@@ -180,8 +180,10 @@ process DOWNLOAD_NCBI_PACKAGE {
 		mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
 
 		mv ncbi_dataset/data/data_report.jsonl ./genbank_${params.date}.jsonl && \
-		dataformat tsv virus-genome genbank_${params.date}.jsonl | \
-		genbank_${params.date}.tsv
+		dataformat tsv virus-genome \
+		--force \
+		--inputfile genbank_${params.date}.jsonl \
+		| genbank_${params.date}.tsv
 
 		rm -rf ${params.date}/
 		"""
@@ -196,8 +198,10 @@ process DOWNLOAD_NCBI_PACKAGE {
 		mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
 
 		mv ncbi_dataset/data/data_report.jsonl ./genbank_${params.date}.jsonl && \
-		dataformat tsv virus-genome genbank_${params.date}.jsonl | \
-		genbank_${params.date}.tsv
+		dataformat tsv virus-genome \
+		--force \
+		--inputfile genbank_${params.date}.jsonl \
+		| genbank_${params.date}.tsv
 
 		rm -rf ${params.date}/
 		"""	
