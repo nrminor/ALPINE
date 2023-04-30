@@ -331,11 +331,11 @@ process CLUSTER_BY_DISTANCE {
 	tag "${yearmonth}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	cpus ${params.max_cpus}
+	cpus params.max_cpus
 
 	input:
-	path fasta
-	each path(metadata)
+	each path(fasta)
+	path metadata
 
 	output:
 	path "*.uc", emit: cluster_table
