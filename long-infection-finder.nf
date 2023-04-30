@@ -396,7 +396,7 @@ process COLLATE_CLUSTER_METADATA {
 
 	script:
 	"""
-	generate_cluster_report.R ${metadata} ${refseq}
+	generate_cluster_report.R ${metadata}
 	"""
 
 }
