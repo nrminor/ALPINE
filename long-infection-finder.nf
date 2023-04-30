@@ -43,8 +43,13 @@ workflow {
 		DOWNLOAD_NCBI_PACKAGE.out.fasta
 	)
 
-	SEPARATE_BY_MONTH (
+	APPEND_DATES (
+		DOWNLOAD_NCBI_PACKAGE.out.metadata,
 		REMOVE_FASTA_GAPS.out
+	)
+
+	SEPARATE_BY_MONTH (
+		APPEND_DATES.out
 	)
 
 	CLUSTER_BY_DISTANCE (
@@ -265,6 +270,28 @@ process REMOVE_FASTA_GAPS {
 	remove_fasta_gaps.py ${fasta} no_gaps.fasta ${params.max_cpus}
 	"""
 	
+}
+
+process APPEND_DATES {
+
+	/*
+	This process appends collection dates onto the ends of each
+	FASTA defline by cross referencing the GenBank accessions in 
+	the FASTA with GenBank accessions in the NCBI metadata.
+	*/
+
+	input:
+	path fasta
+	path metadata
+
+	output:
+	path "*.fasta"
+
+	script:
+	"""
+	append_dates.py ${metadata} ${fasta} dated_seqs.fasta
+	"""
+
 }
 
 process SEPARATE_BY_MONTH {
