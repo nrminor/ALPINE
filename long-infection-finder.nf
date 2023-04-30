@@ -8,12 +8,12 @@ nextflow.enable.dsl = 2
 // --------------------------------------------------------------- //
 workflow {
 
-	UPDATE_PANGO_CONTAINER ( )
+	// UPDATE_PANGO_CONTAINER ( )
 	
-	if ( params.update_pango == true ){
-		println "This workflow will use the following Pangolin version:"
-		UPDATE_PANGO_CONTAINER.out.cue.view()
-	}
+	// if ( params.update_pango == true ){
+	// 	println "This workflow will use the following Pangolin version:"
+	// 	UPDATE_PANGO_CONTAINER.out.cue.view()
+	// }
 
 	// Data setup steps
 	DOWNLOAD_NCBI_PACKAGE ( )
@@ -75,33 +75,33 @@ workflow {
 	)
 	
 	// Steps for re-running pangolin and comparing dates
-	HIGH_THROUGHPUT_PANGOLIN ( 
-		UPDATE_PANGO_CONTAINER.out.cue,
-		DOWNLOAD_NCBI_PACKAGE.out.fasta
-			.splitFasta( by: 5000, file: true )
-	)
+	// HIGH_THROUGHPUT_PANGOLIN ( 
+	// 	UPDATE_PANGO_CONTAINER.out.cue,
+	// 	DOWNLOAD_NCBI_PACKAGE.out.fasta
+	// 		.splitFasta( by: 5000, file: true )
+	// )
 
-	CONCAT_PANGOLIN_REPORTS (
-		HIGH_THROUGHPUT_PANGOLIN.out.collect()
-	)
+	// CONCAT_PANGOLIN_REPORTS (
+	// 	HIGH_THROUGHPUT_PANGOLIN.out.collect()
+	// )
 
-	FIND_CANDIDATE_LINEAGES_BY_DATE (
-		HIGH_THROUGHPUT_PANGOLIN.out
-	)
+	// FIND_CANDIDATE_LINEAGES_BY_DATE (
+	// 	HIGH_THROUGHPUT_PANGOLIN.out
+	// )
 
 	// Steps for inspecting NCBI metadata
-	FILTER_NCBI_METADATA (
-		DOWNLOAD_NCBI_PACKAGE.out.metadata
-	)
+	// FILTER_NCBI_METADATA (
+	// 	DOWNLOAD_NCBI_PACKAGE.out.metadata
+	// )
 
-	SEARCH_NCBI_METADATA ( 
-		FILTER_NCBI_METADATA.out,
-		GET_DESIGNATION_DATES.out
-	)
+	// SEARCH_NCBI_METADATA ( 
+	// 	FILTER_NCBI_METADATA.out,
+	// 	GET_DESIGNATION_DATES.out
+	// )
 
-	COLLATE_NCBI_METADATA_CANDIDATES (
-		SEARCH_NCBI_METADATA.out
-	)
+	// COLLATE_NCBI_METADATA_CANDIDATES (
+	// 	SEARCH_NCBI_METADATA.out
+	// )
 	
 
 }
@@ -268,7 +268,7 @@ process REMOVE_FASTA_GAPS {
 
 	script:
 	"""
-	remove_fasta_gaps.py ${fasta} no_gaps.fasta ${params.max_cpus}
+	remove_fasta_gaps.py ${fasta} no_gaps.fasta ${task.cpus}
 	"""
 	
 }
@@ -474,7 +474,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	publishDir params.anachronistic_candidates, mode: 'copy'
 
-	cpus ${params.max_cpus}
+	cpus params.max_cpus
 
 	input:
 	path csv
