@@ -23,7 +23,7 @@ with open(fasta, "r") as fasta_file:
         # Look up the collection date for the accession number
         collection_date = accession_to_date.get(accession, "")
         # Add the collection date to the defline after a pipe symbol
-        record.id = f"{record.id}|{collection_date}"
+        record.description = f"{record.description}|{collection_date}"
         # Write the modified record to a new FASTA file
         with open(output_handle, "a") as output_file:
             SeqIO.write(record, output_file, "fasta")
