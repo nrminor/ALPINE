@@ -66,7 +66,7 @@ workflow {
 		DOWNLOAD_REFSEQ.out
 	)
 
-	COLLATE_CLUSTER_METADATA (
+	GENERATE_CLUSTER_REPORT (
 		CLUSTER_BY_DISTANCE.out.cluster_table.collect(),
 		CLUSTER_BY_DISTANCE.out.cluster_fastas.collect(),
 		BUILD_CENTROID_TREE.out.collect(),
@@ -405,7 +405,7 @@ process BUILD_CENTROID_TREE {
 	"""
 }
 
-process COLLATE_CLUSTER_METADATA {
+process GENERATE_CLUSTER_REPORT {
 
 	/*
 	In this process, the clustering results are combined with metadata
