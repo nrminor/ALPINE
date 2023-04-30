@@ -1,42 +1,50 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 from Bio import AlignIO, SeqIO
 from Bio.Align.Applications import MuscleCommandline
+
+# parse command line arguments
+if len(sys.argv) != 4:
+    sys.exit("Usage: python3 prep_tree_fasta.py <input_alignment.fasta> <reference.fasta> <label>")
 
 # Define the input and output files
 multi_seq_fasta = sys.argv[1]
 ref_seq_fasta = sys.argv[2]
 label = sys.argv[3]
-aligned_output = str(label) + "-centroids-with-ref.fasta"
 
 # Load the pre-aligned multi-sequence alignment and the reference sequence
 alignment = AlignIO.read(multi_seq_fasta, "fasta")
 ref_seq = SeqIO.read(ref_seq_fasta, "fasta")
 
-# Determine the length of the sequences in the pre-aligned multi-sequence FASTA
-seq_length = len(alignment[0])
+# determine the length difference between the alignment and reference sequences
+align_len = len(alignment[0].seq)
+ref_len = len(ref_seq.seq)
+diff_len = align_len - ref_len
 
-# Determine the length difference between the pre-aligned multi-sequence FASTA and the reference sequence
-ref_length_diff = seq_length - len(ref_seq)
+# add n's to the beginning and end of the reference sequence
+half_diff_len = int(diff_len/2)
+ref_seq.seq = 'n'*half_diff_len + ref_seq.seq + 'n'*half_diff_len
 
-# Add half the difference of 'n' characters to the start and end of the reference sequence
-ref_seq_start = "n" * (ref_length_diff // 2)
-ref_seq_end = "n" * (ref_length_diff - (ref_length_diff // 2))
-ref_seq.seq = ref_seq_start + ref_seq.seq + ref_seq_end
+# write the modified reference sequence to a file
+tmp_out_file = f"{label}-tmp.fasta"
+with open(tmp_out_file, "w") as f:
+    SeqIO.write(ref_seq, f, "fasta")
 
-# Add the reference sequence to the alignment
-alignment.append(ref_seq)
+# write the modified alignment to a file
+with open(tmp_out_file, "a") as f:
+    SeqIO.write(alignment, f, "fasta")
 
-# Re-align the sequences using MUSCLE
-muscle_cline = MuscleCommandline(input=alignment, out=aligned_output)
+# perform a muscle alignment with the modified alignment and reference
+align_out_file = f"{label}-centroids-with-ref.fasta"
+muscle_cline = MuscleCommandline(input=tmp_out_file, out=align_out_file, maxiters=1, quiet=True)
 muscle_cline()
 
 # Replace "/" characters in the deflines with underscores
-for record in AlignIO.read(aligned_output, "fasta"):
+for record in AlignIO.read(align_out_file, "fasta"):
     record.id = record.id.replace("/", "_")
     record.description = record.description.replace("/", "_")
 
-# Write the aligned sequences to a new file
-with open(aligned_output, "w") as handle:
-    SeqIO.write(AlignIO.read(aligned_output, "fasta"), handle, "fasta")
+# Remove the temporary file
+os.remove(tmp_out_file)

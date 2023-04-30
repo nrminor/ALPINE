@@ -349,14 +349,24 @@ process PREP_CENTROID_FASTAS {
 
 process BUILD_CENTROID_TREE {
 
+	/*
+	Next, we take the centroid sequences aligned with Wuhan-1
+	and build a tree with Wuhan-1 as the outgroup. The goal is
+	to identify which centroid has the longest branch length 
+	for each year-month. The sequences that cluster with that
+	long-branch centroid will be classified as a evolutionarily
+	advanced in the final report.
+	*/
+
 	tag "${yearmonth}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	input:
 	tuple path(fasta), val(yearmonth)
+	path refseq
 
 	output:
-	path "*"
+	path "*.treefile"
 
 	script:
 	"""
