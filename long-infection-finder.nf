@@ -182,9 +182,8 @@ process DOWNLOAD_NCBI_PACKAGE {
 
 		datasets download virus genome taxon ${params.pathogen} \
 		--complete-only \
-		--filename ${params.date}.zip \
 		--geo-location ${params.geography} && \
-		unzip ${params.date}.zip
+		unzip ncbi_dataset.zip
 
 		mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
 
@@ -194,15 +193,14 @@ process DOWNLOAD_NCBI_PACKAGE {
 		--inputfile genbank_${params.date}.jsonl \
 		| genbank_${params.date}.tsv
 
-		rm -rf ${params.date}/
+		rm -rf ncbi_dataset/
 		"""
 	else
 		"""
 
 		datasets download virus genome taxon ${params.pathogen} \
 		--complete-only \
-		--filename ${params.date}.zip && \
-		unzip ${params.date}.zip
+		unzip ncbi_dataset.zip
 
 		mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
 
@@ -212,7 +210,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 		--inputfile genbank_${params.date}.jsonl \
 		| genbank_${params.date}.tsv
 
-		rm -rf ${params.date}/
+		rm -rf ncbi_dataset/
 		"""	
 
 }
