@@ -167,6 +167,9 @@ process DOWNLOAD_NCBI_PACKAGE {
 	will be performed on these files downstream.
 	*/
 
+	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
+	maxRetries 5
+	
 	cpus 3
 
 	output:
