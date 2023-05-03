@@ -202,6 +202,10 @@ process UNZIP_NCBI_METADATA {
 	lightweight NCBI zip archive.
 	*/
 
+	publishDir params.results, mode: 'symlink'
+
+	cpus 3
+
 	input:
 	path zip
 
@@ -224,6 +228,8 @@ process UNZIP_NCBI_FASTA {
 	*/
 
 	publishDir params.results, mode: 'symlink'
+
+	cpus 3
 
 	input:
 	path zip
