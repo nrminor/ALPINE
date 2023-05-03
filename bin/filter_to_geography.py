@@ -18,13 +18,11 @@ selected_rows = df[df['Geographic location'].str.contains(geography, na=False)]
 # Write the filtered spreadsheet to a new file
 selected_rows.to_csv('filtered_to_geography.tsv', sep='\t', index=False)
 
-# Read the FASTA file
-fasta_records = list(SeqIO.parse(fasta, 'fasta'))
-
-# Filter the FASTA records for those corresponding to USA accessions
-selected_accessions = selected_rows['Accession'].tolist()
-selected_fastas = [record for record in fasta_records if record.id.split()[0] in selected_accessions]
-
-# Write the filtered FASTA records to a new file
+# Read the FASTA file and write matching sequences to output file in real time
 with open('filtered_to_geography.fasta', 'w') as output_handle:
-    SeqIO.write(selected_fastas, output_handle, 'fasta')
+    for record in SeqIO.parse(fasta, 'fasta'):
+        if record.id.split()[0] in selected_rows['Accession'].tolist():
+            SeqIO.write(record, output_handle, 'fasta')
+
+# Close the output FASTA file
+output_handle.close()

@@ -18,17 +18,17 @@ workflow {
 	// Data setup steps
 	DOWNLOAD_NCBI_PACKAGE ( )
 
-	UNZIP_NCBI_PACKAGE (
+	UNZIP_NCBI_METADATA (
 		DOWNLOAD_NCBI_PACKAGE.out.zip_archive
 	)
 
-	PREP_NCBI_FILES (
-		UNZIP_NCBI_PACKAGE.out.ncbi_folder
+	UNZIP_NCBI_FASTA (
+		DOWNLOAD_NCBI_PACKAGE.out.zip_archive
 	)
 
 	FILTER_TO_GEOGRAPHY (
-		PREP_NCBI_FILES.out.metadata,
-		PREP_NCBI_FILES.out.fasta
+		UNZIP_NCBI_METADATA.out,
+		UNZIP_NCBI_FASTA.out
 	)
 
 	DOWNLOAD_REFSEQ ( )
@@ -195,49 +195,45 @@ process DOWNLOAD_NCBI_PACKAGE {
 
 }
 
-process UNZIP_NCBI_PACKAGE {
+process UNZIP_NCBI_METADATA {
 
 	/*
-	Here the lightweight NCBI zip archive is decompressed into
-	its constituent files. These files will run around 50 GB in
-	size, though of course this will increase as time goes on.
+	Here the pathogen metadata in TSV format is extracted from the 
+	lightweight NCBI zip archive.
 	*/
 
 	input:
 	path zip
 
 	output:
-	path "ncbi_dataset/", emit: ncbi_folder
+	path "*.tsv"
 
 	script:
 	"""
-	unzip ncbi_dataset.zip
+	unzip -p ${zip} ncbi_dataset/data/data_report.jsonl \
+	| dataformat tsv virus-genome --force > genbank_${params.date}.tsv
 	"""
 
 }
 
-process PREP_NCBI_FILES {
+process UNZIP_NCBI_FASTA {
 
 	/*
-	Here the NCBI sequence file is date-stamped with a new 
-	file name, and the metadata is converted from a JSON
-	Lines file to a date-stamped TSV spreadsheet that will
-	be used downstream.
+	Here the pathogen sequences in FASTA format are extracted 
+	from the lightweight NCBI zip archive.
 	*/
 
+	publishDir params.results, mode: 'symlink'
+
 	input:
-	path ncbi_dataset
+	path zip
 
 	output:
-	path "*.fasta", emit: fasta
-	path "*.tsv", emit: metadata
+	path "*.fasta"
 
 	script:
 	"""
-	mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
-	mv ncbi_dataset/data/data_report.jsonl ./genbank_${params.date}.jsonl && \
-	dataformat tsv virus-genome --force \
-	--inputfile genbank_${params.date}.jsonl > genbank_${params.date}.tsv
+	unzip -p ${zip} ncbi_dataset/data/genomic.fna | less > genbank_${params.date}.fasta
 	"""
 
 }
