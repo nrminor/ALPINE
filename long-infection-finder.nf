@@ -199,7 +199,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 		"""
 
 		datasets download virus genome taxon ${params.pathogen} \
-		--complete-only \
+		--complete-only && \
 		unzip ncbi_dataset.zip
 
 		mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta

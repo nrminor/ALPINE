@@ -3,6 +3,7 @@ work/
 data_sources/
 resources/
 sandbox/
+results/pipeline_run_info/
 
 results/report.html*
 results/
