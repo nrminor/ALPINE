@@ -180,6 +180,8 @@ process DOWNLOAD_NCBI_PACKAGE {
 	will be performed on these files downstream.
 	*/
 
+	publishDir params.results, mode: 'symlink'
+
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
 
@@ -196,6 +198,9 @@ process DOWNLOAD_NCBI_PACKAGE {
 process UNZIP_NCBI_PACKAGE {
 
 	/*
+	Here the lightweight NCBI zip archive is decompressed into
+	its constituent files. These files will run around 50 GB in
+	size, though of course this will increase as time goes on.
 	*/
 
 	input:
@@ -214,6 +219,10 @@ process UNZIP_NCBI_PACKAGE {
 process PREP_NCBI_FILES {
 
 	/*
+	Here the NCBI sequence file is date-stamped with a new 
+	file name, and the metadata is converted from a JSON
+	Lines file to a date-stamped TSV spreadsheet that will
+	be used downstream.
 	*/
 
 	input:
@@ -236,9 +245,15 @@ process PREP_NCBI_FILES {
 process FILTER_TO_GEOGRAPHY {
 
 	/*
+	The geography filter in the NCBI Datasets command line
+	interface appears to be broken. Until this is fixed,
+	this process uses a simply python script to filter
+	the full database down to a geography of interest.
 	*/
 
-	output:
+	publishDir params.results, mode: 'symlink'
+
+	input:
 	path fasta
 	path metadata
 
