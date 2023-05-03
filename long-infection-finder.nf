@@ -18,6 +18,19 @@ workflow {
 	// Data setup steps
 	DOWNLOAD_NCBI_PACKAGE ( )
 
+	UNZIP_NCBI_PACKAGE (
+		DOWNLOAD_NCBI_PACKAGE.out.zip_archive
+	)
+
+	PREP_NCBI_FILES (
+		UNZIP_NCBI_PACKAGE.out.ncbi_folder
+	)
+
+	FILTER_TO_GEOGRAPHY (
+		PREP_NCBI_FILES.out.metadata,
+		PREP_NCBI_FILES.out.fasta
+	)
+
 	DOWNLOAD_REFSEQ ( )
 
 	// GET_DESIGNATION_DATES ( )
@@ -40,11 +53,11 @@ workflow {
 
 	// Distance matrix clustering steps
 	REMOVE_FASTA_GAPS ( 
-		DOWNLOAD_NCBI_PACKAGE.out.fasta
+		FILTER_TO_GEOGRAPHY.out.fasta
 	)
 
 	APPEND_DATES (
-		DOWNLOAD_NCBI_PACKAGE.out.metadata,
+		FILTER_TO_GEOGRAPHY.out.metadata,
 		REMOVE_FASTA_GAPS.out
 	)
 
@@ -54,7 +67,7 @@ workflow {
 
 	CLUSTER_BY_DISTANCE (
 		SEPARATE_BY_MONTH.out.flatten(),
-		DOWNLOAD_NCBI_PACKAGE.out.metadata
+		FILTER_TO_GEOGRAPHY.out.metadata
 	)
 
 	PREP_CENTROID_FASTAS (
@@ -71,13 +84,13 @@ workflow {
 		CLUSTER_BY_DISTANCE.out.cluster_table.collect(),
 		CLUSTER_BY_DISTANCE.out.cluster_fastas.collect(),
 		BUILD_CENTROID_TREE.out.collect(),
-		DOWNLOAD_NCBI_PACKAGE.out.metadata
+		FILTER_TO_GEOGRAPHY.out.metadata
 	)
 	
 	// Steps for re-running pangolin and comparing dates
 	// HIGH_THROUGHPUT_PANGOLIN ( 
 	// 	UPDATE_PANGO_CONTAINER.out.cue,
-	// 	DOWNLOAD_NCBI_PACKAGE.out.fasta
+	// 	FILTER_TO_GEOGRAPHY.out.fasta
 	// 		.splitFasta( by: 5000, file: true )
 	// )
 
@@ -91,7 +104,7 @@ workflow {
 
 	// Steps for inspecting NCBI metadata
 	// FILTER_NCBI_METADATA (
-	// 	DOWNLOAD_NCBI_PACKAGE.out.metadata
+	// 	FILTER_TO_GEOGRAPHY.out.metadata
 	// )
 
 	// SEARCH_NCBI_METADATA ( 
@@ -169,49 +182,74 @@ process DOWNLOAD_NCBI_PACKAGE {
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
-	
-	cpus 3
+
+	output:
+	path "*.zip", emit: zip_archive
+
+	script:
+	"""
+	datasets download virus genome taxon ${params.pathogen} --complete-only
+	"""	
+
+}
+
+process UNZIP_NCBI_PACKAGE {
+
+	/*
+	*/
+
+	input:
+	path zip
+
+	output:
+	path "ncbi_dataset/", emit: ncbi_folder
+
+	script:
+	"""
+	unzip ncbi_dataset.zip
+	"""
+
+}
+
+process PREP_NCBI_FILES {
+
+	/*
+	*/
+
+	input:
+	path ncbi_dataset
 
 	output:
 	path "*.fasta", emit: fasta
 	path "*.tsv", emit: metadata
 
 	script:
-	if ( params.geography != "" )
-		"""
+	"""
+	mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
+	mv ncbi_dataset/data/data_report.jsonl ./genbank_${params.date}.jsonl && \
+	dataformat tsv virus-genome --force \
+	--inputfile genbank_${params.date}.jsonl > genbank_${params.date}.tsv
+	"""
 
-		datasets download virus genome taxon ${params.pathogen} \
-		--complete-only \
-		--geo-location ${params.geography} && \
-		unzip ncbi_dataset.zip
+}
 
-		mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
+process FILTER_TO_GEOGRAPHY {
 
-		mv ncbi_dataset/data/data_report.jsonl ./genbank_${params.date}.jsonl && \
-		dataformat tsv virus-genome \
-		--force \
-		--inputfile genbank_${params.date}.jsonl \
-		| genbank_${params.date}.tsv
+	/*
+	*/
 
-		rm -rf ncbi_dataset/
-		"""
-	else
-		"""
+	output:
+	path fasta
+	path metadata
 
-		datasets download virus genome taxon ${params.pathogen} \
-		--complete-only && \
-		unzip ncbi_dataset.zip
+	output:
+	path "*.fasta", emit: fasta
+	path "*.tsv", emit: metadata
 
-		mv ncbi_dataset/data/genomic.fna ./genbank_${params.date}.fasta
-
-		mv ncbi_dataset/data/data_report.jsonl ./genbank_${params.date}.jsonl && \
-		dataformat tsv virus-genome \
-		--force \
-		--inputfile genbank_${params.date}.jsonl \
-		| genbank_${params.date}.tsv
-
-		rm -rf ncbi_dataset/
-		"""	
+	script:
+	"""
+	filter_to_geography.py ${metadata} ${fasta} ${params.geography}
+	"""
 
 }
 
