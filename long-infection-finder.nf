@@ -82,13 +82,13 @@ workflow {
 		DOWNLOAD_REFSEQ.out
 	)
 
-	MDS_PLOT (
-		CLUSTER_BY_DISTANCE.out.cluster_fastas
-	)
+	// MDS_PLOT (
+	// 	CLUSTER_BY_DISTANCE.out.cluster_fastas
+	// )
 
-	PLOT_TREE (
-		BUILD_CENTROID_TREE.out
-	)
+	// PLOT_TREE (
+	// 	BUILD_CENTROID_TREE.out
+	// )
 
 	GENERATE_CLUSTER_REPORT (
 		CLUSTER_BY_DISTANCE.out.cluster_table.collect(),
@@ -96,6 +96,18 @@ workflow {
 		BUILD_CENTROID_TREE.out.collect(),
 		FILTER_TO_GEOGRAPHY.out.metadata
 	)
+
+	// RUN_META_CLUSTER (
+	// 	GENERATE_CLUSTER_REPORT.out.high_dist_seqs
+	// )
+
+	// META_CLUSTER_REPORT (
+	// 	RUN_META_CLUSTER.out.cluster_fastas
+	// 		.flatten(),
+	// 	RUN_META_CLUSTER.out.cluster_fastas
+	// 		.flatten()
+	// 		.map { fasta, yearmonth -> file(fasta).countFasta() }
+	// )
 	
 	// Steps for re-running pangolin and comparing dates
 	// HIGH_THROUGHPUT_PANGOLIN ( 
@@ -152,6 +164,7 @@ if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.i
 // creating results subfolders for the three orthogonal anachronistic
 // sequence search methods
 params.clustering_results = params.ncbi_results + "/all_clustering_results"
+params.repeat_lineages = params.clustering_results "/repeat_lineages"
 params.high_distance_candidates = params.ncbi_results + "/high_distance_cluster"
 params.anachronistic_candidates = params.ncbi_results + "/anachronistic_candidates"
 params.metadata_candidates = params.ncbi_results + "/metadata_candidates"
@@ -473,7 +486,6 @@ process BUILD_CENTROID_TREE {
 	seq_count.toInteger() > 3
 
 	script:
-	println seq_count
 	"""
 	ref_id=\$(grep "^>" ${refseq} | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	iqtree -s ${fasta} -o \${ref_id} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
@@ -540,10 +552,63 @@ process GENERATE_CLUSTER_REPORT {
 	path metadata
 
 	output:
+	path "*.tsv", emit: metadata
+	path "*.fasta", emit: high_dist_seqs
 
 	script:
 	"""
 	generate_cluster_report.R ${metadata}
+	"""
+
+}
+
+process RUN_META_CLUSTER {
+
+	/*
+	*/
+
+	cpus params.max_cpus
+
+	input:
+	path fasta
+	path seq_count
+
+	output:
+	path "*.uc", emit: cluster_table
+	tuple path("centroids.fasta"), val(yearmonth), emit: centroid_fasta
+	path "cluster*", emit: cluster_fastas
+
+	script:
+	"""
+	vsearch --cluster_fast ${fasta} \
+	--id 0.9999 \
+	--centroids centroids.fasta \
+	--uc clusters.uc \
+	--clusters cluster \
+	--threads ${task.cpus}
+	"""
+}
+
+process META_CLUSTER_REPORT {
+
+	/*
+	*/
+
+	publishDir params.repeat_lineages, mode: 'copy'
+
+	cpus params.max_cpus
+
+	input:
+	path fasta
+	path seq_count
+
+	output:
+
+	when:
+	seq_count.toInteger() > 1
+
+	script:
+	"""
 	"""
 
 }
