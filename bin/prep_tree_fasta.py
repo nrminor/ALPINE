@@ -5,10 +5,6 @@ import os
 from Bio import AlignIO, SeqIO
 from Bio.Align.Applications import MuscleCommandline
 
-# parse command line arguments
-if len(sys.argv) != 4:
-    sys.exit("Usage: python3 prep_tree_fasta.py <input_alignment.fasta> <reference.fasta> <label>")
-
 # Define the input and output files
 multi_seq_fasta = sys.argv[1]
 ref_seq_fasta = sys.argv[2]

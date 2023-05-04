@@ -77,7 +77,17 @@ workflow {
 
 	BUILD_CENTROID_TREE (
 		PREP_CENTROID_FASTAS.out,
+		PREP_CENTROID_FASTAS.out
+			.map { fasta, yearmonth -> file(fasta).countFasta() },
 		DOWNLOAD_REFSEQ.out
+	)
+
+	MDS_PLOT (
+		CLUSTER_BY_DISTANCE.out.cluster_fastas
+	)
+
+	PLOT_TREE (
+		BUILD_CENTROID_TREE.out
 	)
 
 	GENERATE_CLUSTER_REPORT (
@@ -239,7 +249,7 @@ process UNZIP_NCBI_FASTA {
 
 	script:
 	"""
-	unzip -p ${zip} ncbi_dataset/data/genomic.fna | less > genbank_${params.date}.fasta
+	unzip -p ${zip} ncbi_dataset/data/genomic.fna | cat > genbank_${params.date}.fasta
 	"""
 
 }
@@ -397,7 +407,7 @@ process CLUSTER_BY_DISTANCE {
 	output:
 	path "*.uc", emit: cluster_table
 	tuple path("*centroids.fasta"), val(yearmonth), emit: centroid_fasta
-	path "*-cluster", emit: cluster_fastas
+	path "*-cluster*", emit: cluster_fastas
 	
 	script:
 	yearmonth = fasta.getSimpleName()
@@ -420,12 +430,15 @@ process PREP_CENTROID_FASTAS {
 	to keep iqTree happy.
 	*/
 
+	tag "${yearmonth}"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
 	input:
 	tuple path(fasta), val(yearmonth)
 	path refseq
 
 	output:
-	tuple path("*.fasta"), val(yearmonth)
+	tuple path("${yearmonth}-centroids-with-ref.fasta"), val(yearmonth)
 
 	script:
 	"""
@@ -450,16 +463,62 @@ process BUILD_CENTROID_TREE {
 
 	input:
 	tuple path(fasta), val(yearmonth)
+	val seq_count
 	path refseq
 
 	output:
 	path "*.treefile"
 
+	when:
+	seq_count.toInteger() > 3
+
 	script:
+	println seq_count
 	"""
 	ref_id=\$(grep "^>" ${refseq} | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	iqtree -s ${fasta} -o \${ref_id} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
 	"""
+
+}
+
+process MDS_PLOT {
+
+	/*
+	*/
+
+	tag "${yearmonth}"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	input:
+	path cluster_seqs
+
+	output:
+	path "*.pdf"
+
+	script:
+	"""
+	"""
+
+}
+
+process PLOT_TREE {
+
+	/*
+	*/
+
+	tag "${yearmonth}"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	input:
+	path treefile
+
+	output:
+	path "*.pdf"
+
+	script:
+	"""
+	"""
+
 }
 
 process GENERATE_CLUSTER_REPORT {
