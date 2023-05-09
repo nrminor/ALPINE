@@ -1,0 +1,29 @@
+name: long-infection-finder
+channels:
+  - base
+  - conda-forge
+  - r
+  - bioconda
+  - anaconda
+dependencies:
+  - nextflow
+  - psutil
+  - pangolin
+  - zstd
+  - ncbi-datasets-cli
+  - wget
+  - make
+  - zlib
+  - muscle
+  - python=3.8
+  - pip
+  - biopython
+  - polars
+  - pandas
+  - seqtk
+  - curl
+  - vsearch
+  - r-base
+  - r-tidyverse
+  - r-ape
+  - r-adephylo

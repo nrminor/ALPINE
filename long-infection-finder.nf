@@ -7,33 +7,53 @@ nextflow.enable.dsl = 2
 // WORKFLOW SPECIFICATION
 // --------------------------------------------------------------- //
 workflow {
-
-	UPDATE_PANGO_CONTAINER ( )
 	
 	if ( params.update_pango == true ){
+
+		UPDATE_PANGO_CONTAINER ( )
+
 		println "This workflow will use the following Pangolin version:"
 		UPDATE_PANGO_CONTAINER.out.cue.view()
+		
 	}
 
 	// Data setup steps
-	DOWNLOAD_NCBI_PACKAGE ( )
+	if ( params.fasta_path == "" ) {
 
-	UNZIP_NCBI_METADATA (
-		DOWNLOAD_NCBI_PACKAGE.out.zip_archive
-	)
+		DOWNLOAD_NCBI_PACKAGE ( )
 
-	UNZIP_NCBI_FASTA (
-		DOWNLOAD_NCBI_PACKAGE.out.zip_archive
-	)
+		UNZIP_NCBI_METADATA (
+			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
+		)
 
-	FILTER_TO_GEOGRAPHY (
-		UNZIP_NCBI_METADATA.out,
-		UNZIP_NCBI_FASTA.out
-	)
+		UNZIP_NCBI_FASTA (
+			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
+		)
+
+		FILTER_TO_GEOGRAPHY (
+			UNZIP_NCBI_METADATA.out,
+			UNZIP_NCBI_FASTA.out
+		)
+
+	} else {
+
+		ch_local_fasta = Channel
+			.fromPath( params.fasta_path )
+
+		ch_local_metadata = Channel
+			.fromPath( params.metadata_path )
+
+		FILTER_TO_GEOGRAPHY (
+			ch_local_metadata,
+			ch_local_fasta
+		)
+
+	}
+	
 
 	DOWNLOAD_REFSEQ ( )
 
-	GET_DESIGNATION_DATES ( )
+	// GET_DESIGNATION_DATES ( )
 
 	// NCBI/GENBANK BRANCH:
 	/* Here we use three orthogonal methods for identifying prolonged
@@ -581,8 +601,7 @@ process RUN_META_CLUSTER {
 	cpus params.max_cpus
 
 	input:
-	path fasta
-	path seq_count
+	path fastas
 
 	output:
 	path "*.uc", emit: cluster_table
