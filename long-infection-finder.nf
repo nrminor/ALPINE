@@ -14,7 +14,7 @@ workflow {
 
 		println "This workflow will use the following Pangolin version:"
 		UPDATE_PANGO_CONTAINER.out.cue.view()
-		
+
 	}
 
 	// Data setup steps
@@ -301,8 +301,8 @@ process FILTER_TO_GEOGRAPHY {
 	publishDir params.results, mode: 'symlink'
 
 	input:
-	path fasta
 	path metadata
+	path fasta
 
 	output:
 	path "*.fasta", emit: fasta
