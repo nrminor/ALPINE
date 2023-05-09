@@ -19,7 +19,7 @@ def write_seq_record(record, file_handle):
 	fcntl.flock(file_handle, fcntl.LOCK_UN)
 
 # Get input and output file names from command line arguments
-input_file = sys.argv[1]
+input_file = os.readlink(sys.argv[1])
 output_file = sys.argv[2]
 
 # Define the number of processes to use (default to number of CPU cores)

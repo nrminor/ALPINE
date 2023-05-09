@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 import pandas as pd
 from Bio import SeqIO
 
 # read in arguments
-metadata = sys.argv[1]
-fasta = sys.argv[2]
+metadata = os.readlink(sys.argv[1])
+fasta = os.readlink(sys.argv[2])
 output_handle = sys.argv[3]
 
 # Read in the metadata TSV file as a pandas dataframe

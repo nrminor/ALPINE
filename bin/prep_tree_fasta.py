@@ -6,8 +6,8 @@ from Bio import AlignIO, SeqIO
 from Bio.Align.Applications import MuscleCommandline
 
 # Define the input and output files
-multi_seq_fasta = sys.argv[1]
-ref_seq_fasta = sys.argv[2]
+multi_seq_fasta = os.readlink(sys.argv[1])
+ref_seq_fasta = os.readlink(sys.argv[2])
 label = sys.argv[3]
 
 # Load the multi-sequence FASTA and the reference sequence
