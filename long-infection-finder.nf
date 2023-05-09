@@ -8,12 +8,12 @@ nextflow.enable.dsl = 2
 // --------------------------------------------------------------- //
 workflow {
 
-	// UPDATE_PANGO_CONTAINER ( )
+	UPDATE_PANGO_CONTAINER ( )
 	
-	// if ( params.update_pango == true ){
-	// 	println "This workflow will use the following Pangolin version:"
-	// 	UPDATE_PANGO_CONTAINER.out.cue.view()
-	// }
+	if ( params.update_pango == true ){
+		println "This workflow will use the following Pangolin version:"
+		UPDATE_PANGO_CONTAINER.out.cue.view()
+	}
 
 	// Data setup steps
 	DOWNLOAD_NCBI_PACKAGE ( )
@@ -33,7 +33,7 @@ workflow {
 
 	DOWNLOAD_REFSEQ ( )
 
-	// GET_DESIGNATION_DATES ( )
+	GET_DESIGNATION_DATES ( )
 
 	// NCBI/GENBANK BRANCH:
 	/* Here we use three orthogonal methods for identifying prolonged
@@ -66,8 +66,7 @@ workflow {
 	)
 
 	CLUSTER_BY_DISTANCE (
-		SEPARATE_BY_MONTH.out.flatten(),
-		FILTER_TO_GEOGRAPHY.out.metadata
+		SEPARATE_BY_MONTH.out.flatten()
 	)
 
 	PREP_CENTROID_FASTAS (
@@ -97,9 +96,9 @@ workflow {
 		FILTER_TO_GEOGRAPHY.out.metadata
 	)
 
-	// RUN_META_CLUSTER (
-	// 	GENERATE_CLUSTER_REPORT.out.high_dist_seqs
-	// )
+	RUN_META_CLUSTER (
+		GENERATE_CLUSTER_REPORT.out.high_dist_seqs
+	)
 
 	// META_CLUSTER_REPORT (
 	// 	RUN_META_CLUSTER.out.cluster_fastas
@@ -160,6 +159,9 @@ if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.i
 } else {
 	params.ncbi_results = params.results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
 }
+
+// Making a date-stamped results folder
+params.results = params.results + "/" + params.date
 
 // creating results subfolders for the three orthogonal anachronistic
 // sequence search methods
@@ -238,7 +240,7 @@ process UNZIP_NCBI_METADATA {
 	script:
 	"""
 	unzip -p ${zip} ncbi_dataset/data/data_report.jsonl \
-	| dataformat tsv virus-genome --force > genbank_${params.date}.tsv
+	| dataformat tsv virus-genome --force > genbank_metadata.tsv
 	"""
 
 }
@@ -262,7 +264,7 @@ process UNZIP_NCBI_FASTA {
 
 	script:
 	"""
-	unzip -p ${zip} ncbi_dataset/data/genomic.fna | cat > genbank_${params.date}.fasta
+	unzip -p ${zip} ncbi_dataset/data/genomic.fna | cat > genbank_sequences.fasta
 	"""
 
 }
@@ -288,12 +290,18 @@ process FILTER_TO_GEOGRAPHY {
 
 	script:
 	"""
-	filter_to_geography.py ${metadata} ${fasta} ${params.geography}
+	filter_to_geography.py ${metadata} ${params.geography} && \
+	seqtk subseq ${fasta} accessions.txt > filtered_to_geography.fasta 
 	"""
 
 }
 
 process DOWNLOAD_REFSEQ {
+
+	/*
+	Here the NCBI RefSeq for the selected pathogen, if 
+	available, is downloaded for downstream usage.
+	*/
 
 	publishDir params.resources, mode: 'copy'
 
@@ -414,12 +422,11 @@ process CLUSTER_BY_DISTANCE {
 	cpus params.max_cpus
 
 	input:
-	each path(fasta)
-	path metadata
+	path fasta
 
 	output:
 	path "*.uc", emit: cluster_table
-	tuple path("*centroids.fasta"), val(yearmonth), emit: centroid_fasta
+	path "*centroids.fasta", emit: centroid_fasta
 	path "*-cluster*", emit: cluster_fastas
 	
 	script:
@@ -447,13 +454,14 @@ process PREP_CENTROID_FASTAS {
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	input:
-	tuple path(fasta), val(yearmonth)
+	each path(fasta)
 	path refseq
 
 	output:
-	tuple path("${yearmonth}-centroids-with-ref.fasta"), val(yearmonth)
+	path "${yearmonth}-centroids-with-ref.fasta"
 
 	script:
+	yearmonth = fasta.getSimpleName.replace("-centroids", "")
 	"""
 	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
 	"""
@@ -475,7 +483,7 @@ process BUILD_CENTROID_TREE {
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	input:
-	tuple path(fasta), val(yearmonth)
+	each path(fasta)
 	val seq_count
 	path refseq
 
@@ -486,6 +494,7 @@ process BUILD_CENTROID_TREE {
 	seq_count.toInteger() > 3
 
 	script:
+	yearmonth = fasta.getSimpleName.replace("-centroids-with-ref", "")
 	"""
 	ref_id=\$(grep "^>" ${refseq} | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	iqtree -s ${fasta} -o \${ref_id} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
@@ -566,6 +575,8 @@ process RUN_META_CLUSTER {
 
 	/*
 	*/
+
+	publishDir params.repeat_lineages, mode: 'copy'
 
 	cpus params.max_cpus
 
