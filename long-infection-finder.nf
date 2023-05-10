@@ -22,7 +22,7 @@ workflow {
 	
 	// GET_DESIGNATION_DATES ( )
 
-	if ( params.fasta_path == "" ) {
+	if ( params.fasta_path == "" || params.metadata_path == "" ) {
 
 		DOWNLOAD_NCBI_PACKAGE ( )
 
