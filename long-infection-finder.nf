@@ -352,8 +352,8 @@ process FILTER_TO_GEOGRAPHY {
 	path fasta
 
 	output:
-	path "*.fasta", emit: fasta
-	path "*.tsv", emit: metadata
+	path "filtered_to_geography.fasta", emit: fasta
+	path "filtered_to_geography.tsv", emit: metadata
 
 	script:
 	"""
