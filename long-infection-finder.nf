@@ -18,6 +18,10 @@ workflow {
 	}
 
 	// Data setup steps
+	DOWNLOAD_REFSEQ ( )
+	
+	// GET_DESIGNATION_DATES ( )
+
 	if ( params.fasta_path == "" ) {
 
 		DOWNLOAD_NCBI_PACKAGE ( )
@@ -49,11 +53,6 @@ workflow {
 		)
 
 	}
-	
-
-	DOWNLOAD_REFSEQ ( )
-
-	// GET_DESIGNATION_DATES ( )
 
 	// NCBI/GENBANK BRANCH:
 	/* Here we use three orthogonal methods for identifying prolonged
@@ -223,6 +222,44 @@ process UPDATE_PANGO_CONTAINER {
 	"""
 }
 
+process DOWNLOAD_REFSEQ {
+
+	/*
+	Here the NCBI RefSeq for the selected pathogen, if 
+	available, is downloaded for downstream usage.
+	*/
+
+	publishDir params.resources, mode: 'copy'
+
+	output:
+	path "refseq.fasta"
+
+	script:
+	"""
+	datasets download virus genome taxon ${params.pathogen} \
+	--refseq && \
+	unzip ncbi_dataset.zip
+	mv ncbi_dataset/data/genomic.fna ./refseq.fasta
+	"""
+}
+
+process GET_DESIGNATION_DATES {
+	
+	// This process downloads a table of pangolin lineage designation dates
+	// from Cornelius Roemer's GitHub. These dates represent when each lineage was
+	// added to pangolin, after which point sequences could be classified as such 
+	
+	publishDir params.resources, mode: 'copy', overwrite: true
+	
+	output:
+	path "*.csv"
+	
+	script:
+	"""
+	-fsSL https://raw.githubusercontent.com/corneliusroemer/pango-designation-dates/main/data/lineage_designation_date.csv > lineage_designation_dates.csv
+	"""
+}
+
 process DOWNLOAD_NCBI_PACKAGE {
 
 	/*
@@ -324,44 +361,6 @@ process FILTER_TO_GEOGRAPHY {
 	seqtk subseq ${fasta} accessions.txt > filtered_to_geography.fasta 
 	"""
 
-}
-
-process DOWNLOAD_REFSEQ {
-
-	/*
-	Here the NCBI RefSeq for the selected pathogen, if 
-	available, is downloaded for downstream usage.
-	*/
-
-	publishDir params.resources, mode: 'copy'
-
-	output:
-	path "refseq.fasta"
-
-	script:
-	"""
-	datasets download virus genome taxon ${params.pathogen} \
-	--refseq && \
-	unzip ncbi_dataset.zip
-	mv ncbi_dataset/data/genomic.fna ./refseq.fasta
-	"""
-}
-
-process GET_DESIGNATION_DATES {
-	
-	// This process downloads a table of pangolin lineage designation dates
-	// from Cornelius Roemer's GitHub. These dates represent when each lineage was
-	// added to pangolin, after which point sequences could be classified as such 
-	
-	publishDir params.resources, mode: 'copy', overwrite: true
-	
-	output:
-	path "*.csv"
-	
-	script:
-	"""
-	-fsSL https://raw.githubusercontent.com/corneliusroemer/pango-designation-dates/main/data/lineage_designation_date.csv > lineage_designation_dates.csv
-	"""
 }
 
 process REMOVE_FASTA_GAPS {
