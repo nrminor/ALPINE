@@ -14,8 +14,21 @@ geography = str(sys.argv[2])
 # Load the TSV file into a DataFrame
 df = pl.read_csv(metadata, separator='\t', has_header=True)
 
+# check if any column names are "Geographic location" or "Geographic Location"
+if "Geographic Location" in df.columns:
+    # if the column name is already "Geographic Location", do nothing
+    pass
+elif "Geographic location" in df.columns:
+    # if the column name is "Geographic location", rename it to "Geographic Location"
+    df = df.rename({"Geographic location": "Geographic Location"})
+else:
+    # if neither column name is found, do nothing
+    pass
+
 # Filter for rows containing geography in the "Geographic location" column
-selected_rows = df.filter(pl.col('Geographic Location').str.contains(geography).alias('literal'))
+selected_rows = df.filter(
+    pl.col('Geographic Location').str.contains(geography).alias('literal')
+)
 
 # Write the matching "Accession" numbers to a separate file
 accessions = selected_rows['Accession'].to_list()
