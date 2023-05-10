@@ -5,10 +5,20 @@ import os
 import pandas as pd
 from Bio import SeqIO
 
-# read in arguments
-metadata = os.readlink(sys.argv[1])
-fasta = os.readlink(sys.argv[2])
-output_handle = sys.argv[3]
+# read in metadata
+if os.path.islink(sys.argv[1]):
+    metadata = os.readlink(sys.argv[1])
+else:
+    metadata = sys.argv[1]
+
+# read in fasta
+if os.path.islink(sys.argv[2]):
+    fasta = os.readlink(sys.argv[2])
+else:
+    fasta = sys.argv[2]
+
+# define output file name
+output_handle = str(sys.argv[3])
 
 # Read in the metadata TSV file as a pandas dataframe
 metadata_df = pd.read_csv(metadata, sep="\t")

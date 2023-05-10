@@ -25,7 +25,10 @@ def process_seq_record(record):
     return (output_file, record)
 
 # Get the input filename from the command line arguments
-input_file = sys.argv[1]
+if os.path.islink(sys.argv[1]):
+    input_file = os.readlink(sys.argv[1])
+else:
+    input_file = sys.argv[1]
 
 # Define the number of processes to use (default to number of CPU cores)
 num_processes = int(sys.argv[2]) if len(sys.argv) > 1 else cpu_count()

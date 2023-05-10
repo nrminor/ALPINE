@@ -5,7 +5,10 @@ import os
 import polars as pl
 
 # parse information supplied by nextflow as arguments
-metadata = os.readlink(sys.argv[1])
+if os.path.islink(sys.argv[1]):
+    metadata = os.readlink(sys.argv[1])
+else:
+    metadata = sys.argv[1]
 geography = str(sys.argv[2])
 
 # Load the TSV file into a DataFrame
