@@ -173,6 +173,14 @@ if ( workflow.profile == "chtc" ){
 	params.max_cpus = params.max_local_cpus
 }
 
+// specifying whether to run in low disk mode
+if( params.low_disk_mode == true ) {
+    params.publishMode = 'symlink'
+}
+else {
+    params.publishMode = 'copy'
+}
+
 // Making a date-stamped results folder
 params.dated_results = params.results + "/" + params.date
 
@@ -225,7 +233,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	will be performed on these files downstream.
 	*/
 
-	publishDir params.dated_results, mode: 'symlink'
+	publishDir params.dated_results, mode: params.publishMode
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
@@ -247,7 +255,7 @@ process UNZIP_NCBI_METADATA {
 	lightweight NCBI zip archive.
 	*/
 
-	publishDir params.dated_results, mode: 'symlink'
+	publishDir params.dated_results, mode: params.publishMode
 
 	cpus 3
 
@@ -272,7 +280,7 @@ process UNZIP_NCBI_FASTA {
 	from the lightweight NCBI zip archive.
 	*/
 
-	publishDir params.dated_results, mode: 'symlink'
+	publishDir params.dated_results, mode: params.publishMode
 
 	cpus 3
 
@@ -298,7 +306,7 @@ process FILTER_TO_GEOGRAPHY {
 	the full database down to a geography of interest.
 	*/
 
-	publishDir params.dated_results, mode: 'symlink'
+	publishDir params.dated_results, mode: params.publishMode
 
 	input:
 	path metadata
