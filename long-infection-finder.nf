@@ -173,15 +173,15 @@ if ( workflow.profile == "chtc" ){
 	params.max_cpus = params.max_local_cpus
 }
 
+// Making a date-stamped results folder
+params.dated_results = params.results + "/" + params.date
+
 // handling the case where no geography or date filters are provided
 if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.isEmpty() ){
-	params.ncbi_results = params.results + "/GenBank"
+	params.ncbi_results = params.dated_results + "/GenBank"
 } else {
-	params.ncbi_results = params.results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
+	params.ncbi_results = params.dated_results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
 }
-
-// Making a date-stamped results folder
-params.results = params.results + "/" + params.date
 
 // creating results subfolders for the three orthogonal anachronistic
 // sequence search methods
@@ -225,7 +225,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	will be performed on these files downstream.
 	*/
 
-	publishDir params.results, mode: 'symlink'
+	publishDir params.dated_results, mode: 'symlink'
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
@@ -247,7 +247,7 @@ process UNZIP_NCBI_METADATA {
 	lightweight NCBI zip archive.
 	*/
 
-	publishDir params.results, mode: 'symlink'
+	publishDir params.dated_results, mode: 'symlink'
 
 	cpus 3
 
@@ -272,7 +272,7 @@ process UNZIP_NCBI_FASTA {
 	from the lightweight NCBI zip archive.
 	*/
 
-	publishDir params.results, mode: 'symlink'
+	publishDir params.dated_results, mode: 'symlink'
 
 	cpus 3
 
@@ -298,7 +298,7 @@ process FILTER_TO_GEOGRAPHY {
 	the full database down to a geography of interest.
 	*/
 
-	publishDir params.results, mode: 'symlink'
+	publishDir params.dated_results, mode: 'symlink'
 
 	input:
 	path metadata

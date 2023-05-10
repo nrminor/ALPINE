@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 import fcntl
 from Bio import SeqIO
 from Bio.Seq import Seq
