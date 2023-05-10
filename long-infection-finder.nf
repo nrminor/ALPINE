@@ -170,7 +170,7 @@ workflow {
 if ( workflow.profile == "chtc" ){
 	params.max_cpus = executor.cpus
 } else {
-	params.max_cpus = params.max_local_cpus
+	params.max_cpus = params.max_shared_cpus
 }
 
 // specifying whether to run in low disk mode
@@ -308,6 +308,8 @@ process FILTER_TO_GEOGRAPHY {
 
 	publishDir params.dated_results, mode: params.publishMode
 
+	cpus params.available_cpus
+
 	input:
 	path metadata
 	path fasta
@@ -370,7 +372,7 @@ process REMOVE_FASTA_GAPS {
 	gaps.
 	*/
 
-	cpus params.max_cpus
+	cpus params.available_cpus
 
 	input:
 	path fasta
@@ -420,7 +422,7 @@ process SEPARATE_BY_MONTH {
 	most evolved (which, almost by definition, they are!)
 	*/
 
-	cpus params.max_cpus
+	cpus params.available_cpus
 
 	input:
 	path fasta
