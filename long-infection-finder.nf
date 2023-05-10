@@ -345,7 +345,7 @@ process FILTER_TO_GEOGRAPHY {
 
 	publishDir params.dated_results, mode: params.publishMode
 
-	cpus params.available_cpus
+	cpus 8
 
 	input:
 	path metadata
@@ -371,7 +371,7 @@ process REMOVE_FASTA_GAPS {
 	gaps.
 	*/
 
-	cpus params.available_cpus
+	cpus 8
 
 	input:
 	path fasta
@@ -421,7 +421,7 @@ process SEPARATE_BY_MONTH {
 	most evolved (which, almost by definition, they are!)
 	*/
 
-	cpus params.available_cpus
+	cpus 8
 
 	input:
 	path fasta
