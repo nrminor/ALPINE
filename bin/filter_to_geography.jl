@@ -8,7 +8,7 @@ metadata_path = ARGS[1]
 geography = ARGS[2]
 
 # Read in the TSV file with metadata
-metadata = CSV.read(metadata_path, DataFrame, delim="\t")
+metadata = CSV.read(metadata_path, DataFrame, delim="\t", follow_symlinks=true)
 
 # Double check the column name for geographic locations
 if "Geographic location" in names(metadata)
@@ -21,3 +21,6 @@ filtered = metadata[[contains(geography, string(value)) for value in metadata[:"
 
 # separating out accessions
 accessions = filtered[:"Accession"]
+
+# Writing accessions to a text file for use by seqtk
+CSV.write("accessions.txt", accessions, delim="\t")
