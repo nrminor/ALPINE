@@ -1,36 +1,45 @@
 FROM ubuntu:20.04
 
-# Install required packages
+# Set environment variables
+ENV DEBIAN_FRONTEND noninteractive
+ENV TZ America/New_York
+
+# Install dependencies
 RUN apt-get update && \
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
     build-essential \
-    wget \
     curl \
-    gcc \
+    wget \
     make \
+    gnupg \
+    libssl-dev \
     zlib1g-dev \
-    libz-dev \
+    libncurses5-dev \
+    libgdbm-dev \
+    libnss3-dev \
+    libreadline-dev \
+    libffi-dev \
+    libsqlite3-dev \
     libbz2-dev \
     liblzma-dev \
-    libssl-dev \
-    libcurl4-openssl-dev \
+    libxml2-dev \
+    libxslt-dev \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libpng-dev \
+    libxt-dev \
+    libxaw7-dev \
+    libglu1-mesa-dev \
+    libglfw3-dev \
+    xvfb \
     muscle \
     python3-pip \
-    libssl-dev \
-    libcurl4-openssl-dev \
-    default-jre \
-    default-jdk \
-    libnss-sss \
-    procps
-
-# Install psutil
-RUN pip3 install psutil
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Biopython
 RUN pip3 install biopython
-
-# Install Biopython
-RUN pip3 install pysam
 
 # Install pandas
 RUN pip3 install pandas
@@ -55,10 +64,18 @@ RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
     mv seqtk /usr/local/bin/ && \
     cd .. && \
     rm -rf seqtk-1.3 v1.3.tar.gz && \
-    apt-get remove -y wget gcc make zlib1g-dev && \
-    apt-get autoremove -y && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install Julia
+RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
+    tar -xzf julia-1.9.0-linux-x86_64.tar.gz -C /opt && \
+    ln -s /opt/julia-1.9.0/bin/julia /usr/local/bin/julia && \
+    rm julia-1.9.0-linux-x86_64.tar.gz
+
+# Install Julia packages
+RUN julia -e 'using Pkg; Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("BioAlignments"); Pkg.add("PopGen"); Pkg.add("FASTX"); Pkg.add("XAM")'
+# ; Pkg.add("SubstitutionModels"); Pkg.add("KmerAnalysis"); Pkg.add("GFF3"); Pkg.add("GenomicFeatures"); Pkg.add("BioServices"); Pkg.add("BioFetch"); Pkg.add("BED"); Pkg.add("BioTools"); Pkg.add("NaturalSelection"); Pkg.add("Phylogenies")'
 
 # Set working directory
 WORKDIR /app
