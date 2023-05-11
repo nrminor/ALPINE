@@ -192,7 +192,7 @@ else {
 params.dated_results = params.results + "/" + params.date
 
 // handling the case where no geography or date filters are provided
-if( params.geography.isEmpty() || params.min_date.isEmpty() || params.max_date.isEmpty() ){
+if( params.geography == "" || params.min_date == "" || params.max_date == "" ){
 	params.ncbi_results = params.dated_results + "/GenBank"
 } else {
 	params.ncbi_results = params.dated_results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
@@ -361,12 +361,12 @@ process FILTER_TO_GEOGRAPHY {
 	path fasta
 
 	output:
-	path "filtered_to_geography.fasta", emit: fasta
-	path "filtered_to_geography.tsv", emit: metadata
+	path "*.fasta", emit: fasta
+	path "*.tsv", emit: metadata
 
 	script:
 	"""
-	filter_to_geography.py ${metadata} ${params.geography} && \
+	filter-to-geography.jl ${metadata} ${params.geography} && \
 	seqtk subseq ${fasta} accessions.txt > filtered_to_geography.fasta 
 	"""
 

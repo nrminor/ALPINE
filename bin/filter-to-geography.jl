@@ -1,14 +1,14 @@
 #!/usr/bin/env julia
 
 # loading packages
-using DataFrames, CSV
+using DelimitedFiles, DataFrames, CSV
 
 # saving command line arguments supplied by nextflow
 metadata_path = ARGS[1]
-geography = ARGS[2]
+geography = string(ARGS[2])
 
 # Read in the TSV file with metadata
-metadata = CSV.read(metadata_path, DataFrame, delim="\t", follow_symlinks=true)
+metadata = CSV.read(metadata_path, DataFrame, delim="\t")
 
 # Double check the column name for geographic locations
 if "Geographic location" in names(metadata)
@@ -17,10 +17,13 @@ if "Geographic location" in names(metadata)
 end
 
 # filter metadata based on desired geography
-filtered = metadata[[contains(geography, string(value)) for value in metadata[:"Geographic Location"]], :]
+filtered = metadata[[contains(string(value), geography) for value in metadata[!,"Geographic Location"]], :]
+
+# Writing filtered metadata
+CSV.write("filtered_to_geography.tsv", filtered, delim="\t")
 
 # separating out accessions
-accessions = filtered[:"Accession"]
+accessions = filtered[!,"Accession"]
 
 # Writing accessions to a text file for use by seqtk
-CSV.write("accessions.txt", accessions, delim="\t")
+writedlm("accessions.txt", accessions, "\n")
