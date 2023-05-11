@@ -20,7 +20,11 @@ workflow {
 	// Data setup steps
 	DOWNLOAD_REFSEQ ( )
 	
-	// GET_DESIGNATION_DATES ( )
+	if ( params.compare_lineage_dates == true ){
+
+		GET_DESIGNATION_DATES ( )
+
+	}
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
 
@@ -75,9 +79,13 @@ workflow {
 		FILTER_TO_GEOGRAPHY.out.fasta
 	)
 
+	FILTER_BY_MASKED_BASES (
+		REMOVE_FASTA_GAPS.out
+	)
+
 	APPEND_DATES (
 		FILTER_TO_GEOGRAPHY.out.metadata,
-		REMOVE_FASTA_GAPS.out
+		FILTER_BY_MASKED_BASES.out
 	)
 
 	SEPARATE_BY_MONTH (
@@ -256,7 +264,7 @@ process GET_DESIGNATION_DATES {
 	
 	script:
 	"""
-	-fsSL https://raw.githubusercontent.com/corneliusroemer/pango-designation-dates/main/data/lineage_designation_date.csv > lineage_designation_dates.csv
+	curl -fsSL https://raw.githubusercontent.com/corneliusroemer/pango-designation-dates/main/data/lineage_designation_date.csv > lineage_designation_dates.csv
 	"""
 }
 
@@ -270,6 +278,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	will be performed on these files downstream.
 	*/
 
+	tag "${params.pathogen}"
 	publishDir params.dated_results, mode: params.publishMode
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
@@ -387,6 +396,27 @@ process REMOVE_FASTA_GAPS {
 	remove_fasta_gaps.py ${fasta} no_gaps.fasta ${task.cpus}
 	"""
 	
+}
+
+process FILTER_BY_MASKED_BASES {
+
+	/*
+	This process makes sure that none of the sequences in the
+	Genbank FASTA have fewer than 10% of their bases masked,
+	i.e., are "N" instead of a defined base.
+	*/
+
+	input:
+	path fasta
+
+	output:
+	path "*.fasta"
+
+	script:
+	"""
+	filter-by-n-count.jl `realpath ${fasta}`
+	"""
+
 }
 
 process APPEND_DATES {

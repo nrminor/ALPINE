@@ -7,12 +7,18 @@ ENV TZ America/New_York
 # Install dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    build-essential \
     ca-certificates \
     build-essential \
     curl \
     wget \
+    unzip \
+    gzip \
     make \
     gnupg \
+    libz-dev \
+    libbz2-dev \
+    liblzma-dev \
     libssl-dev \
     zlib1g-dev \
     libncurses5-dev \
@@ -35,6 +41,13 @@ RUN apt-get update && \
     xvfb \
     muscle \
     python3-pip \
+    git \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    default-jre \
+    default-jdk \
+    libnss-sss \
+    procps \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -52,6 +65,9 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh
 ENV PATH /opt/conda/bin:$PATH
+
+# Install psutil
+RUN pip3 install psutil
 
 # Install vsearch
 RUN conda install -c bioconda vsearch
