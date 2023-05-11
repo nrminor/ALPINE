@@ -398,8 +398,8 @@ process APPEND_DATES {
 	*/
 
 	input:
-	path fasta
 	path metadata
+	path fasta
 
 	output:
 	path "*.fasta"
