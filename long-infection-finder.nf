@@ -38,9 +38,14 @@ workflow {
 			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
 		)
 
-		FILTER_TO_GEOGRAPHY (
-			UNZIP_NCBI_METADATA.out,
+		FILTER_TSV_TO_GEOGRAPHY (
+			UNZIP_NCBI_METADATA.out
+		)
+
+		FILTER_SEQS_TO_GEOGRAPHY (
 			UNZIP_NCBI_FASTA.out
+				.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" ),
+			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
 	} else {
@@ -51,9 +56,14 @@ workflow {
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
 
-		FILTER_TO_GEOGRAPHY (
-			ch_local_metadata,
+		FILTER_TSV_TO_GEOGRAPHY (
+			ch_local_metadata
+		)
+
+		FILTER_SEQS_TO_GEOGRAPHY (
 			ch_local_fasta
+				.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" ),
+			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
 	}
@@ -76,7 +86,7 @@ workflow {
 
 	// Distance matrix clustering steps
 	REMOVE_FASTA_GAPS ( 
-		FILTER_TO_GEOGRAPHY.out.fasta
+		FILTER_SEQS_TO_GEOGRAPHY.out
 	)
 
 	FILTER_BY_MASKED_BASES (
@@ -84,12 +94,13 @@ workflow {
 	)
 
 	APPEND_DATES (
-		FILTER_TO_GEOGRAPHY.out.metadata,
+		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
 		FILTER_BY_MASKED_BASES.out
 	)
 
 	SEPARATE_BY_MONTH (
 		APPEND_DATES.out
+			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true )
 	)
 
 	CLUSTER_BY_DISTANCE (
@@ -120,7 +131,7 @@ workflow {
 		CLUSTER_BY_DISTANCE.out.cluster_table.collect(),
 		CLUSTER_BY_DISTANCE.out.cluster_fastas.collect(),
 		BUILD_CENTROID_TREE.out.collect(),
-		FILTER_TO_GEOGRAPHY.out.metadata
+		FILTER_TSV_TO_GEOGRAPHY.out.metadata
 	)
 
 	RUN_META_CLUSTER (
@@ -138,7 +149,7 @@ workflow {
 	// Steps for re-running pangolin and comparing dates
 	// HIGH_THROUGHPUT_PANGOLIN ( 
 	// 	UPDATE_PANGO_CONTAINER.out.cue,
-	// 	FILTER_TO_GEOGRAPHY.out.fasta
+	// 	FILTER_SEQS_TO_GEOGRAPHY.out
 	// 		.splitFasta( by: 5000, file: true )
 	// )
 
@@ -152,7 +163,7 @@ workflow {
 
 	// Steps for inspecting NCBI metadata
 	// FILTER_NCBI_METADATA (
-	// 	FILTER_TO_GEOGRAPHY.out.metadata
+	// 	FILTER_TSV_TO_GEOGRAPHY.out.metadata
 	// )
 
 	// SEARCH_NCBI_METADATA ( 
@@ -343,13 +354,13 @@ process UNZIP_NCBI_FASTA {
 
 }
 
-process FILTER_TO_GEOGRAPHY {
+process FILTER_TSV_TO_GEOGRAPHY {
 
 	/*
 	The geography filter in the NCBI Datasets command line
 	interface appears to be broken. Until this is fixed,
-	this process uses a simply python script to filter
-	the full database down to a geography of interest.
+	this process uses a simple julia script to filter
+	the metadata down to a geography of interest.
 	*/
 
 	publishDir params.dated_results, mode: params.publishMode
@@ -358,16 +369,45 @@ process FILTER_TO_GEOGRAPHY {
 
 	input:
 	path metadata
-	path fasta
 
 	output:
-	path "*.fasta", emit: fasta
 	path "*.tsv", emit: metadata
+	path "*.txt", emit: accessions
 
 	script:
 	"""
-	filter-to-geography.jl ${metadata} ${params.geography} && \
-	seqtk subseq ${fasta} accessions.txt > filtered_to_geography.fasta 
+	filter-to-geography.jl ${metadata} ${params.geography}
+	"""
+
+}
+
+process FILTER_SEQS_TO_GEOGRAPHY {
+
+	/*
+	This process takes the aceessions list from 
+	FILTER_TSV_TO_GEOGRAPHY and filters down the full FASTA
+	to those accessions, ensuring that both the metadata and
+	the sequences reflect the same geography filtering.
+
+	In the future, this process will be parallelized to split
+	up the large genbank FASTA into many more computationally
+	bite-sized pieces.
+	*/
+
+	publishDir params.dated_results, mode: params.publishMode
+
+	cpus 8
+
+	input:
+	each path(fasta)
+	path accessions
+
+	output:
+	path "*.fasta"
+
+	script:
+	"""
+	seqtk subseq ${fasta} ${accessions} > filtered_to_geography.fasta 
 	"""
 
 }

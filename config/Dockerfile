@@ -93,5 +93,8 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
 RUN julia -e 'using Pkg; Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("BioAlignments"); Pkg.add("PopGen"); Pkg.add("FASTX"); Pkg.add("XAM")'
 # ; Pkg.add("SubstitutionModels"); Pkg.add("KmerAnalysis"); Pkg.add("GFF3"); Pkg.add("GenomicFeatures"); Pkg.add("BioServices"); Pkg.add("BioFetch"); Pkg.add("BED"); Pkg.add("BioTools"); Pkg.add("NaturalSelection"); Pkg.add("Phylogenies")'
 
+# Make sure nothing is amiss and that julia is still in the path
+ENV PATH /usr/local/bin:$PATH
+
 # Set working directory
 WORKDIR /app
