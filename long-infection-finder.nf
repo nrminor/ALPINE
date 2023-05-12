@@ -236,7 +236,7 @@ process UPDATE_PANGO_CONTAINER {
 	env(version), emit: cue
 	
 	when:
-	workflow.profile == 'standard' || workflow.profile == 'docker' || workflow.profile == 'singularity'
+	(workflow.profile == 'standard' || workflow.profile == 'docker' || workflow.profile == 'singularity') && (params.pathogen == "SARS-CoV-2" || params.pathogen == "sars-cov-2")
 	
 	script:
 	"""
@@ -251,9 +251,12 @@ process DOWNLOAD_REFSEQ {
 	Here the NCBI RefSeq for the selected pathogen, if 
 	available, is downloaded for downstream usage.
 	*/
-	
+
 	tag "${params.pathogen}"
 	publishDir params.resources, mode: 'copy'
+
+	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
+	maxRetries 5
 
 	output:
 	path "refseq.fasta"
@@ -371,7 +374,7 @@ process FILTER_TSV_TO_GEOGRAPHY {
 	label "lif_container"
 	publishDir params.dated_results, mode: params.publishMode, pattern: "*.tsv"
 
-	cpus 8
+	cpus 4
 
 	input:
 	path metadata
@@ -486,7 +489,7 @@ process APPEND_DATES {
 
 	input:
 	path metadata
-	path fasta
+	each path(fasta)
 
 	output:
 	path "*.fasta"
