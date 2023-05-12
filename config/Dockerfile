@@ -55,7 +55,7 @@ RUN apt-get update && \
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh
-ENV PATH /opt/conda/bin:$PATH
+ENV PATH=/opt/conda/bin:$PATH
 
 # Install psutil
 RUN conda install -c conda-forge psutil
@@ -90,11 +90,11 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
     rm julia-1.9.0-linux-x86_64.tar.gz
 
 # Install Julia packages
-RUN julia -e 'using Pkg; Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("BioAlignments"); Pkg.add("PopGen"); Pkg.add("FASTX"); Pkg.add("XAM")'
-# ; Pkg.add("SubstitutionModels"); Pkg.add("KmerAnalysis"); Pkg.add("GFF3"); Pkg.add("GenomicFeatures"); Pkg.add("BioServices"); Pkg.add("BioFetch"); Pkg.add("BED"); Pkg.add("BioTools"); Pkg.add("NaturalSelection"); Pkg.add("Phylogenies")'
+RUN julia -e 'using Pkg; Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("FastaIO")'
+# Pkg.add("BioAlignments"); Pkg.add("PopGen"); Pkg.add("FASTX"); Pkg.add("XAM"); Pkg.add("SubstitutionModels"); Pkg.add("KmerAnalysis"); Pkg.add("GFF3"); Pkg.add("GenomicFeatures"); Pkg.add("BioServices"); Pkg.add("BioFetch"); Pkg.add("BED"); Pkg.add("BioTools"); Pkg.add("NaturalSelection"); Pkg.add("Phylogenies")'
 
 # Make sure nothing is amiss and that julia is still in the path
-ENV PATH /usr/local/bin:$PATH
+ENV PATH=/usr/local/bin:$PATH
 
 # Set working directory
 WORKDIR /app

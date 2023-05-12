@@ -87,19 +87,23 @@ workflow {
 	// Distance matrix clustering steps
 	REMOVE_FASTA_GAPS ( 
 		FILTER_SEQS_TO_GEOGRAPHY.out
+			.filter { !file(it).isEmpty() }
 	)
 
 	FILTER_BY_MASKED_BASES (
 		REMOVE_FASTA_GAPS.out
+			.filter { !file(it).isEmpty() }
 	)
 
 	APPEND_DATES (
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
 		FILTER_BY_MASKED_BASES.out
+			.filter { !file(it).isEmpty() }
 	)
 
 	SEPARATE_BY_MONTH (
 		APPEND_DATES.out
+			.filter { !file(it).isEmpty() }
 			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true )
 	)
 
@@ -247,7 +251,8 @@ process DOWNLOAD_REFSEQ {
 	Here the NCBI RefSeq for the selected pathogen, if 
 	available, is downloaded for downstream usage.
 	*/
-
+	
+	tag "${params.pathogen}"
 	publishDir params.resources, mode: 'copy'
 
 	output:
@@ -363,7 +368,8 @@ process FILTER_TSV_TO_GEOGRAPHY {
 	the metadata down to a geography of interest.
 	*/
 
-	publishDir params.dated_results, mode: params.publishMode
+	label "lif_container"
+	publishDir params.dated_results, mode: params.publishMode, pattern: "*.tsv"
 
 	cpus 8
 
@@ -389,14 +395,15 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	to those accessions, ensuring that both the metadata and
 	the sequences reflect the same geography filtering.
 
-	In the future, this process will be parallelized to split
-	up the large genbank FASTA into many more computationally
-	bite-sized pieces.
+	This process is parallelized, meaning that it splits up
+	the large genbank FASTA into many more computationally
+	bite-sized pieces of ~5,000 sequences.
 	*/
 
-	publishDir params.dated_results, mode: params.publishMode
+	label "lif_container"
+	// publishDir params.dated_results, mode: params.publishMode
 
-	cpus 8
+	cpus 2
 
 	input:
 	each path(fasta)
@@ -419,8 +426,10 @@ process REMOVE_FASTA_GAPS {
 	"N's", effectively converting them into masked bases instead of
 	gaps.
 	*/
+	
+	label "lif_container"
 
-	cpus 8
+	cpus 2
 
 	input:
 	path fasta
@@ -446,6 +455,10 @@ process FILTER_BY_MASKED_BASES {
 	i.e., are "N" instead of a defined base.
 	*/
 
+	label "lif_container"
+
+	cpus 3
+
 	input:
 	path fasta
 
@@ -466,6 +479,10 @@ process APPEND_DATES {
 	FASTA defline by cross referencing the GenBank accessions in 
 	the FASTA with GenBank accessions in the NCBI metadata.
 	*/
+
+	label "lif_container"
+
+	cpus 2
 
 	input:
 	path metadata
@@ -490,6 +507,8 @@ process SEPARATE_BY_MONTH {
 	month instead of simply flagging the newest variants as the 
 	most evolved (which, almost by definition, they are!)
 	*/
+
+	label "lif_container"
 
 	cpus 8
 
@@ -516,6 +535,7 @@ process CLUSTER_BY_DISTANCE {
 	*/
 
 	tag "${yearmonth}"
+	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	cpus params.max_cpus
@@ -550,6 +570,7 @@ process PREP_CENTROID_FASTAS {
 	*/
 
 	tag "${yearmonth}"
+	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	input:
