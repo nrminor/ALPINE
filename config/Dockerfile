@@ -51,15 +51,6 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Biopython
-RUN pip3 install biopython
-
-# Install pandas
-RUN pip3 install pandas
-
-# Install polars
-RUN pip3 install polars
-
 # Install miniconda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
@@ -67,7 +58,16 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH /opt/conda/bin:$PATH
 
 # Install psutil
-RUN pip3 install psutil
+RUN conda install -c conda-forge psutil
+
+# Install Biopython
+RUN conda install -c conda-forge biopython
+
+# Install pandas
+RUN conda install -c anaconda pandas
+
+# Install polars
+RUN conda install -c conda-forge polars
 
 # Install vsearch
 RUN conda install -c bioconda vsearch
