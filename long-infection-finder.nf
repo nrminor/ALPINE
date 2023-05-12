@@ -52,6 +52,7 @@ workflow {
 
 		ch_local_fasta = Channel
 			.fromPath( params.fasta_path )
+			.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" )
 
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
@@ -61,8 +62,7 @@ workflow {
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
-			ch_local_fasta
-				.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" ),
+			ch_local_fasta,
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
