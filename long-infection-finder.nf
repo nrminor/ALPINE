@@ -461,7 +461,7 @@ process FILTER_BY_MASKED_BASES {
 
 	label "lif_container"
 
-	cpus 3
+	cpus 2
 
 	input:
 	path fasta
