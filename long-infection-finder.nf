@@ -446,7 +446,7 @@ process REMOVE_FASTA_GAPS {
 
 	script:
 	"""
-	remove_fasta_gaps.py ${fasta} no_gaps.fasta ${task.cpus}
+	remove-fasta-gaps.jl ${fasta} "no-gaps.fasta"
 	"""
 	
 }
@@ -471,7 +471,7 @@ process FILTER_BY_MASKED_BASES {
 
 	script:
 	"""
-	filter-by-n-count.jl `realpath ${fasta}`
+	filter-by-n-count.jl ${fasta}
 	"""
 
 }
@@ -497,7 +497,7 @@ process APPEND_DATES {
 
 	script:
 	"""
-	append_dates.py ${metadata} ${fasta} dated_seqs.fasta
+	append-dates.jl ${metadata} ${fasta} dated-seqs.fasta
 	"""
 
 }
@@ -524,7 +524,7 @@ process SEPARATE_BY_MONTH {
 
 	script:
 	"""
-	separate_by_year-month.py ${fasta} ${task.cpus}
+	separate-by-yearmonth.jl ${fasta}
 	"""
 
 }
