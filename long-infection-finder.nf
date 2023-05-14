@@ -98,6 +98,7 @@ workflow {
 	APPEND_DATES (
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
 		FILTER_BY_MASKED_BASES.out
+			.flatten()
 			.filter { !file(it).isEmpty() }
 	)
 
