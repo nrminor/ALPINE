@@ -20,7 +20,7 @@ workflow {
 	// Data setup steps
 	DOWNLOAD_REFSEQ ( )
 
-	println "Downloading NCBI Reference Sequence for ${params.pathogen}"
+	println "Downloading NCBI Reference Sequence and GenBank data for the pathogen ${params.pathogen}"
 	
 	if ( params.compare_lineage_dates == true ){
 
@@ -556,7 +556,7 @@ process CLUSTER_BY_DISTANCE {
 	output:
 	path "*.uc", emit: cluster_table
 	path "*centroids.fasta", emit: centroid_fasta
-	path "*-cluster*", emit: cluster_fastas
+	path "*-cluster-seqs*", emit: cluster_fastas
 	
 	script:
 	yearmonth = fasta.getSimpleName()
@@ -565,7 +565,7 @@ process CLUSTER_BY_DISTANCE {
 	--id ${params.id_threshold} \
 	--centroids ${yearmonth}-centroids.fasta \
 	--uc ${yearmonth}-clusters.uc \
-	--clusters ${yearmonth}-cluster \
+	--clusters ${yearmonth}-cluster-seqs \
 	--threads ${task.cpus}
 	"""
 	
