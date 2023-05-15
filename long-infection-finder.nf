@@ -110,13 +110,17 @@ workflow {
 			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true )
 	)
 
-	CLUSTER_BY_DISTANCE (
+	CLUSTER_BY_IDENTITY (
 		SEPARATE_BY_MONTH.out.flatten()
 	)
 
 	PREP_CENTROID_FASTAS (
-		CLUSTER_BY_DISTANCE.out.centroid_fasta,
+		CLUSTER_BY_IDENTITY.out.centroid_fasta,
 		DOWNLOAD_REFSEQ.out
+	)
+
+	COMPUTE_DISTANCE_MATRIX (
+		PREP_CENTROID_FASTAS.out
 	)
 
 	COUNT_FASTA_RECORDS (
@@ -131,7 +135,7 @@ workflow {
 	)
 
 	// MDS_PLOT (
-	// 	CLUSTER_BY_DISTANCE.out.cluster_fastas
+	// 	CLUSTER_BY_IDENTITY.out.cluster_fastas
 	// )
 
 	// PLOT_TREE (
@@ -139,9 +143,10 @@ workflow {
 	// )
 
 	GENERATE_CLUSTER_REPORT (
-		CLUSTER_BY_DISTANCE.out.cluster_table.collect(),
-		CLUSTER_BY_DISTANCE.out.cluster_fastas.collect(),
+		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
+		CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
 		BUILD_CENTROID_TREE.out.collect(),
+		COMPUTE_DISTANCE_MATRIX.out.collect(),
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata
 	)
 
@@ -434,7 +439,8 @@ process REMOVE_FASTA_GAPS {
 	/*
 	In this process, we replace all dashes in the NCBI FASTA with
 	"N's", effectively converting them into masked bases instead of
-	gaps.
+	gaps. As is the case throughout this pipeline, this process uses
+	a fasta julia script to scan through each sequence.
 	*/
 	
 	label "lif_container"
@@ -535,7 +541,7 @@ process SEPARATE_BY_MONTH {
 
 }
 
-process CLUSTER_BY_DISTANCE {
+process CLUSTER_BY_IDENTITY {
 
 	/*
 	Here we run a version of Robert Edgar's UCLUST algorithm that 
@@ -600,6 +606,35 @@ process PREP_CENTROID_FASTAS {
 
 }
 
+process COMPUTE_DISTANCE_MATRIX {
+
+	/*
+	In parallel to clustering each month's sequences by nucleotide 
+	identity, the workflow will also compute a simple nucleotide
+	distance matrix, which will be used to assign distances for each
+	cluster.
+	*/
+
+	tag "${yearmonth}"
+	label "lif_container"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	cpus params.max_cpus
+
+	input:
+	path fasta
+
+	output:
+	path "*-dist-matrix.csv"
+
+	script:
+	yearmonth = fasta.getSimpleName()
+	"""
+	compute-distance-matrix.jl ${fasta} ${yearmonth}
+	"""
+
+}
+
 process COUNT_FASTA_RECORDS {
 
 	/*
@@ -659,6 +694,11 @@ process BUILD_CENTROID_TREE {
 process MDS_PLOT {
 
 	/*
+	This plot runs multi-dimensional scaling to produce a "bee-swarm"
+	plot of the sequences in each cluster. This plot will visualize 
+	the cluster's distances relative to each other, and make it more
+	intuitive to discern when a cluster is exceptionally distant, 
+	and therefore evolutionarily advanced.
 	*/
 
 	tag "${yearmonth}"
@@ -679,6 +719,9 @@ process MDS_PLOT {
 process PLOT_TREE {
 
 	/*
+	This process builds a simple phylogeny plot to show how the 
+	centroid sequences from each month are related to each other
+	and to the pathogen RefSeq.
 	*/
 
 	tag "${yearmonth}"
@@ -712,6 +755,7 @@ process GENERATE_CLUSTER_REPORT {
 	path cluster_tables
 	path cluster_fastas
 	path cluster_trees
+	path distance_matrices
 	path metadata
 
 	output:
@@ -728,6 +772,10 @@ process GENERATE_CLUSTER_REPORT {
 process RUN_META_CLUSTER {
 
 	/*
+	This process runs clustering on the previous clustering
+	results, but with a tighter identity threshold. In doing 
+	so, the workflow can identify multiple sequences that
+	are potentially from the same prolonged infection.
 	*/
 
 	publishDir params.repeat_lineages, mode: 'copy'
@@ -756,6 +804,12 @@ process RUN_META_CLUSTER {
 process META_CLUSTER_REPORT {
 
 	/*
+	In the final step of the distance matrix branch of the 
+	workflow, this process generates a CSV report highlighting
+	any promising results from the meta-clustering step. If
+	all high-distance sequences are in their own clusters,
+	indicating that they do not stem from prolonged infections
+	sampled multiple times, no report will be generated.
 	*/
 
 	publishDir params.repeat_lineages, mode: 'copy'
