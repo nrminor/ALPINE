@@ -19,6 +19,8 @@ workflow {
 
 	// Data setup steps
 	DOWNLOAD_REFSEQ ( )
+
+	println "Downloading NCBI Reference Sequence for ${params.pathogen}"
 	
 	if ( params.compare_lineage_dates == true ){
 
