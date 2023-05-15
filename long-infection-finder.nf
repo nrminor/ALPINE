@@ -120,7 +120,9 @@ workflow {
 	BUILD_CENTROID_TREE (
 		PREP_CENTROID_FASTAS.out,
 		PREP_CENTROID_FASTAS.out
-			.map { fasta, yearmonth -> file(fasta).countFasta() },
+			.map { fasta, yearmonth -> 
+			["grep", "-c", "^>", fasta.toString()].execute().text.trim().toInteger()
+			},
 		DOWNLOAD_REFSEQ.out
 	)
 
@@ -407,7 +409,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	label "lif_container"
 	// publishDir params.dated_results, mode: params.publishMode
 
-	cpus 2
+	cpus params.max_cpus
 
 	input:
 	each path(fasta)
@@ -433,7 +435,7 @@ process REMOVE_FASTA_GAPS {
 	
 	label "lif_container"
 
-	cpus 2
+	cpus params.max_cpus
 
 	input:
 	path fasta
@@ -461,7 +463,7 @@ process FILTER_BY_MASKED_BASES {
 
 	label "lif_container"
 
-	cpus 2
+	cpus params.max_cpus
 
 	input:
 	path fasta
@@ -486,7 +488,7 @@ process APPEND_DATES {
 
 	label "lif_container"
 
-	cpus 2
+	cpus params.max_cpus
 
 	input:
 	path metadata
@@ -577,15 +579,17 @@ process PREP_CENTROID_FASTAS {
 	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
+	cpus params.max_cpus
+
 	input:
 	each path(fasta)
 	path refseq
 
 	output:
-	path "${yearmonth}-centroids-with-ref.fasta"
+	path "*-centroids-with-ref.fasta"
 
 	script:
-	yearmonth = fasta.getSimpleName.replace("-centroids", "")
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
 	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
 	"""
@@ -618,7 +622,7 @@ process BUILD_CENTROID_TREE {
 	seq_count.toInteger() > 3
 
 	script:
-	yearmonth = fasta.getSimpleName.replace("-centroids-with-ref", "")
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
 	"""
 	ref_id=\$(grep "^>" ${refseq} | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	iqtree -s ${fasta} -o \${ref_id} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
