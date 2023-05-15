@@ -119,12 +119,14 @@ workflow {
 		DOWNLOAD_REFSEQ.out
 	)
 
-	BUILD_CENTROID_TREE (
-		PREP_CENTROID_FASTAS.out,
+	COUNT_FASTA_RECORDS (
 		PREP_CENTROID_FASTAS.out
-			.map { fasta, yearmonth -> 
-			["grep", "-c", "^>", fasta.toString()].execute().text.trim().toInteger()
-			},
+	)
+
+	BUILD_CENTROID_TREE (
+		COUNT_FASTA_RECORDS.out
+			.filter { it[1].toInteger() > 3 }
+			.map { fasta, count -> fasta },
 		DOWNLOAD_REFSEQ.out
 	)
 
@@ -598,6 +600,32 @@ process PREP_CENTROID_FASTAS {
 
 }
 
+process COUNT_FASTA_RECORDS {
+
+	/*
+	This process counts the number of records in each year-month's
+	centroid FASTA so it can filter low-cluster months prior to
+	iqTree.
+	*/
+
+	tag "${yearmonth}"
+	label "lif_container"
+
+	input:
+	path fasta
+
+	output:
+	tuple path(fasta), env(count)
+
+	shell:
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
+	'''
+	count=$(grep -c "^>" !{fasta})
+	echo "There are" ${count} "records in the FASTA" !{fasta}
+	'''
+
+}
+
 process BUILD_CENTROID_TREE {
 
 	/*
@@ -606,7 +634,7 @@ process BUILD_CENTROID_TREE {
 	to identify which centroid has the longest branch length 
 	for each year-month. The sequences that cluster with that
 	long-branch centroid will be classified as a evolutionarily
-	advanced in the final report.
+	advanced.
 	*/
 
 	tag "${yearmonth}"
@@ -614,14 +642,10 @@ process BUILD_CENTROID_TREE {
 
 	input:
 	each path(fasta)
-	val seq_count
 	path refseq
 
 	output:
 	path "*.treefile"
-
-	when:
-	seq_count.toInteger() > 3
 
 	script:
 	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
