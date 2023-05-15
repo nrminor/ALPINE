@@ -67,7 +67,7 @@ for (i in yearmonths){
   rownames(high_dist_cluster) <- NULL
   
   # bring in FASTA
-  cluster_seqs <- read.delim(paste(i, "-cluster", cluster_number, sep = ""), header = F)
+  cluster_seqs <- read.delim(paste(i, "-cluster-seqs", cluster_number, sep = ""), header = F)
   
   # add that FASTA to a growing FASTA object of all hits, which will be exported
   # after normalizing later
@@ -105,7 +105,7 @@ for (i in yearmonths){
 # normalizing year-month by down-prioritizing branches that are not exceptionally
 # long compared to all other year-months
 
-
+# NOTE TO SELF: read in distance matrices here
 
 # writing candidate FASTA of high-distance sequences that passed normalization and 
 # filtering
