@@ -780,6 +780,7 @@ process RUN_META_CLUSTER {
 	are potentially from the same prolonged infection.
 	*/
 
+	label "lif_container"
 	publishDir params.repeat_lineages, mode: 'copy'
 
 	cpus params.max_cpus
