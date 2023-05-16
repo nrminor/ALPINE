@@ -89,24 +89,24 @@ workflow {
 	// Distance matrix clustering steps
 	REMOVE_FASTA_GAPS ( 
 		FILTER_SEQS_TO_GEOGRAPHY.out
-			.filter { !file(it).isEmpty() }
+			.filter { file(it).eachFileMatch(~/./) { it.size() > 0 } }
 	)
 
 	FILTER_BY_MASKED_BASES (
 		REMOVE_FASTA_GAPS.out
-			.filter { !file(it).isEmpty() }
+			.filter { file(it).eachFileMatch(~/./) { it.size() > 0 } }
 	)
 
 	APPEND_DATES (
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
 		FILTER_BY_MASKED_BASES.out
 			.flatten()
-			.filter { !file(it).isEmpty() }
+			.filter { file(it).eachFileMatch(~/./) { it.size() > 0 } }
 	)
 
 	SEPARATE_BY_MONTH (
 		APPEND_DATES.out
-			.filter { !file(it).isEmpty() }
+			.filter { file(it).eachFileMatch(~/./) { it.size() > 0 } }
 			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true )
 	)
 
@@ -796,7 +796,7 @@ process RUN_META_CLUSTER {
 
 	output:
 	path "*.uc", emit: cluster_table
-	tuple path("centroids.fasta"), val(yearmonth), emit: centroid_fasta
+	path "centroids.fasta", emit: centroid_fasta
 	path "cluster-seqs*", emit: cluster_fastas
 
 	script:
