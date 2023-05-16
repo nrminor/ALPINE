@@ -116,7 +116,7 @@ workflow {
 
 	PREP_CENTROID_FASTAS (
 		CLUSTER_BY_IDENTITY.out.centroid_fasta,
-		DOWNLOAD_REFSEQ.out
+		DOWNLOAD_REFSEQ.out.ref_fasta
 	)
 
 	COMPUTE_DISTANCE_MATRIX (
@@ -131,7 +131,8 @@ workflow {
 		COUNT_FASTA_RECORDS.out
 			.filter { it[1].toInteger() > 3 }
 			.map { fasta, count -> fasta },
-		DOWNLOAD_REFSEQ.out
+		DOWNLOAD_REFSEQ.out.ref_fasta,
+		DOWNLOAD_REFSEQ.out.ref_id
 	)
 
 	// MDS_PLOT (
@@ -139,15 +140,15 @@ workflow {
 	// )
 
 	// PLOT_TREE (
-	// 	BUILD_CENTROID_TREE.out.treefile
+	// 	BUILD_CENTROID_TREE.out
 	// )
 
 	GENERATE_CLUSTER_REPORT (
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
 		CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
-		BUILD_CENTROID_TREE.out.treefile.collect(),
+		BUILD_CENTROID_TREE.out.collect(),
 		COMPUTE_DISTANCE_MATRIX.out.collect(),
-		BUILD_CENTROID_TREE.out.ref_id.unique(),
+		DOWNLOAD_REFSEQ.out.ref_id,
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata
 	)
 
@@ -230,7 +231,7 @@ if( params.geography == "" || params.min_date == "" || params.max_date == "" ){
 // sequence search methods
 params.clustering_results = params.ncbi_results + "/all_clustering_results"
 params.repeat_lineages = params.clustering_results + "/repeat_lineages"
-params.high_distance_candidates = params.ncbi_results + "/high_distance_cluster"
+params.high_distance_candidates = params.ncbi_results + "/high_distance_clusters"
 params.anachronistic_candidates = params.ncbi_results + "/anachronistic_candidates"
 params.metadata_candidates = params.ncbi_results + "/metadata_candidates"
 
@@ -272,7 +273,8 @@ process DOWNLOAD_REFSEQ {
 	maxRetries 5
 
 	output:
-	path "refseq.fasta"
+	path "refseq.fasta", emit: ref_fasta
+	env ref_id, emit: ref_id
 
 	script:
 	"""
@@ -280,6 +282,7 @@ process DOWNLOAD_REFSEQ {
 	--refseq && \
 	unzip ncbi_dataset.zip
 	mv ncbi_dataset/data/genomic.fna ./refseq.fasta
+	ref_id=\$(grep "^>" refseq.fasta | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	"""
 }
 
@@ -679,16 +682,15 @@ process BUILD_CENTROID_TREE {
 	input:
 	each path(fasta)
 	path refseq
+	val ref_id
 
 	output:
-	path "*.treefile", emit: treefile
-	env ref_id, emit: ref_id
+	path "*.treefile"
 
 	script:
 	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
 	"""
-	ref_id=\$(grep "^>" ${refseq} | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
-	iqtree -s ${fasta} -o \${ref_id} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
+	iqtree -s ${fasta} -o ${ref_id} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
 	"""
 
 }
