@@ -115,7 +115,7 @@ workflow {
 	)
 
 	PREP_CENTROID_FASTAS (
-		CLUSTER_BY_DISTANCE.out.centroid_fasta,
+		CLUSTER_BY_DISTANCE.out.centroid_fasta.flatten(),
 		DOWNLOAD_REFSEQ.out
 	)
 
@@ -135,13 +135,14 @@ workflow {
 	// )
 
 	// PLOT_TREE (
-	// 	BUILD_CENTROID_TREE.out
+	// 	BUILD_CENTROID_TREE.out.treefile
 	// )
 
 	GENERATE_CLUSTER_REPORT (
 		CLUSTER_BY_DISTANCE.out.cluster_table.collect(),
 		CLUSTER_BY_DISTANCE.out.cluster_fastas.collect(),
-		BUILD_CENTROID_TREE.out.collect(),
+		BUILD_CENTROID_TREE.out.treefile.collect(),
+		BUILD_CENTROID_TREE.out.ref_id.unique(),
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata
 	)
 
@@ -645,7 +646,8 @@ process BUILD_CENTROID_TREE {
 	path refseq
 
 	output:
-	path "*.treefile"
+	path "*.treefile", emit: treefile
+	env ref_id, emit: ref_id
 
 	script:
 	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
@@ -712,6 +714,7 @@ process GENERATE_CLUSTER_REPORT {
 	path cluster_tables
 	path cluster_fastas
 	path cluster_trees
+	val ref_id
 	path metadata
 
 	output:
@@ -720,7 +723,7 @@ process GENERATE_CLUSTER_REPORT {
 
 	script:
 	"""
-	generate_cluster_report.R ${metadata}
+	generate_cluster_report.R ${metadata} ${ref_id}
 	"""
 
 }
@@ -735,7 +738,7 @@ process RUN_META_CLUSTER {
 	cpus params.max_cpus
 
 	input:
-	path fastas
+	path fasta
 
 	output:
 	path "*.uc", emit: cluster_table

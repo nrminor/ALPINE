@@ -9,6 +9,9 @@ library(adephylo)
 # Bringing in NCBI metadata
 metadata <- read.delim(args[1])
 
+# defining Reference Sequence Accession number
+ref_id <- as.character(args[2])
+
 # creating list of year-month combinations to loop through
 yearmonths <- str_remove_all(list.files(path = ".", pattern = "*.treefile"), ".treefile")
 
@@ -32,7 +35,7 @@ for (i in yearmonths){
   
   # root the tree, if it isn't already
   if (is.rooted(tree)==F){
-    tree <- root(tree, "MN908947.3", resolve.root = T)
+    tree <- root(tree, ref_id, resolve.root = T)
   }
   
   # fixing non-unique node labels
@@ -41,7 +44,7 @@ for (i in yearmonths){
   
   # compute total branch lengths from root to each tip
   roottotip <- distRoot(tree, tips = tree$tip.label, method = "patristic")
-  roottotip <- roottotip[names(roottotip)!="MN908947.3"]
+  roottotip <- roottotip[names(roottotip)!=ref_id]
   
   # finding max branch length sample
   max_distance <- roottotip[roottotip==max(roottotip)]
