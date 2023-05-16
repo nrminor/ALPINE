@@ -314,7 +314,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	*/
 
 	tag "${params.pathogen}"
-	publishDir params.dated_results, mode: params.publishMode
+	publishDir params.ncbi_results, mode: params.publishMode
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
@@ -336,7 +336,7 @@ process UNZIP_NCBI_METADATA {
 	lightweight NCBI zip archive.
 	*/
 
-	publishDir params.dated_results, mode: params.publishMode
+	publishDir params.ncbi_results, mode: params.publishMode
 
 	cpus 3
 
@@ -361,7 +361,7 @@ process UNZIP_NCBI_FASTA {
 	from the lightweight NCBI zip archive.
 	*/
 
-	publishDir params.dated_results, mode: params.publishMode
+	publishDir params.ncbi_results, mode: params.publishMode
 
 	cpus 3
 
@@ -388,7 +388,7 @@ process FILTER_TSV_TO_GEOGRAPHY {
 	*/
 
 	label "lif_container"
-	publishDir params.dated_results, mode: params.publishMode, pattern: "*.tsv"
+	publishDir params.ncbi_results, mode: params.publishMode, pattern: "*.tsv"
 
 	cpus 4
 
@@ -420,7 +420,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	*/
 
 	label "lif_container"
-	// publishDir params.dated_results, mode: params.publishMode
+	publishDir params.ncbi_results, mode: params.publishMode
 
 	cpus params.max_cpus
 
