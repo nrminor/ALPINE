@@ -791,7 +791,7 @@ process RUN_META_CLUSTER {
 	output:
 	path "*.uc", emit: cluster_table
 	tuple path("centroids.fasta"), val(yearmonth), emit: centroid_fasta
-	path "cluster*", emit: cluster_fastas
+	path "cluster-seqs*", emit: cluster_fastas
 
 	script:
 	"""
