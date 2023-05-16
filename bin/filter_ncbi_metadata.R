@@ -18,21 +18,21 @@ if (length(args)>1 & !grepl("-", args[length(args)]) ){
 
 # bringing in US State names/territories & abbreviations
 states = c("Alabama", "Alaska", "American Samoa", "Arizona", "Arkansas",
-"California", "Colorado", "Connecticut", "Delaware", "District of Columbia",
-"Florida", "Georgia", "Guam", "Hawaii", "Idaho", "Illinois", "Indiana",
-"Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
-"Massachusetts", "Michigan", "Minnesota", "Minor Outlying Islands",
-"Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
-"New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota",
-"Northern Mariana Islands", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
-"Puerto Rico", "Rhode Island", "South Carolina", "South Dakota", "Tennessee",
-"Texas", "U.S. Virgin Islands", "Utah", "Vermont", "Virginia", "Washington",
-"West Virginia", "Wisconsin", "Wyoming") 
+           "California", "Colorado", "Connecticut", "Delaware", "District of Columbia",
+           "Florida", "Georgia", "Guam", "Hawaii", "Idaho", "Illinois", "Indiana",
+           "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland",
+           "Massachusetts", "Michigan", "Minnesota", "Minor Outlying Islands",
+           "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
+           "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota",
+           "Northern Mariana Islands", "Ohio", "Oklahoma", "Oregon", "Pennsylvania",
+           "Puerto Rico", "Rhode Island", "South Carolina", "South Dakota", "Tennessee",
+           "Texas", "U.S. Virgin Islands", "Utah", "Vermont", "Virginia", "Washington",
+           "West Virginia", "Wisconsin", "Wyoming") 
 states_abbrev <- c("AK", "AL", "AR", "AS", "AZ", "CA", "CO", "CT", "DC", "DE",
-"FL", "GA", "GU", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD",
-"ME", "MI", "MN", "MO", "MP", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM",
-"NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UM",
-"UT", "VA", "VI", "VT", "WA", "WI", "WV", "WY")
+                   "FL", "GA", "GU", "HI", "IA", "ID", "IL", "IN", "KS", "KY", "LA", "MA", "MD",
+                   "ME", "MI", "MN", "MO", "MP", "MS", "MT", "NC", "ND", "NE", "NH", "NJ", "NM",
+                   "NV", "NY", "OH", "OK", "OR", "PA", "PR", "RI", "SC", "SD", "TN", "TX", "UM",
+                   "UT", "VA", "VI", "VT", "WA", "WI", "WV", "WY")
 
 # fixing improperly formatted dates
 full_list <- full_list[!is.na(full_list$Isolate.Collection.date),]
@@ -42,7 +42,7 @@ full_list <- full_list[!is.na(full_list$Isolate.Collection.date),]
 # filtering
 if (exists("min_date") & exists("max_date")){
   full_list <- full_list[full_list$Isolate.Collection.date >= min_date &
-                         full_list$Isolate.Collection.date <= max_date,]
+                           full_list$Isolate.Collection.date <= max_date,]
 }
 if(exists("geography")){
   if (geography == "USA"){
@@ -68,4 +68,4 @@ rownames(include_list) <- NULL ; remove(full_list)
 colnames(include_list) <- c("accession", "date", "location", "pango")
 
 write.table(include_list, file = "include_list.tsv", 
-          sep = "\t", quote = F, row.names = F)
+            sep = "\t", quote = F, row.names = F)

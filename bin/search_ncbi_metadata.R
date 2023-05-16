@@ -45,7 +45,7 @@ rownames(long_infections) <- NULL
 
 # exporting CSV of long infection candidates
 write.table(long_infections,
-          paste("long_infections_ncbi_metadata_",
-                Sys.Date(), 
-                ".tsv", sep = ""),
-          row.names = F, quote = F, na = "", sep = "\t")
+            paste("long_infections_ncbi_metadata_",
+                  Sys.Date(), 
+                  ".tsv", sep = ""),
+            row.names = F, quote = F, na = "", sep = "\t")

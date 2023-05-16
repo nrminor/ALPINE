@@ -139,9 +139,9 @@ workflow {
 	// 	CLUSTER_BY_IDENTITY.out.cluster_fastas
 	// )
 
-	// PLOT_TREE (
-	// 	BUILD_CENTROID_TREE.out
-	// )
+	PLOT_TREE (
+		BUILD_CENTROID_TREE.out
+	)
 
 	GENERATE_CLUSTER_REPORT (
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
@@ -705,7 +705,7 @@ process MDS_PLOT {
 	and therefore evolutionarily advanced.
 	*/
 
-	tag "${yearmonth}"
+	tag "${yearmonth_cluster}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	input:
@@ -715,6 +715,7 @@ process MDS_PLOT {
 	path "*.pdf"
 
 	script:
+	yearmonth_cluster = file(fasta.toString()).getSimpleName().replace("cluster-seqs", "")
 	"""
 	"""
 
@@ -738,7 +739,9 @@ process PLOT_TREE {
 	path "*.pdf"
 
 	script:
+	yearmonth = file(fasta.toString()).getSimpleName().replace(".treefile", "")
 	"""
+	plot-tree.R ${treefile} ${yearmonth}
 	"""
 
 }
@@ -759,6 +762,7 @@ process GENERATE_CLUSTER_REPORT {
 	path cluster_tables
 	path cluster_fastas
 	path cluster_trees
+	path distance_matrices
 	val ref_id
 	path metadata
 
@@ -768,7 +772,7 @@ process GENERATE_CLUSTER_REPORT {
 
 	script:
 	"""
-	generate_cluster_report.R ${metadata} ${ref_id}
+	generate-cluster-report.R ${metadata} ${ref_id}
 	"""
 
 }

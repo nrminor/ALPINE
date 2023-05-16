@@ -48,8 +48,8 @@ pango_report$anachronistic <- do.call(c,
                                         # across states.
                                         # hhs <- hhs_regions[hhs_regions$state_or_territory==us_state[i], "region"]
                                         # region_states <- hhs_regions[hhs_regions$region==hhs,
-                                                                     # "state_or_territory"]
-
+                                        # "state_or_territory"]
+                                        
                                         # creating an empty table where we will fill in
                                         # prevalences
                                         prevalence_table <- getPrevalence(pangolin_lineage = lineages[i], 
