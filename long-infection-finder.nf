@@ -797,9 +797,9 @@ process RUN_META_CLUSTER {
 	"""
 	vsearch --cluster_fast ${fasta} \
 	--id 0.9999 \
-	--centroids centroids.fasta \
-	--uc clusters.uc \
-	--clusters cluster \
+	--centroids meta-centroids.fasta \
+	--uc meta-clusters.uc \
+	--clusters meta-cluster-seqs \
 	--threads ${task.cpus}
 	"""
 }
