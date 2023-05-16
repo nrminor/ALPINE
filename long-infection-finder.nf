@@ -458,7 +458,7 @@ process REMOVE_FASTA_GAPS {
 	path "*.fasta"
 
 	when:
-	params.make_distance_matrix == true
+	params.make_distance_matrix == true && fasta.text.readLines().find { it.trim() != "" }
 
 	script:
 	"""
@@ -484,6 +484,9 @@ process FILTER_BY_MASKED_BASES {
 
 	output:
 	path "*.fasta"
+
+	when:
+	fasta.text.readLines().find { it.trim() != "" }
 
 	script:
 	"""
@@ -511,6 +514,9 @@ process APPEND_DATES {
 	output:
 	path "*.fasta"
 
+	when:
+	fasta.text.readLines().find { it.trim() != "" }
+
 	script:
 	"""
 	append-dates.jl ${metadata} ${fasta} dated-seqs.fasta
@@ -537,6 +543,9 @@ process SEPARATE_BY_MONTH {
 
 	output:
 	path "*.fasta"
+
+	when:
+	fasta.text.readLines().find { it.trim() != "" }
 
 	script:
 	"""
