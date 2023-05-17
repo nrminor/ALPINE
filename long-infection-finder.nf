@@ -89,24 +89,20 @@ workflow {
 	// Distance matrix clustering steps
 	REMOVE_FASTA_GAPS ( 
 		FILTER_SEQS_TO_GEOGRAPHY.out
-			.filter { file(it).eachFileMatch(~/./) { it.size() > 0 } }
 	)
 
 	FILTER_BY_MASKED_BASES (
 		REMOVE_FASTA_GAPS.out
-			.filter { file(it).eachFileMatch(~/./) { it.size() > 0 } }
 	)
 
 	APPEND_DATES (
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
 		FILTER_BY_MASKED_BASES.out
 			.flatten()
-			.filter { file(it).eachFileMatch(~/./) { it.size() > 0 } }
 	)
 
 	SEPARATE_BY_MONTH (
 		APPEND_DATES.out
-			.filter { file(it).eachFileMatch(~/./) { it.size() > 0 } }
 			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true )
 	)
 
@@ -458,7 +454,7 @@ process REMOVE_FASTA_GAPS {
 	path "*.fasta"
 
 	when:
-	params.make_distance_matrix == true && fasta.text.readLines().find { it.trim() != "" }
+	params.make_distance_matrix == true && "\$(grep -c "^>" ${fasta})".execute().text.trim() > 0
 
 	script:
 	"""
@@ -486,7 +482,7 @@ process FILTER_BY_MASKED_BASES {
 	path "*.fasta"
 
 	when:
-	fasta.text.readLines().find { it.trim() != "" }
+	"\$(grep -c "^>" ${fasta})".execute().text.trim() > 0
 
 	script:
 	"""
@@ -515,7 +511,7 @@ process APPEND_DATES {
 	path "*.fasta"
 
 	when:
-	fasta.text.readLines().find { it.trim() != "" }
+	"\$(grep -c "^>" ${fasta})".execute().text.trim() > 0
 
 	script:
 	"""
@@ -545,7 +541,7 @@ process SEPARATE_BY_MONTH {
 	path "*.fasta"
 
 	when:
-	fasta.text.readLines().find { it.trim() != "" }
+	"\$(grep -c "^>" ${fasta})".execute().text.trim() > 0
 
 	script:
 	"""
