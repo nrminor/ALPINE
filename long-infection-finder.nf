@@ -89,19 +89,19 @@ workflow {
 	// Distance matrix clustering steps
 	REMOVE_FASTA_GAPS ( 
 		FILTER_SEQS_TO_GEOGRAPHY.out
-			.filter { it.size > 0 }
+			.filter { it.size() > 0 }
 	)
 
 	FILTER_BY_MASKED_BASES (
 		REMOVE_FASTA_GAPS.out
-			.filter { it.size > 0 }
+			.filter { it.size() > 0 }
 	)
 
 	APPEND_DATES (
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
 		FILTER_BY_MASKED_BASES.out
 			.flatten()
-			.filter { it.size > 0 }
+			.filter { it.size() > 0 }
 	)
 
 	SEPARATE_BY_MONTH (
