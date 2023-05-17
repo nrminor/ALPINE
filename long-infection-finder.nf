@@ -337,6 +337,9 @@ process UNZIP_NCBI_METADATA {
 
 	publishDir params.ncbi_results, mode: params.publishMode
 
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
+
 	cpus 3
 
 	input:
@@ -361,6 +364,9 @@ process UNZIP_NCBI_FASTA {
 	*/
 
 	publishDir params.ncbi_results, mode: params.publishMode
+
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	cpus 3
 
@@ -388,6 +394,9 @@ process FILTER_TSV_TO_GEOGRAPHY {
 
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode, pattern: "*.tsv"
+
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	cpus 4
 
@@ -421,6 +430,9 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode
 
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
+
 	cpus params.max_cpus
 
 	input:
@@ -447,6 +459,9 @@ process REMOVE_FASTA_GAPS {
 	*/
 	
 	label "lif_container"
+
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	cpus params.max_cpus
 
@@ -476,6 +491,9 @@ process FILTER_BY_MASKED_BASES {
 
 	label "lif_container"
 
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
+
 	cpus params.max_cpus
 
 	input:
@@ -500,6 +518,9 @@ process APPEND_DATES {
 	*/
 
 	label "lif_container"
+
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	cpus params.max_cpus
 
@@ -528,6 +549,9 @@ process SEPARATE_BY_MONTH {
 	*/
 
 	label "lif_container"
+
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	cpus 8
 
