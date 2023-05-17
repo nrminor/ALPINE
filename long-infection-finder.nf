@@ -89,16 +89,19 @@ workflow {
 	// Distance matrix clustering steps
 	REMOVE_FASTA_GAPS ( 
 		FILTER_SEQS_TO_GEOGRAPHY.out
+			.filter { it.size > 0 }
 	)
 
 	FILTER_BY_MASKED_BASES (
 		REMOVE_FASTA_GAPS.out
+			.filter { it.size > 0 }
 	)
 
 	APPEND_DATES (
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
 		FILTER_BY_MASKED_BASES.out
 			.flatten()
+			.filter { it.size > 0 }
 	)
 
 	SEPARATE_BY_MONTH (
@@ -454,7 +457,7 @@ process REMOVE_FASTA_GAPS {
 	path "*.fasta"
 
 	when:
-	params.make_distance_matrix == true && "\$(grep -c "^>" ${fasta})".execute().text.trim() > 0
+	params.make_distance_matrix == true
 
 	script:
 	"""
@@ -480,9 +483,6 @@ process FILTER_BY_MASKED_BASES {
 
 	output:
 	path "*.fasta"
-
-	when:
-	"\$(grep -c "^>" ${fasta})".execute().text.trim() > 0
 
 	script:
 	"""
@@ -510,9 +510,6 @@ process APPEND_DATES {
 	output:
 	path "*.fasta"
 
-	when:
-	"\$(grep -c "^>" ${fasta})".execute().text.trim() > 0
-
 	script:
 	"""
 	append-dates.jl ${metadata} ${fasta} dated-seqs.fasta
@@ -539,9 +536,6 @@ process SEPARATE_BY_MONTH {
 
 	output:
 	path "*.fasta"
-
-	when:
-	"\$(grep -c "^>" ${fasta})".execute().text.trim() > 0
 
 	script:
 	"""
