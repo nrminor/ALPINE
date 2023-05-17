@@ -57,20 +57,26 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     rm ~/miniconda.sh
 ENV PATH=/opt/conda/bin:$PATH
 
+# Install mamba
+RUN conda install -y -c conda-forge mamba
+
 # Install psutil
-RUN conda install -c conda-forge psutil
+RUN mamba install -y -c conda-forge psutil
 
 # Install Biopython
-RUN conda install -c conda-forge biopython
+RUN mamba install -y -c conda-forge biopython
 
 # Install pandas
-RUN conda install -c anaconda pandas
+RUN mamba install -y -c anaconda pandas
 
 # Install polars
-RUN conda install -c conda-forge polars
+RUN mamba install -y -c conda-forge polars
 
 # Install vsearch
-RUN conda install -c bioconda vsearch
+RUN mamba install -y -c bioconda vsearch
+
+# Install R channel packages
+RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape r-adephylo 
 
 # Install seqtk
 RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
