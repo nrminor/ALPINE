@@ -272,7 +272,7 @@ process DOWNLOAD_REFSEQ {
 	maxRetries 5
 
 	output:
-	path "refseq.fasta", emit: ref_fasta
+	path "*.fasta", emit: ref_fasta
 	env ref_id, emit: ref_id
 
 	script:
