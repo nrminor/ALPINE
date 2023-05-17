@@ -578,6 +578,9 @@ process CLUSTER_BY_IDENTITY {
 	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
+
 	cpus params.max_cpus
 
 	input:
@@ -646,6 +649,9 @@ process COMPUTE_DISTANCE_MATRIX {
 	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
+
 	cpus params.max_cpus
 
 	input:
@@ -672,6 +678,9 @@ process COUNT_FASTA_RECORDS {
 
 	tag "${yearmonth}"
 	label "lif_container"
+
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	input:
 	path fasta
@@ -702,6 +711,9 @@ process BUILD_CENTROID_TREE {
 	tag "${yearmonth}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
+
 	input:
 	each path(fasta)
 	path refseq
@@ -731,6 +743,9 @@ process MDS_PLOT {
 	tag "${yearmonth_cluster}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
+
 	input:
 	path cluster_seqs
 
@@ -754,6 +769,9 @@ process PLOT_TREE {
 
 	tag "${yearmonth}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	input:
 	path treefile
@@ -780,6 +798,9 @@ process GENERATE_CLUSTER_REPORT {
 	*/
 
 	publishDir params.high_distance_candidates, mode: 'copy'
+
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	input:
 	path cluster_tables
@@ -811,6 +832,9 @@ process RUN_META_CLUSTER {
 
 	label "lif_container"
 	publishDir params.repeat_lineages, mode: 'copy'
+
+	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	cpus params.max_cpus
 
