@@ -280,8 +280,8 @@ process DOWNLOAD_REFSEQ {
 	datasets download virus genome taxon ${params.pathogen} \
 	--refseq && \
 	unzip ncbi_dataset.zip
-	mv ncbi_dataset/data/genomic.fna ./refseq.fasta
-	ref_id=\$(grep "^>" refseq.fasta | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
+	mv ncbi_dataset/data/genomic.fna ./${params.pathogen}_refseq.fasta
+	ref_id=\$(grep "^>" ${params.pathogen}_refseq.fasta | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	"""
 }
 
