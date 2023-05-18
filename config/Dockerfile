@@ -116,4 +116,4 @@ RUN julia /tmp/julia_setup.jl && \
 ENV PATH=/usr/local/bin:/opt/julia-1.9.0/bin:$PATH
 
 # Set working directory
-WORKDIR /app
+WORKDIR /scratch
