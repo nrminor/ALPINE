@@ -110,7 +110,7 @@ RUN julia /tmp/julia_setup.jl && \
     rm -rf tmp/
 
 # Make sure nothing is amiss and that julia is still in the path
-ENV PATH=/usr/local/bin:$PATH
+ENV PATH=/usr/local/bin:/opt/julia-1.9.0/bin:$PATH
 
 # Set working directory
 WORKDIR /app
