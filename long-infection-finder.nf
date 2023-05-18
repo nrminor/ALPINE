@@ -550,7 +550,7 @@ process SEPARATE_BY_MONTH {
 	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus 8
+	cpus params.max_cpus
 
 	input:
 	path fasta
