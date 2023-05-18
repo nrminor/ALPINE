@@ -334,7 +334,7 @@ process UNZIP_NCBI_METADATA {
 
 	publishDir params.ncbi_results, mode: params.publishMode
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus 3
@@ -362,7 +362,7 @@ process UNZIP_NCBI_FASTA {
 
 	publishDir params.ncbi_results, mode: params.publishMode
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus 3
@@ -392,7 +392,7 @@ process FILTER_TSV_TO_GEOGRAPHY {
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode, pattern: "*.tsv"
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus 4
@@ -427,7 +427,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus params.max_cpus
@@ -457,7 +457,7 @@ process REMOVE_FASTA_GAPS {
 	
 	label "lif_container"
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus params.max_cpus
@@ -488,7 +488,7 @@ process FILTER_BY_MASKED_BASES {
 
 	label "lif_container"
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus params.max_cpus
@@ -516,7 +516,7 @@ process APPEND_DATES {
 
 	label "lif_container"
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus params.max_cpus
@@ -547,7 +547,7 @@ process SEPARATE_BY_MONTH {
 
 	label "lif_container"
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus params.max_cpus
@@ -578,7 +578,7 @@ process CLUSTER_BY_IDENTITY {
 	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus params.max_cpus
@@ -616,7 +616,7 @@ process PREP_CENTROID_FASTAS {
 	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus params.max_cpus
@@ -649,7 +649,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus params.max_cpus
@@ -679,7 +679,7 @@ process COUNT_FASTA_RECORDS {
 	tag "${yearmonth}"
 	label "lif_container"
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	input:
@@ -711,7 +711,7 @@ process BUILD_CENTROID_TREE {
 	tag "${yearmonth}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	input:
@@ -743,7 +743,7 @@ process MDS_PLOT {
 	tag "${yearmonth_cluster}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	input:
@@ -770,7 +770,7 @@ process PLOT_TREE {
 	tag "${yearmonth}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	input:
@@ -799,7 +799,7 @@ process GENERATE_CLUSTER_REPORT {
 
 	publishDir params.high_distance_candidates, mode: 'copy'
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	input:
@@ -833,7 +833,7 @@ process RUN_META_CLUSTER {
 	label "lif_container"
 	publishDir params.repeat_lineages, mode: 'copy'
 
-	errorStrategy { task.attempt < 4 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
 	cpus params.max_cpus
