@@ -15,6 +15,7 @@ RUN apt-get update && \
     unzip \
     gzip \
     make \
+    zstd \
     gnupg \
     libz-dev \
     libbz2-dev \
@@ -50,6 +51,12 @@ RUN apt-get update && \
     procps \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install nextflow
+RUN wget -qO- https://get.nextflow.io | bash && \
+    chmod +x nextflow && \
+    mv nextflow /usr/local/bin/ && \
+    nextflow self-update
 
 # Install miniconda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
@@ -98,6 +105,9 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
 # Install Julia packages
 RUN julia -e 'using Pkg; Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("FastaIO"); Pkg.add("FileIO"); Pkg.add("Distances")'
 # Pkg.add("BioAlignments"); Pkg.add("PopGen"); Pkg.add("FASTX"); Pkg.add("XAM"); Pkg.add("SubstitutionModels"); Pkg.add("KmerAnalysis"); Pkg.add("GFF3"); Pkg.add("GenomicFeatures"); Pkg.add("BioServices"); Pkg.add("BioFetch"); Pkg.add("BED"); Pkg.add("BioTools"); Pkg.add("NaturalSelection"); Pkg.add("Phylogenies")'
+RUN echo 'using Pkg; Pkg.activate("."); Pkg.precompile()' > /tmp/julia_setup.jl
+RUN julia /tmp/julia_setup.jl && \
+    rm -rf tmp/
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV PATH=/usr/local/bin:$PATH
