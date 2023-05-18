@@ -22,10 +22,14 @@ function parse_date_from_defline(defline::String)
     end
 end
 
-# defining a function that makes a dictionary of record-yearmonth pairs
-function group_records_by_year_month(fr::FastaReader)
-    grouped_records = Dict{String, Vector{Tuple{String, String}}}()
+# creating a dictionary of FastaWriters for each year_month
+open_writers = Dict{String, FastaWriter}()
 
+# create a finalizer to close all writers when script ends
+atexit(() -> foreach(close, values(open_writers)))
+
+# process each sequence in the input FASTA file
+FastaReader(fasta_path) do fr
     for (name, seq) in fr
         record_date = parse_date_from_defline(name)
 
@@ -36,36 +40,13 @@ function group_records_by_year_month(fr::FastaReader)
 
         year_month = Dates.format(record_date, "yyyy-mm")
 
-        if !haskey(grouped_records, year_month)
-            grouped_records[year_month] = []
+        # get the writer for this year_month, or create a new one if it doesn't exist yet
+        writer = get!(open_writers, year_month) do
+            output_filename = string(year_month, ".fasta")
+            touch(output_filename)
+            FastaWriter(output_filename, "a")
         end
 
-        push!(grouped_records[year_month], (name, seq))
-    end
-
-    return grouped_records
-end
-
-# defining a function that will make a FASTA for each yearmonth group of records
-function write_grouped_records(grouped_records::Dict{String, Vector{Tuple{String, String}}})
-    for (year_month, records) in grouped_records
-        output_filename = string(year_month, ".fasta")
-
-        # make sure a file of that name is available for writing
-        touch(output_filename)
-
-        FastaWriter(output_filename, "a") do fa
-            for (name, seq) in records
-                writeentry(fa, name, seq)
-            end
-        end
+        writeentry(writer, name, seq)
     end
 end
-
-# grouping records
-grouped_records = FastaReader(fasta_path) do fr
-    group_records_by_year_month(fr)
-end
-
-# writing new FASTA for each yearmonth group of records
-write_grouped_records(grouped_records)
