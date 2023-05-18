@@ -110,7 +110,7 @@ RUN echo 'using Pkg; Pkg.activate("."); Pkg.precompile()' > /tmp/julia_setup.jl
 RUN julia /tmp/julia_setup.jl && \
     rm -rf tmp/ && \
     chmod +w /opt/julia_packages/compiled/v1.9/ && \
-    julia -e 'using BioSequences, CSV, DataFrames, FastaIO, FileIO, Distances'
+    julia -e 'using BioSequences, CSV, DataFrames, FastaIO, FileIO, Distances, DelimitedFiles'
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV PATH=/usr/local/bin:/opt/julia-1.9.0/bin:$PATH
