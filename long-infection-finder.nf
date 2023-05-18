@@ -44,15 +44,39 @@ workflow {
 			UNZIP_NCBI_METADATA.out
 		)
 
-		FILTER_SEQS_TO_GEOGRAPHY (
-			UNZIP_NCBI_FASTA.out,
-			FILTER_TSV_TO_GEOGRAPHY.out.accessions
-		)
+		if ( workflow.profile == 'standard' || workflow.profile == 'docker' ){
+
+			FILTER_SEQS_TO_GEOGRAPHY (
+				UNZIP_NCBI_FASTA.out,
+				FILTER_TSV_TO_GEOGRAPHY.out.accessions
+			)
+
+		} else {
+
+			FILTER_SEQS_TO_GEOGRAPHY (
+				UNZIP_NCBI_FASTA.out
+					.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" ),
+				FILTER_TSV_TO_GEOGRAPHY.out.accessions
+			)
+				
+		}
+
+		
 
 	} else {
 
-		ch_local_fasta = Channel
-			.fromPath( params.fasta_path )
+		if ( workflow.profile == 'standard' || workflow.profile == 'docker' ){
+
+			ch_local_fasta = Channel
+				.fromPath( params.fasta_path )
+
+		} else {
+
+			ch_local_fasta = Channel
+				.fromPath( params.fasta_path )
+				.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" )
+
+		}
 
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
@@ -104,6 +128,7 @@ workflow {
 
 	SEPARATE_BY_MONTH (
 		APPEND_DATES.out
+			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true )
 	)
 
 	CLUSTER_BY_IDENTITY (
