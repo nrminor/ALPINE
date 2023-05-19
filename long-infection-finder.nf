@@ -320,7 +320,7 @@ process DOWNLOAD_REFSEQ {
 	env ref_id, emit: ref_id
 
 	when:
-	proceed
+	proceed == true
 
 	script:
 	"""
