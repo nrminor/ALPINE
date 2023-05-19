@@ -652,7 +652,7 @@ process COUNT_FASTA_RECORDS {
 	tuple path(fasta), env(count)
 
 	shell:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	'''
 	count=$(grep -c "^>" !{fasta})
 	echo "There are" ${count} "records in the FASTA" !{fasta}
@@ -685,7 +685,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	path "*-dist-matrix.csv"
 
 	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
 	compute-distance-matrix.jl ${fasta} ${yearmonth}
 	"""
