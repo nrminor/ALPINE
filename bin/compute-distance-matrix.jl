@@ -10,12 +10,24 @@ if islink(fasta_file)
 end
 yearmonth = String(ARGS[2])
 
+# replace lowercase n symbols with uppercase Ns
+tmp = "tmp.fasta"
+open(fasta_file) do infile
+    open(tmp, "w") do outfile
+        # Read, replace, and write one line at a time
+        for line in eachline(infile)
+            line = uppercase(line)
+            println(outfile, line)
+        end
+    end
+end
+
 # Collect both names and sequences
-seqs = [seq for (name, seq) in FastaReader(fasta_file)]
-names = [name for (name, seq) in FastaReader(fasta_file)]
+seqs = [seq for (name, seq) in FastaReader(tmp)]
+names = [name for (name, seq) in FastaReader(tmp)]
 
 # Convert the sequences to BioSequence objects
-seq_vectors = [LongSequence{DNAAlphabet{5}}(seq) for seq in seqs]
+seq_vectors = [BioSequence{DNAAlphabet{4}}(seq) for seq in seqs]
 
 # Compute the Hamming distance matrix
 dist_matrix = pairwise(Hamming(), seq_vectors, seq_vectors)
@@ -23,7 +35,6 @@ dist_matrix = pairwise(Hamming(), seq_vectors, seq_vectors)
 # Find the sequence that is the highest distance, on average, from all the other sequences
 avg_dists = mean(dist_matrix, dims=1)
 max_avg_dist_index = argmax(avg_dists)[1]
-println("The sequence with the highest average distance from all others is sequence number $max_avg_dist_index")
 
 # Convert the distance matrix to a DataFrame
 dist_df = DataFrame(dist_matrix)
