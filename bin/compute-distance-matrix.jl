@@ -15,7 +15,7 @@ seqs = [seq for (name, seq) in FastaReader(fasta_file)]
 names = [name for (name, seq) in FastaReader(fasta_file)]
 
 # Convert the sequences to BioSequence objects
-seq_vectors = [BioSequence{DNAAlphabet{5}}(seq) for seq in seqs]
+seq_vectors = [LongSequence{DNAAlphabet{5}}(seq) for seq in seqs]
 
 # Compute the Hamming distance matrix
 dist_matrix = pairwise(Hamming(), seq_vectors, seq_vectors)
