@@ -807,7 +807,7 @@ process PLOT_TREE {
 	path "*.pdf"
 
 	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace(".treefile", "")
+	yearmonth = file(treefile.toString()).getSimpleName().replace(".treefile", "")
 	"""
 	plot-tree.R ${treefile} ${yearmonth}
 	"""
