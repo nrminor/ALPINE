@@ -1,8 +1,5 @@
 #!/usr/bin/env julia
 
-# loading necessary packages
-using FastaIO, FileIO
-
 # saving command line arguments supplied by nextflow
 fasta_path = ARGS[1]
 output_filename = ARGS[2]
@@ -15,17 +12,17 @@ end
 # create the output file
 touch(output_filename)
 
-# iterate through each FASTA record
-FastaWriter(output_filename) do fa
-    # creating a loop that goes through sequence records, replaces '-' with 'N',
-    # and writes the modified records to the output file
-    FastaReader(fasta_path) do fr
-        for (name, seq) in fr
-            # Replace '-' symbols with 'N' letters in the sequence
-            modified_seq = replace(seq, '-' => 'N')
-            
-            # Write the entry to the output file
-            writeentry(fa, name, modified_seq)
+# iterate through each line in the FASTA to minimuze memory usage
+open(fasta_path) do infile
+    open(output_filename, "w") do outfile
+        # Read, replace, and write one line at a time
+        for line in eachline(infile)
+            if startswith(line, ">")
+                println(outfile, line)
+            else
+                new_line = replace(line, '-' => 'N')
+                println(outfile, new_line)
+            end
         end
     end
 end
