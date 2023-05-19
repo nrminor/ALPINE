@@ -254,8 +254,8 @@ if( params.geography == "" || params.min_date == "" || params.max_date == "" ){
 // creating results subfolders for the three orthogonal anachronistic
 // sequence search methods
 params.clustering_results = params.ncbi_results + "/all_clustering_results"
-params.repeat_lineages = params.clustering_results + "/repeat_lineages"
 params.high_distance_candidates = params.ncbi_results + "/high_distance_clusters"
+params.repeat_lineages = params.high_distance_candidates + "/repeat_lineages"
 params.anachronistic_candidates = params.ncbi_results + "/anachronistic_candidates"
 params.metadata_candidates = params.ncbi_results + "/metadata_candidates"
 
