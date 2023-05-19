@@ -11,6 +11,9 @@ workflow {
 	ch_pathogens = Channel
 		.of ( params.pathogen )
 		.splitCsv( header: false, strip: true )
+
+	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen(s)":
+	ch_pathogens.view()
 	
 	if ( params.update_pango == true ){
 
@@ -25,15 +28,10 @@ workflow {
 		
 	// tell the workflow to proceed for first pathogen
 	proceed = true
-	
+
 	DOWNLOAD_REFSEQ (
 		ch_pathogens
 	)
-
-	proceed = { DOWNLOAD_REFSEQ.out.ref_fasta ? false : true }
-
-	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen(s)":
-	ch_pathogens.view()
 	
 	if ( params.compare_lineage_dates == true ){
 
@@ -195,8 +193,6 @@ workflow {
 		GENERATE_CLUSTER_REPORT.out.high_dist_seqs
 	)
 
-	proceed = { RUN_META_CLUSTER.out ? true : false }
-
 	// META_CLUSTER_REPORT (
 	// 	RUN_META_CLUSTER.out.cluster_fastas
 	// 		.flatten(),
@@ -307,7 +303,7 @@ process DOWNLOAD_REFSEQ {
 	available, is downloaded for downstream usage.
 	*/
 
-	tag "${params.pathogen}"
+	tag "${pathogen}"
 	publishDir params.resources, mode: 'copy'
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
@@ -324,6 +320,7 @@ process DOWNLOAD_REFSEQ {
 	proceed == true
 
 	script:
+	proceed = false
 	"""
 	datasets download virus genome taxon ${pathogen} \
 	--refseq && \
@@ -902,6 +899,7 @@ process RUN_META_CLUSTER {
 	path "*meta-cluster-seqs*", emit: cluster_fastas
 
 	script:
+	proceed = true
 	"""
 	vsearch --cluster_fast ${fasta} \
 	--id 0.9999 \
