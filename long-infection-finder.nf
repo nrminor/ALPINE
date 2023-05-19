@@ -872,8 +872,8 @@ process RUN_META_CLUSTER {
 
 	output:
 	path "*.uc", emit: cluster_table
-	path "centroids.fasta", emit: centroid_fasta
-	path "cluster-seqs*", emit: cluster_fastas
+	path "*meta-centroids.fasta", emit: centroid_fasta
+	path "*meta-cluster-seqs*", emit: cluster_fastas
 
 	script:
 	"""
