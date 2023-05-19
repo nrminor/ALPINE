@@ -7,6 +7,10 @@ nextflow.enable.dsl = 2
 // WORKFLOW SPECIFICATION
 // --------------------------------------------------------------- //
 workflow {
+
+	ch_pathogens = Channel
+		.of ( params.pathogen )
+		.splitCsv( header: false, strip: true )
 	
 	if ( params.update_pango == true ){
 
@@ -18,9 +22,12 @@ workflow {
 	}
 
 	// Data setup steps
-	DOWNLOAD_REFSEQ ( )
+	DOWNLOAD_REFSEQ (
+		ch_pathogens
+	)
 
-	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen ${params.pathogen}"
+	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen(s)":
+	ch_pathogens.out.collect().view()
 	
 	if ( params.compare_lineage_dates == true ){
 
@@ -30,7 +37,9 @@ workflow {
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
 
-		DOWNLOAD_NCBI_PACKAGE ( )
+		DOWNLOAD_NCBI_PACKAGE (
+			ch_pathogens
+		)
 
 		UNZIP_NCBI_METADATA (
 			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
@@ -296,17 +305,20 @@ process DOWNLOAD_REFSEQ {
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
 
+	input:
+	val pathogen
+
 	output:
 	path "*.fasta", emit: ref_fasta
 	env ref_id, emit: ref_id
 
 	script:
 	"""
-	datasets download virus genome taxon ${params.pathogen} \
+	datasets download virus genome taxon ${pathogen} \
 	--refseq && \
 	unzip ncbi_dataset.zip
-	mv ncbi_dataset/data/genomic.fna ./${params.pathogen}_refseq.fasta
-	ref_id=\$(grep "^>" ${params.pathogen}_refseq.fasta | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
+	mv ncbi_dataset/data/genomic.fna ./${pathogen}_refseq.fasta
+	ref_id=\$(grep "^>" ${pathogen}_refseq.fasta | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	"""
 }
 
@@ -343,12 +355,15 @@ process DOWNLOAD_NCBI_PACKAGE {
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
 
+	input:
+	val pathogen
+
 	output:
 	path "*.zip", emit: zip_archive
 
 	script:
 	"""
-	datasets download virus genome taxon ${params.pathogen} --complete-only
+	datasets download virus genome taxon ${pathogen} --complete-only
 	"""	
 
 }
