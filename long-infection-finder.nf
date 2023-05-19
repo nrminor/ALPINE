@@ -29,7 +29,7 @@ workflow {
 	proceed = { DOWNLOAD_REFSEQ.out.ref_fasta ? false : true }
 
 	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen(s)":
-	ch_pathogens.out.collect().view()
+	ch_pathogens.collect().view()
 	
 	if ( params.compare_lineage_dates == true ){
 
