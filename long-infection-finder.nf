@@ -26,6 +26,8 @@ workflow {
 		ch_pathogens
 	)
 
+	proceed = { DOWNLOAD_REFSEQ.out.ref_fasta ? false : true }
+
 	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen(s)":
 	ch_pathogens.out.collect().view()
 	
@@ -36,6 +38,9 @@ workflow {
 	}
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
+		
+		// tell the workflow to proceed for first pathogen
+		proceed = true
 
 		DOWNLOAD_NCBI_PACKAGE (
 			ch_pathogens
@@ -189,6 +194,8 @@ workflow {
 		GENERATE_CLUSTER_REPORT.out.high_dist_seqs
 	)
 
+	proceed = { RUN_META_CLUSTER.out ? true : false }
+
 	// META_CLUSTER_REPORT (
 	// 	RUN_META_CLUSTER.out.cluster_fastas
 	// 		.flatten(),
@@ -311,6 +318,9 @@ process DOWNLOAD_REFSEQ {
 	output:
 	path "*.fasta", emit: ref_fasta
 	env ref_id, emit: ref_id
+
+	when:
+	proceed
 
 	script:
 	"""
