@@ -9,7 +9,6 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
-    build-essential \
     curl \
     wget \
     unzip \
@@ -105,7 +104,6 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
 # Install Julia packages
 ENV JULIA_DEPOT_PATH=/opt/julia_packages
 RUN julia -e 'using Pkg; Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("FastaIO"); Pkg.add("FileIO"); Pkg.add("Distances")'
-# Pkg.add("BioAlignments"); Pkg.add("PopGen"); Pkg.add("FASTX"); Pkg.add("XAM"); Pkg.add("SubstitutionModels"); Pkg.add("KmerAnalysis"); Pkg.add("GFF3"); Pkg.add("GenomicFeatures"); Pkg.add("BioServices"); Pkg.add("BioFetch"); Pkg.add("BED"); Pkg.add("BioTools"); Pkg.add("NaturalSelection"); Pkg.add("Phylogenies")'
 RUN echo 'using Pkg; Pkg.activate("."); Pkg.precompile()' > /tmp/julia_setup.jl
 RUN julia /tmp/julia_setup.jl && \
     rm -rf tmp/ && \

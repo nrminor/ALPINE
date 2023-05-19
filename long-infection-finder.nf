@@ -686,7 +686,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	path "*-dist-matrix.csv"
 
 	script:
-	yearmonth = fasta.getSimpleName()
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
 	"""
 	compute-distance-matrix.jl ${fasta} ${yearmonth}
 	"""
