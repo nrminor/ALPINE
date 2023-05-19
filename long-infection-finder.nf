@@ -163,7 +163,8 @@ workflow {
 	// )
 
 	PLOT_TREE (
-		BUILD_CENTROID_TREE.out
+		BUILD_CENTROID_TREE.out,
+		DOWNLOAD_REFSEQ.out
 	)
 
 	GENERATE_CLUSTER_REPORT (
@@ -802,6 +803,7 @@ process PLOT_TREE {
 
 	input:
 	path treefile
+	val ref_id
 
 	output:
 	path "*.pdf"
@@ -809,7 +811,7 @@ process PLOT_TREE {
 	script:
 	yearmonth = file(treefile.toString()).getSimpleName().replace(".treefile", "")
 	"""
-	plot-tree.R ${treefile} ${yearmonth}
+	plot-tree.R ${treefile} ${yearmonth} ${ref_id}
 	"""
 
 }

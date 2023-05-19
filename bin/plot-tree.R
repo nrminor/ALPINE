@@ -11,6 +11,9 @@ tree <- read.tree(args[1])
 # define year-month
 yearmonth = as.character(args[2])
 
+# define reference sequence id
+ref_id <- as.character(args[3])
+
 # root the tree, if it isn't already
 if (is.rooted(tree)==F){
   tree <- root(tree, ref_id, resolve.root = T)
