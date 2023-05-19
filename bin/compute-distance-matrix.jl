@@ -27,7 +27,7 @@ seqs = [seq for (name, seq) in FastaReader(tmp)]
 names = [name for (name, seq) in FastaReader(tmp)]
 
 # Convert the sequences to BioSequence objects
-seq_vectors = [BioSequence{DNAAlphabet{4}}(seq) for seq in seqs]
+seq_vectors = [LongSequence{DNAAlphabet{4}}(seq) for seq in seqs]
 
 # Compute the Hamming distance matrix
 dist_matrix = pairwise(Hamming(), seq_vectors, seq_vectors)
@@ -37,7 +37,7 @@ avg_dists = mean(dist_matrix, dims=1)
 max_avg_dist_index = argmax(avg_dists)[1]
 
 # Convert the distance matrix to a DataFrame
-dist_df = DataFrame(dist_matrix)
+dist_df = DataFrame(dist_matrix, :auto)
 rename!(dist_df, names)
 
 # Add a column for the sequence names
