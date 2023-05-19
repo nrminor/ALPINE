@@ -135,23 +135,25 @@ workflow {
 		SEPARATE_BY_MONTH.out.flatten()
 	)
 
-	PREP_CENTROID_FASTAS (
-		CLUSTER_BY_IDENTITY.out.centroid_fasta,
-		DOWNLOAD_REFSEQ.out.ref_fasta
+	COUNT_FASTA_RECORDS (
+		CLUSTER_BY_IDENTITY.out.centroid_fasta
 	)
 
 	COMPUTE_DISTANCE_MATRIX (
-		PREP_CENTROID_FASTAS.out
+		COUNT_FASTA_RECORDS.out
+			.filter { it[1].toInteger() > 2 }
+			.map { fasta, count -> fasta }
 	)
 
-	COUNT_FASTA_RECORDS (
-		PREP_CENTROID_FASTAS.out
+	PREP_CENTROID_FASTAS (
+		COUNT_FASTA_RECORDS.out
+			.filter { it[1].toInteger() > 2 }
+			.map { fasta, count -> fasta },
+		DOWNLOAD_REFSEQ.out.ref_fasta
 	)
 
 	BUILD_CENTROID_TREE (
-		COUNT_FASTA_RECORDS.out
-			.filter { it[1].toInteger() > 3 }
-			.map { fasta, count -> fasta },
+		PREP_CENTROID_FASTAS.out,
 		DOWNLOAD_REFSEQ.out.ref_fasta,
 		DOWNLOAD_REFSEQ.out.ref_id
 	)
@@ -629,35 +631,32 @@ process CLUSTER_BY_IDENTITY {
 	
 }
 
-process PREP_CENTROID_FASTAS {
+process COUNT_FASTA_RECORDS {
 
 	/*
-	In this process, we align centroid sequences to Wuhan-1, which
-	will be used as an outgroup, and replace "/" symbols with underscores
-	to keep iqTree happy.
+	This process counts the number of records in each year-month's
+	centroid FASTA so it can filter low-cluster months prior to
+	iqTree.
 	*/
 
 	tag "${yearmonth}"
 	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus params.max_cpus
-
 	input:
-	each path(fasta)
-	path refseq
+	path fasta
 
 	output:
-	path "*-centroids-with-ref.fasta"
+	tuple path(fasta), env(count)
 
-	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
-	"""
-	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
-	"""
+	shell:
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
+	'''
+	count=$(grep -c "^>" !{fasta})
+	echo "There are" ${count} "records in the FASTA" !{fasta}
+	'''
 
 }
 
@@ -693,32 +692,35 @@ process COMPUTE_DISTANCE_MATRIX {
 
 }
 
-process COUNT_FASTA_RECORDS {
+process PREP_CENTROID_FASTAS {
 
 	/*
-	This process counts the number of records in each year-month's
-	centroid FASTA so it can filter low-cluster months prior to
-	iqTree.
+	In this process, we align centroid sequences to Wuhan-1, which
+	will be used as an outgroup, and replace "/" symbols with underscores
+	to keep iqTree happy.
 	*/
 
 	tag "${yearmonth}"
 	label "lif_container"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
+	cpus params.max_cpus
+
 	input:
-	path fasta
+	each path(fasta)
+	path refseq
 
 	output:
-	tuple path(fasta), env(count)
+	path "*-centroids-with-ref.fasta"
 
-	shell:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
-	'''
-	count=$(grep -c "^>" !{fasta})
-	echo "There are" ${count} "records in the FASTA" !{fasta}
-	'''
+	script:
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
+	"""
+	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
+	"""
 
 }
 
