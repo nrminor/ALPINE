@@ -7,13 +7,6 @@ nextflow.enable.dsl = 2
 // WORKFLOW SPECIFICATION
 // --------------------------------------------------------------- //
 workflow {
-
-	ch_pathogens = Channel
-		.of ( params.pathogen )
-		.splitCsv( header: false, strip: true )
-
-	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen(s)":
-	ch_pathogens.view()
 	
 	if ( params.update_pango == true ){
 
@@ -25,13 +18,9 @@ workflow {
 	}
 
 	// Data setup steps
-		
-	// tell the workflow to proceed for first pathogen
-	proceed = true
+	DOWNLOAD_REFSEQ ( )
 
-	DOWNLOAD_REFSEQ (
-		ch_pathogens
-	)
+	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen ${params.pathogen}"
 	
 	if ( params.compare_lineage_dates == true ){
 
@@ -41,9 +30,7 @@ workflow {
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
 
-		DOWNLOAD_NCBI_PACKAGE (
-			ch_pathogens
-		)
+		DOWNLOAD_NCBI_PACKAGE ( )
 
 		UNZIP_NCBI_METADATA (
 			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
@@ -303,30 +290,23 @@ process DOWNLOAD_REFSEQ {
 	available, is downloaded for downstream usage.
 	*/
 
-	tag "${pathogen}"
+	tag "${params.pathogen}"
 	publishDir params.resources, mode: 'copy'
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
 
-	input:
-	val pathogen
-
 	output:
 	path "*.fasta", emit: ref_fasta
 	env ref_id, emit: ref_id
 
-	when:
-	proceed == true
-
 	script:
-	proceed = false
 	"""
-	datasets download virus genome taxon ${pathogen} \
+	datasets download virus genome taxon ${params.pathogen} \
 	--refseq && \
 	unzip ncbi_dataset.zip
-	mv ncbi_dataset/data/genomic.fna ./${pathogen}_refseq.fasta
-	ref_id=\$(grep "^>" ${pathogen}_refseq.fasta | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
+	mv ncbi_dataset/data/genomic.fna ./${params.pathogen}_refseq.fasta
+	ref_id=\$(grep "^>" ${params.pathogen}_refseq.fasta | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	"""
 }
 
@@ -363,15 +343,12 @@ process DOWNLOAD_NCBI_PACKAGE {
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
 
-	input:
-	val pathogen
-
 	output:
 	path "*.zip", emit: zip_archive
 
 	script:
 	"""
-	datasets download virus genome taxon ${pathogen} --complete-only
+	datasets download virus genome taxon ${params.pathogen} --complete-only
 	"""	
 
 }
@@ -899,7 +876,6 @@ process RUN_META_CLUSTER {
 	path "*meta-cluster-seqs*", emit: cluster_fastas
 
 	script:
-	proceed = true
 	"""
 	vsearch --cluster_fast ${fasta} \
 	--id 0.9999 \
