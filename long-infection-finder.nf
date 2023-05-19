@@ -22,6 +22,10 @@ workflow {
 	}
 
 	// Data setup steps
+		
+	// tell the workflow to proceed for first pathogen
+	proceed = true
+	
 	DOWNLOAD_REFSEQ (
 		ch_pathogens
 	)
@@ -38,9 +42,6 @@ workflow {
 	}
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
-		
-		// tell the workflow to proceed for first pathogen
-		proceed = true
 
 		DOWNLOAD_NCBI_PACKAGE (
 			ch_pathogens
