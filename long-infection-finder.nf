@@ -530,7 +530,7 @@ process FILTER_BY_MASKED_BASES {
 	script:
 	"""
 	julia --threads ${task.cpus} \
-	filter-by-n-count.jl ${fasta}
+	bin/filter-by-n-count.jl ${fasta}
 	"""
 
 }
@@ -560,7 +560,7 @@ process APPEND_DATES {
 	script:
 	"""
 	julia --threads ${task.cpus} \
-	append-dates.jl ${metadata} ${fasta}
+	bin/append-dates.jl ${metadata} ${fasta}
 	"""
 
 }
@@ -591,7 +591,7 @@ process SEPARATE_BY_MONTH {
 	script:
 	"""
 	julia --threads ${task.cpus} \
-	separate-by-yearmonth.jl ${fasta}
+	bin/separate-by-yearmonth.jl ${fasta}
 	"""
 
 }
