@@ -501,7 +501,7 @@ process REMOVE_FASTA_GAPS {
 
 	script:
 	"""
-	remove-fasta-gaps.jl ${fasta} "no-gaps.fasta"
+	remove-fasta-gaps.jl ${fasta}
 	"""
 	
 }
@@ -560,7 +560,7 @@ process APPEND_DATES {
 	script:
 	"""
 	julia --threads ${task.cpus} \
-	append-dates.jl ${metadata} ${fasta} dated-seqs.fasta
+	append-dates.jl ${metadata} ${fasta}
 	"""
 
 }

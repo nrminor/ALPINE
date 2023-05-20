@@ -2,7 +2,7 @@
 
 # saving command line arguments supplied by nextflow
 fasta_path = ARGS[1]
-output_filename = ARGS[2]
+output_filename = "no-gaps.fasta"
 
 # Check if the input FASTA file is a symlink, and if it is, follow the symlink
 if islink(fasta_path)
@@ -18,7 +18,8 @@ open(fasta_path) do infile
         # Read, replace, and write one line at a time
         for line in eachline(infile)
             if startswith(line, ">")
-                println(outfile, line)
+                accession = split(line, ' ')[1]
+                println(outfile, accession)
             else
                 new_line = replace(line, '-' => 'N')
                 println(outfile, new_line)
