@@ -51,12 +51,6 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install nextflow
-RUN wget -qO- https://get.nextflow.io | bash && \
-    chmod +x nextflow && \
-    mv nextflow /usr/local/bin/ && \
-    nextflow self-update
-
 # Install miniconda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
@@ -72,6 +66,11 @@ RUN mamba install -y -c bioconda -c anaconda -c conda-forge psutil biopython pan
 
 # Install R channel packages
 RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape r-adephylo 
+
+# Install nextflow
+RUN wget -qO- https://get.nextflow.io | bash && \
+    mv nextflow /usr/local/bin/ && \
+    nextflow self-update
 
 # Install seqtk
 RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
