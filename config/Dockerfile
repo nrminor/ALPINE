@@ -67,7 +67,8 @@ ENV PATH=/opt/conda/bin:$PATH
 RUN conda install -y -c conda-forge mamba
 
 # Install packages with mamba
-RUN mamba install -y -c bioconda -c anaconda -c conda-forge psutil biopython pandas polars vsearch ncbi-datasets-cli=14.2.2 pangolin=4.2 iqtree=1.6.7
+RUN mamba install -y -c bioconda -c anaconda -c conda-forge psutil biopython pandas polars vsearch ncbi-datasets-cli=14.2.2 iqtree=1.6.7
+# pangolin=4.2
 
 # Install R channel packages
 RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape r-adephylo 
@@ -95,11 +96,16 @@ RUN julia -e 'using Pkg; Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataF
 RUN echo 'using Pkg; Pkg.activate("."); Pkg.precompile()' > /tmp/julia_setup.jl
 RUN julia /tmp/julia_setup.jl && \
     rm -rf tmp/ && \
-    chmod +w /opt/julia_packages/compiled/v1.9/ && \
-    julia -e 'using BioSequences, CSV, DataFrames, FastaIO, FileIO, Distances, DelimitedFiles'
+    julia -e 'using BioSequences, CSV, DataFrames, FastaIO, FileIO, Distances, DelimitedFiles' && \
+    chmod -R +w /opt/julia_packages/compiled/v1.9/*
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV PATH=/usr/local/bin:/opt/julia-1.9.0/bin:$PATH
+
+# make sure bin files are executable
+RUN chmod +x /usr/local/bin/* && \
+    chmod +x /opt/julia-1.9.0/bin/* && \
+    chmod +x /opt/conda/bin/*
 
 # Set working directory
 WORKDIR /scratch
