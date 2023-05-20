@@ -796,6 +796,7 @@ process PLOT_TREE {
 	*/
 
 	tag "${yearmonth}"
+	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
@@ -826,6 +827,7 @@ process GENERATE_CLUSTER_REPORT {
 	the two additional methods used in this pipeline.
 	*/
 
+	label "lif_container"
 	publishDir params.high_distance_candidates, mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
