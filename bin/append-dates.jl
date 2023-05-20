@@ -4,51 +4,51 @@
 using CSV, DataFrames, FastaIO, FileIO
 import Base.Threads
 
-# locate metadata
-metadata_path = ARGS[1]
-
 # Check if the input metadata file is a symlink, and if it is, follow the symlink
-if islink(metadata_path)
-    metadata_path = readlink(metadata_path)
-end
-
-# locate FASTA
-fasta_path = ARGS[2]
+const metadata_path = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
 
 # Check if the input FASTA file is a symlink, and if it is, follow the symlink
-if islink(fasta_path)
-    fasta_path = readlink(fasta_path)
-end
+const fasta_path = islink(ARGS[2]) ? readlink(ARGS[2]) : ARGS[2]
 
 # define output file name
-output_handle = "dated-seqs.fasta"
-touch(output_handle)
+const output = "dated-seqs.fasta"
 
-# create a file lock to prevent threads from corrupting the output file
-u = ReentrantLock()
+# nest the most intensive steps in a function for faster compilation
+function append_dates(input_tsv_path::String, input_fasta_path::String, output_handle::String)
 
-# read in metadata
-metadata_df = CSV.read(metadata_path, DataFrame, delim="\t")
+    # prepare empty output file to append records to
+    touch(output_handle)
 
-# create lookup of dates and accessions
-accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
+    # create a file lock to prevent threads from corrupting the output file
+    u = ReentrantLock()
 
-# add date for each FASTA record
-FastaWriter(output_handle, "a") do fa
-    FastaReader(fasta_path) do reader 
-        @sync for (name, seq) in reader
-            Threads.@spawn begin
-                # Parse out the accession number from the defline
-                accession = split(name, ' ')[1]
-                # Look up the collection date for the accession number
-                collection_date = get(accession_to_date, accession, "")
-                # Add the collection date to the defline after a pipe symbol
-                new_name = string(name, "|", collection_date)
-                # Write the modified record to a new FASTA file
-                Threads.lock(u) do
-                    writeentry(fa, new_name, seq)
+    # read in metadata
+    metadata_df = CSV.read(input_tsv_path, DataFrame, delim="\t")
+
+    # create lookup of dates and accessions
+    accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
+
+    # add date for each FASTA record
+    FastaWriter(output_handle, "a") do fa
+        FastaReader(input_fasta_path) do reader 
+            @sync for (name, seq) in reader
+                Threads.@spawn begin
+                    # Parse out the accession number from the defline
+                    accession = split(name, ' ')[1]
+                    # Look up the collection date for the accession number
+                    collection_date = get(accession_to_date, accession, "")
+                    # Add the collection date to the defline after a pipe symbol
+                    new_name = string(name, "|", collection_date)
+                    # Write the modified record to a new FASTA file
+                    Threads.lock(u) do
+                        writeentry(fa, new_name, seq)
+                    end
                 end
             end
         end
     end
+
 end
+
+# run the function
+append_dates(metadata_path,fasta_path,output)
