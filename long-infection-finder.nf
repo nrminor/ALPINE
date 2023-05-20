@@ -423,7 +423,7 @@ process FILTER_TSV_TO_GEOGRAPHY {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus 4
+	cpus 1
 
 	input:
 	path metadata
@@ -458,7 +458,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus params.max_cpus
+	cpus 1
 
 	input:
 	each path(fasta)
@@ -488,7 +488,7 @@ process REMOVE_FASTA_GAPS {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus params.max_cpus
+	cpus 1
 
 	input:
 	path fasta
@@ -529,6 +529,7 @@ process FILTER_BY_MASKED_BASES {
 
 	script:
 	"""
+	julia --threads ${task.cpus} \
 	filter-by-n-count.jl ${fasta}
 	"""
 
@@ -558,6 +559,7 @@ process APPEND_DATES {
 
 	script:
 	"""
+	julia --threads ${task.cpus} \
 	append-dates.jl ${metadata} ${fasta} dated-seqs.fasta
 	"""
 
@@ -588,6 +590,7 @@ process SEPARATE_BY_MONTH {
 
 	script:
 	"""
+	julia --threads ${task.cpus} \
 	separate-by-yearmonth.jl ${fasta}
 	"""
 
@@ -677,7 +680,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus params.max_cpus
+	cpus 1
 
 	input:
 	path fasta

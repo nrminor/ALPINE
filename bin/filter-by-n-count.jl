@@ -2,6 +2,7 @@
 
 # loading necessary packages
 using FastaIO, FileIO
+import Base.Threads.@spawn
 
 # saving command line arguments supplied by nextflow
 fasta_path = ARGS[1]

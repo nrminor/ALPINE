@@ -2,6 +2,7 @@
 
 # loading necessary packages
 using CSV, DataFrames, FastaIO, FileIO
+import Base.Threads.@spawn
 
 # locate metadata
 metadata_path = ARGS[1]

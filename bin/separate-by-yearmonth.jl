@@ -2,6 +2,7 @@
 
 # loading necessary packages
 using FastaIO, FileIO, Dates
+import Base.Threads.@spawn
 
 # locate fasta
 fasta_path = ARGS[1]
