@@ -45,6 +45,9 @@ function separate_by_month(input_fasta::String)
                 FastaWriter(output_filename, "a")
             end
 
+            # split the defline by the pipe symbol and keep the first split
+            name = split(name, '|')[1]
+
             writeentry(writer, name, seq)
         end
     end
