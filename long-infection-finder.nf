@@ -787,7 +787,6 @@ process MDS_PLOT {
 
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
-	println yearmonth
 	"""
 	plot-mds.R ${yearmonth} ${cluster_table} ${ref_id}
 	"""
