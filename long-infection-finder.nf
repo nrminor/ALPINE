@@ -119,15 +119,8 @@ workflow {
 			.filter { it.size() > 0 }
 	)
 
-	APPEND_DATES (
-		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
-		FILTER_BY_MASKED_BASES.out
-			.flatten()
-			.filter { it.size() > 0 }
-	)
-
 	SEPARATE_BY_MONTH (
-		APPEND_DATES.out
+		FILTER_BY_MASKED_BASES.out
 			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true )
 	)
 
@@ -531,36 +524,6 @@ process FILTER_BY_MASKED_BASES {
 	"""
 	JULIA_NUM_THREADS=${task.cpus} \
 	filter-by-n-count.jl ${fasta}
-	"""
-
-}
-
-process APPEND_DATES {
-
-	/*
-	This process appends collection dates onto the ends of each
-	FASTA defline by cross referencing the GenBank accessions in 
-	the FASTA with GenBank accessions in the NCBI metadata.
-	*/
-
-	label "lif_container"
-
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
-
-	cpus params.max_cpus
-
-	input:
-	path metadata
-	each path(fasta)
-
-	output:
-	path "*.fasta"
-
-	script:
-	"""
-	JULIA_NUM_THREADS=${task.cpus} \
-	append-dates.jl ${metadata} ${fasta}
 	"""
 
 }

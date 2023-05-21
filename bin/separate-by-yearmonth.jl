@@ -6,12 +6,22 @@ using FastaIO, FileIO, Dates
 # Check if the input FASTA file is a symlink, and if it is, follow the symlink
 const fasta_path = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
 
-# defining a function that parses the dates that were added to the defline
-function parse_date_from_defline(defline::String)
-    components = split(defline, '|')
-    date_string = components[end]
+# locate metadata
+const input_tsv_path = islink(ARGS[2]) ? readlink(ARGS[1]) : ARGS[1]
+
+# read in metadata
+metadata_df = CSV.read(input_tsv_path, DataFrame, delim="\t")
+
+# create lookup of dates and accessions
+accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
+
+# define a function that accesses the collection date for each record name
+function lookup_date(record_name::String, lookup::Dict)
+
+    # Look up the collection date for the accession number
+    date = get(lookup, record_name, "")
     try
-        return Date(date_string)
+        return Date(date)
     catch
         return nothing
     end
@@ -29,7 +39,7 @@ function separate_by_month(input_fasta::String)
     # process each sequence in the input FASTA file
     FastaReader(input_fasta) do fr
         for (name, seq) in fr
-            record_date = parse_date_from_defline(name)
+            record_date = lookup_date(name,accession_to_date)
 
             if record_date === nothing
                 @warn "Skipping record with missing or unparseable date:" name
@@ -44,9 +54,6 @@ function separate_by_month(input_fasta::String)
                 touch(output_filename)
                 FastaWriter(output_filename, "a")
             end
-
-            # split the defline by the pipe symbol and keep the first split
-            name = split(name, '|')[1]
 
             writeentry(writer, name, seq)
         end
