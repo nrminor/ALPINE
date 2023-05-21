@@ -146,7 +146,7 @@ workflow {
 		DOWNLOAD_REFSEQ.out.ref_fasta
 	)
 
-	COMPUTE_DISTANCE_MATRIX (
+	CENTROID_DISTANCE_MATRIX (
 		PREP_CENTROID_FASTAS.out
 	)
 
@@ -171,7 +171,7 @@ workflow {
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
 		CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
 		BUILD_CENTROID_TREE.out.collect(),
-		COMPUTE_DISTANCE_MATRIX.out.collect(),
+		CENTROID_DISTANCE_MATRIX.out.collect(),
 		DOWNLOAD_REFSEQ.out.ref_id,
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata
 	)
@@ -696,7 +696,7 @@ process PREP_CENTROID_FASTAS {
 
 }
 
-process COMPUTE_DISTANCE_MATRIX {
+process CENTROID_DISTANCE_MATRIX {
 
 	/*
 	In parallel to clustering each month's sequences by nucleotide 
@@ -786,7 +786,7 @@ process MDS_PLOT {
 	path "*"
 
 	script:
-	yearmonth_cluster = file(fasta.toString()).getSimpleName().replace("cluster-seqs", "")
+	yearmonth_cluster = file(cluster_table.toString()).getSimpleName().replace("-clusters.uc", "")
 	"""
 	plot-mds.R ${yearmonth} ${cluster_table} ${ref_id}
 	"""
