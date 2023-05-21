@@ -139,17 +139,15 @@ workflow {
 		CLUSTER_BY_IDENTITY.out.centroid_fasta
 	)
 
-	COMPUTE_DISTANCE_MATRIX (
-		COUNT_FASTA_RECORDS.out
-			.filter { it[1].toInteger() > 2 }
-			.map { fasta, count -> fasta }
-	)
-
 	PREP_CENTROID_FASTAS (
 		COUNT_FASTA_RECORDS.out
 			.filter { it[1].toInteger() > 2 }
 			.map { fasta, count -> fasta },
 		DOWNLOAD_REFSEQ.out.ref_fasta
+	)
+
+	COMPUTE_DISTANCE_MATRIX (
+		PREP_CENTROID_FASTAS.out
 	)
 
 	BUILD_CENTROID_TREE (
@@ -664,38 +662,6 @@ process COUNT_FASTA_RECORDS {
 
 }
 
-process COMPUTE_DISTANCE_MATRIX {
-
-	/*
-	In parallel to clustering each month's sequences by nucleotide 
-	identity, the workflow will also compute a simple nucleotide
-	distance matrix, which will be used to assign distances for each
-	cluster.
-	*/
-
-	tag "${yearmonth}"
-	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
-
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
-
-	cpus 1
-
-	input:
-	path fasta
-
-	output:
-	path "*-dist-matrix.csv"
-
-	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
-	"""
-	compute-distance-matrix.jl ${fasta} ${yearmonth}
-	"""
-
-}
-
 process PREP_CENTROID_FASTAS {
 
 	/*
@@ -724,6 +690,38 @@ process PREP_CENTROID_FASTAS {
 	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
 	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
+	"""
+
+}
+
+process COMPUTE_DISTANCE_MATRIX {
+
+	/*
+	In parallel to clustering each month's sequences by nucleotide 
+	identity, the workflow will also compute a simple nucleotide
+	distance matrix, which will be used to assign distances for each
+	cluster.
+	*/
+
+	tag "${yearmonth}"
+	label "lif_container"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
+
+	cpus 1
+
+	input:
+	path fasta
+
+	output:
+	path "*-dist-matrix.csv"
+
+	script:
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-wth-ref", "")
+	"""
+	compute-distance-matrix.jl ${fasta} ${yearmonth}
 	"""
 
 }
