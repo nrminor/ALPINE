@@ -141,7 +141,7 @@ workflow {
 
 	PREP_CENTROID_FASTAS (
 		COUNT_FASTA_RECORDS.out
-			.filter { it[1].toInteger() > 2 }
+			.filter { it[1].toInteger() > 1 }
 			.map { fasta, count -> fasta },
 		DOWNLOAD_REFSEQ.out.ref_fasta
 	)
