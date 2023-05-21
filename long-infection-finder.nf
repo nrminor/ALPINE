@@ -121,7 +121,8 @@ workflow {
 
 	SEPARATE_BY_MONTH (
 		FILTER_BY_MASKED_BASES.out
-			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true )
+			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true ),
+		FILTER_SEQS_TO_GEOGRAPHY.out.metadata
 	)
 
 	CLUSTER_BY_IDENTITY (
@@ -547,6 +548,7 @@ process SEPARATE_BY_MONTH {
 
 	input:
 	path fasta
+	path metadata
 
 	output:
 	path "*.fasta"
@@ -554,7 +556,7 @@ process SEPARATE_BY_MONTH {
 	script:
 	"""
 	JULIA_NUM_THREADS=${task.cpus} \
-	separate-by-yearmonth.jl ${fasta}
+	separate-by-yearmonth.jl ${fasta} ${metadata}
 	"""
 
 }
