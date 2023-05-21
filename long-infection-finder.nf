@@ -141,7 +141,7 @@ workflow {
 
 	PREP_CENTROID_FASTAS (
 		COUNT_FASTA_RECORDS.out
-			.filter { it[1].toInteger() > 1 }
+			.filter { it[1].toInteger() > 2 }
 			.map { fasta, count -> fasta },
 		DOWNLOAD_REFSEQ.out.ref_fasta
 	)
@@ -721,7 +721,7 @@ process CENTROID_DISTANCE_MATRIX {
 	path "*-dist-matrix.csv"
 
 	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-wth-ref", "")
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
 	"""
 	compute-distance-matrix.jl ${fasta} ${yearmonth}
 	"""
