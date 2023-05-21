@@ -156,9 +156,11 @@ workflow {
 		DOWNLOAD_REFSEQ.out.ref_id
 	)
 
-	// MDS_PLOT (
-	// 	CLUSTER_BY_IDENTITY.out.cluster_fastas
-	// )
+	MDS_PLOT (
+		CLUSTER_BY_IDENTITY.out.cluster_fastas,
+		CLUSTER_BY_IDENTITY.out.cluster_table,
+		DOWNLOAD_REFSEQ.out.ref_id,
+	)
 
 	PLOT_TREE (
 		BUILD_CENTROID_TREE.out,
@@ -776,14 +778,17 @@ process MDS_PLOT {
 	maxRetries 2
 
 	input:
-	path cluster_seqs
+	path cluster_fastas
+	path cluster_table
+	val ref_id
 
 	output:
-	path "*.pdf"
+	path "*"
 
 	script:
 	yearmonth_cluster = file(fasta.toString()).getSimpleName().replace("cluster-seqs", "")
 	"""
+	plot-mds.R ${yearmonth} ${cluster_table} ${ref_id}
 	"""
 
 }
