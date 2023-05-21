@@ -60,6 +60,9 @@ for (i in yearmonths){
   # determining which cluster corresponds to this more evolved virus
   cluster_table <- read.delim(paste(i, "-clusters.uc", sep = ""), header = F)
   row_hits <- cluster_table[grepl(name, cluster_table$V9),]
+  if (nrow(row_hits)==0){
+    break
+  }
   cluster_number <- as.numeric(unique(row_hits$V2))
   
   # creating table for that cluster and adding branch length to it
