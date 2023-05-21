@@ -156,11 +156,11 @@ workflow {
 		DOWNLOAD_REFSEQ.out.ref_id
 	)
 
-	MDS_PLOT (
-		CLUSTER_BY_IDENTITY.out.cluster_fastas,
-		CLUSTER_BY_IDENTITY.out.cluster_table,
-		DOWNLOAD_REFSEQ.out.ref_id,
-	)
+	// MDS_PLOT (
+	// 	CLUSTER_BY_IDENTITY.out.cluster_fastas,
+	// 	CLUSTER_BY_IDENTITY.out.cluster_table,
+	// 	DOWNLOAD_REFSEQ.out.ref_id,
+	// )
 
 	PLOT_TREE (
 		BUILD_CENTROID_TREE.out,
