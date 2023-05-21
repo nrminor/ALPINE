@@ -771,7 +771,7 @@ process MDS_PLOT {
 	and therefore evolutionarily advanced.
 	*/
 
-	tag "${yearmonth_cluster}"
+	tag "${yearmonth}"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
@@ -784,6 +784,9 @@ process MDS_PLOT {
 
 	output:
 	path "*"
+
+	when:
+	file(cluster_table.toString()).countLines().toInteger > 2
 
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters.uc", "")
