@@ -129,6 +129,14 @@ workflow {
 		SEPARATE_BY_MONTH.out.flatten()
 	)
 
+	ALIGN_MONTHLY_SEQS (
+		CLUSTER_BY_IDENTITY.out.cluster_fastas
+	)
+
+	COMPUTE_DISTANCE_MATRIX (
+		ALIGN_MONTHLY_SEQS.out
+	)
+
 	COUNT_FASTA_RECORDS (
 		CLUSTER_BY_IDENTITY.out.centroid_fasta
 	)
@@ -138,10 +146,6 @@ workflow {
 			.filter { it[1].toInteger() > 2 }
 			.map { fasta, count -> fasta },
 		DOWNLOAD_REFSEQ.out.ref_fasta
-	)
-
-	CENTROID_DISTANCE_MATRIX (
-		PREP_CENTROID_FASTAS.out
 	)
 
 	BUILD_CENTROID_TREE (
@@ -161,18 +165,18 @@ workflow {
 		DOWNLOAD_REFSEQ.out.ref_id
 	)
 
-	GENERATE_CLUSTER_REPORT (
-		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
-		CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
-		BUILD_CENTROID_TREE.out.collect(),
-		CENTROID_DISTANCE_MATRIX.out.collect(),
-		DOWNLOAD_REFSEQ.out.ref_id,
-		FILTER_TSV_TO_GEOGRAPHY.out.metadata
-	)
+	// GENERATE_CLUSTER_REPORT (
+	// 	CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
+	// 	CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
+	// 	BUILD_CENTROID_TREE.out.collect(),
+	// 	COMPUTE_DISTANCE_MATRIX.out.collect(),
+	// 	DOWNLOAD_REFSEQ.out.ref_id,
+	// 	FILTER_TSV_TO_GEOGRAPHY.out.metadata
+	// )
 
-	RUN_META_CLUSTER (
-		GENERATE_CLUSTER_REPORT.out.high_dist_seqs
-	)
+	// RUN_META_CLUSTER (
+	// 	GENERATE_CLUSTER_REPORT.out.high_dist_seqs
+	// )
 
 	// META_CLUSTER_REPORT (
 	// 	RUN_META_CLUSTER.out.cluster_fastas
@@ -600,6 +604,69 @@ process CLUSTER_BY_IDENTITY {
 	
 }
 
+process ALIGN_MONTHLY_SEQS {
+
+	/*
+	This process takses the cluster outputs from vsearch and aligns
+	all clusters together so that they will be comparable in the 
+	same distance matrix.
+	*/
+
+	label "lif_container"
+
+	cpus params.max_cpus
+
+	input:
+	path cluster_seqs
+
+	output:
+	path "*-aligned.fasta"
+
+	shell:
+	'''
+	find . -type f -name *cluster-seqs* > fasta_list.txt
+	yearmonth=`head -n 1 fasta_list.txt | cut -d "-cluster" -f 1`
+	touch ${yearmonth}.fasta
+	for i in `cat fasta_list.txt`;
+	do
+		cat $i >> ${yearmonth}.fasta
+	done
+	muscle -in ${yearmonth}.fasta -out ${yearmonth}-aligned.fasta -threads ${task.cpus}
+	'''
+}
+
+process COMPUTE_DISTANCE_MATRIX {
+
+	/*
+	In parallel to clustering each month's sequences by nucleotide 
+	identity, the workflow will also compute a simple nucleotide
+	distance matrix, which will be used to assign distances for each
+	sequence in each month.
+	*/
+
+	tag "${yearmonth}"
+	label "lif_container"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
+
+	cpus 1
+
+	input:
+	path fasta
+
+	output:
+	path "*-dist-matrix.csv"
+
+	script:
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-aligned", "")
+	"""
+	compute-distance-matrix.jl ${fasta} ${yearmonth}
+	"""
+
+}
+
 process COUNT_FASTA_RECORDS {
 
 	/*
@@ -657,38 +724,6 @@ process PREP_CENTROID_FASTAS {
 	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
 	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
-	"""
-
-}
-
-process CENTROID_DISTANCE_MATRIX {
-
-	/*
-	In parallel to clustering each month's sequences by nucleotide 
-	identity, the workflow will also compute a simple nucleotide
-	distance matrix, which will be used to assign distances for each
-	cluster.
-	*/
-
-	tag "${yearmonth}"
-	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
-
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
-
-	cpus 1
-
-	input:
-	path fasta
-
-	output:
-	path "*-dist-matrix.csv"
-
-	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
-	"""
-	compute-distance-matrix.jl ${fasta} ${yearmonth}
 	"""
 
 }

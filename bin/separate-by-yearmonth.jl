@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 # loading necessary packages
-using FastaIO, FileIO, Dates
+using FastaIO, FileIO, Dates, CSV, DataFrames
 
 # Check if the input FASTA file is a symlink, and if it is, follow the symlink
 const fasta_path = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
@@ -16,7 +16,7 @@ metadata_df = CSV.read(input_tsv_path, DataFrame, delim="\t")
 accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
 
 # define a function that accesses the collection date for each record name
-function lookup_date(record_name::String, lookup::Dict)
+function lookup_date(record_name::String, lookup::Dict{String, Date})
 
     # Look up the collection date for the accession number
     date = get(lookup, record_name, "")
