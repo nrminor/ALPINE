@@ -7,7 +7,7 @@ using FastaIO, FileIO, Dates, CSV, DataFrames
 const fasta_path = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
 
 # locate metadata
-const input_tsv_path = islink(ARGS[2]) ? readlink(ARGS[1]) : ARGS[1]
+const input_tsv_path = islink(ARGS[2]) ? readlink(ARGS[2]) : ARGS[2]
 
 # read in metadata
 metadata_df = CSV.read(input_tsv_path, DataFrame, delim="\t")
