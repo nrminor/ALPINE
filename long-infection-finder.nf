@@ -785,9 +785,6 @@ process MDS_PLOT {
 	output:
 	path "*"
 
-	when:
-	file(cluster_table.toString()).countLines().toInteger > 2
-
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters.uc", "")
 	"""
