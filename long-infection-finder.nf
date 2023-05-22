@@ -53,14 +53,12 @@ workflow {
 
 			REMOVE_FASTA_GAPS ( 
 				FILTER_SEQS_TO_GEOGRAPHY.out
-					.filter { it.size() > 0 }
 			)
 
 		} else {
 
 			REMOVE_FASTA_GAPS ( 
 				FILTER_SEQS_TO_GEOGRAPHY.out
-					.filter { it.size() > 0 }
 					.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" )
 			)
 				
@@ -95,7 +93,6 @@ workflow {
 
 		REMOVE_FASTA_GAPS ( 
 			FILTER_SEQS_TO_GEOGRAPHY.out
-				.filter { it.size() > 0 }
 		)
 
 	}
@@ -119,7 +116,6 @@ workflow {
 	// Distance matrix clustering steps
 	FILTER_BY_MASKED_BASES (
 		REMOVE_FASTA_GAPS.out
-			.filter { it.size() > 0 }
 	)
 
 	SEPARATE_BY_MONTH (
@@ -148,7 +144,7 @@ workflow {
 	)
 
 	BUILD_CENTROID_TREE (
-		PREP_CENTROID_FASTAS.out,
+		PREP_CENTROID_FASTAS.out
 			.filter { it[1].toInteger() > 3 }
 			.map { fasta, count -> fasta },
 		DOWNLOAD_REFSEQ.out.ref_fasta,
