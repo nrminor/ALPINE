@@ -44,19 +44,25 @@ workflow {
 			UNZIP_NCBI_METADATA.out
 		)
 
+		FILTER_SEQS_TO_GEOGRAPHY (
+			UNZIP_NCBI_FASTA.out,
+			FILTER_TSV_TO_GEOGRAPHY.out.accessions
+		)
+
 		if ( workflow.profile == 'standard' || workflow.profile == 'docker' ){
 
-			FILTER_SEQS_TO_GEOGRAPHY (
-				UNZIP_NCBI_FASTA.out,
-				FILTER_TSV_TO_GEOGRAPHY.out.accessions
+			REMOVE_FASTA_GAPS ( 
+				FILTER_SEQS_TO_GEOGRAPHY.out
+					.filter { it.size() > 0 }
 			)
 
 		} else {
 
-			FILTER_SEQS_TO_GEOGRAPHY (
-				UNZIP_NCBI_FASTA.out
+
+			REMOVE_FASTA_GAPS ( 
+				FILTER_SEQS_TO_GEOGRAPHY.out
+					.filter { it.size() > 0 }
 					.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" ),
-				FILTER_TSV_TO_GEOGRAPHY.out.accessions
 			)
 				
 		}
@@ -90,6 +96,11 @@ workflow {
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
+		REMOVE_FASTA_GAPS ( 
+			FILTER_SEQS_TO_GEOGRAPHY.out
+				.filter { it.size() > 0 }
+		)
+
 	}
 
 	// NCBI/GENBANK BRANCH:
@@ -109,11 +120,6 @@ workflow {
 	*/
 
 	// Distance matrix clustering steps
-	REMOVE_FASTA_GAPS ( 
-		FILTER_SEQS_TO_GEOGRAPHY.out
-			.filter { it.size() > 0 }
-	)
-
 	FILTER_BY_MASKED_BASES (
 		REMOVE_FASTA_GAPS.out
 			.filter { it.size() > 0 }
@@ -129,27 +135,25 @@ workflow {
 		SEPARATE_BY_MONTH.out.flatten()
 	)
 
-	ALIGN_MONTHLY_SEQS (
-		CLUSTER_BY_IDENTITY.out.cluster_fastas
-	)
-
-	COMPUTE_DISTANCE_MATRIX (
-		ALIGN_MONTHLY_SEQS.out
-	)
-
 	COUNT_FASTA_RECORDS (
 		CLUSTER_BY_IDENTITY.out.centroid_fasta
 	)
 
 	PREP_CENTROID_FASTAS (
 		COUNT_FASTA_RECORDS.out
-			.filter { it[1].toInteger() > 2 }
+			.filter { it[1].toInteger() > 1 }
 			.map { fasta, count -> fasta },
 		DOWNLOAD_REFSEQ.out.ref_fasta
 	)
 
+	COMPUTE_DISTANCE_MATRIX (
+		PREP_CENTROID_FASTAS.out
+	)
+
 	BUILD_CENTROID_TREE (
 		PREP_CENTROID_FASTAS.out,
+			.filter { it[1].toInteger() > 3 }
+			.map { fasta, count -> fasta },
 		DOWNLOAD_REFSEQ.out.ref_fasta,
 		DOWNLOAD_REFSEQ.out.ref_id
 	)
@@ -604,69 +608,6 @@ process CLUSTER_BY_IDENTITY {
 	
 }
 
-process ALIGN_MONTHLY_SEQS {
-
-	/*
-	This process takses the cluster outputs from vsearch and aligns
-	all clusters together so that they will be comparable in the 
-	same distance matrix.
-	*/
-
-	label "lif_container"
-
-	cpus params.max_cpus
-
-	input:
-	path cluster_seqs
-
-	output:
-	path "*-aligned.fasta"
-
-	shell:
-	'''
-	find . -type f -name *cluster-seqs* > fasta_list.txt
-	yearmonth=`head -n 1 fasta_list.txt | cut -d "-cluster" -f 1`
-	touch ${yearmonth}.fasta
-	for i in `cat fasta_list.txt`;
-	do
-		cat $i >> ${yearmonth}.fasta
-	done
-	muscle -in ${yearmonth}.fasta -out ${yearmonth}-aligned.fasta -threads ${task.cpus}
-	'''
-}
-
-process COMPUTE_DISTANCE_MATRIX {
-
-	/*
-	In parallel to clustering each month's sequences by nucleotide 
-	identity, the workflow will also compute a simple nucleotide
-	distance matrix, which will be used to assign distances for each
-	sequence in each month.
-	*/
-
-	tag "${yearmonth}"
-	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
-
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
-
-	cpus 1
-
-	input:
-	path fasta
-
-	output:
-	path "*-dist-matrix.csv"
-
-	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-aligned", "")
-	"""
-	compute-distance-matrix.jl ${fasta} ${yearmonth}
-	"""
-
-}
-
 process COUNT_FASTA_RECORDS {
 
 	/*
@@ -718,12 +659,45 @@ process PREP_CENTROID_FASTAS {
 	path refseq
 
 	output:
-	path "*-centroids-with-ref.fasta"
+	tuple path("*-centroids-with-ref.fasta"), env(count)
 
 	script:
 	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
+	count=$(grep -c "^>" !{fasta})
 	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
+	"""
+
+}
+
+process COMPUTE_DISTANCE_MATRIX {
+
+	/*
+	In parallel to clustering each month's sequences by nucleotide 
+	identity, the workflow will also compute a simple nucleotide
+	distance matrix, which will be used to assign distances for each
+	sequence in each month.
+	*/
+
+	tag "${yearmonth}"
+	label "lif_container"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
+
+	cpus 1
+
+	input:
+	tuple path(fasta), val(clust_count)
+
+	output:
+	path "*-dist-matrix.csv"
+
+	script:
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-aligned", "")
+	"""
+	compute-distance-matrix.jl ${fasta} ${yearmonth}
 	"""
 
 }
