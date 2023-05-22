@@ -657,7 +657,7 @@ process PREP_CENTROID_FASTAS {
 	script:
 	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
-	count=$(grep -c "^>" !{fasta})
+	count=\$(grep -c "^>" !{fasta})
 	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
 	"""
 
