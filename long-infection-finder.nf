@@ -67,8 +67,6 @@ workflow {
 				
 		}
 
-		
-
 	} else {
 
 		if ( workflow.profile == 'standard' || workflow.profile == 'docker' ){
