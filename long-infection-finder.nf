@@ -58,7 +58,6 @@ workflow {
 
 		} else {
 
-
 			REMOVE_FASTA_GAPS ( 
 				FILTER_SEQS_TO_GEOGRAPHY.out
 					.filter { it.size() > 0 }
