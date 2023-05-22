@@ -62,7 +62,7 @@ workflow {
 			REMOVE_FASTA_GAPS ( 
 				FILTER_SEQS_TO_GEOGRAPHY.out
 					.filter { it.size() > 0 }
-					.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" ),
+					.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" )
 			)
 				
 		}
