@@ -16,7 +16,7 @@ metadata_df = CSV.read(input_tsv_path, DataFrame, delim="\t")
 accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
 
 # define a function that accesses the collection date for each record name
-function lookup_date(record_name::String, lookup::Dict{String, Date})
+function lookup_date(record_name::String,!Matched::Dict{String, Date})
 
     # Look up the collection date for the accession number
     date = get(lookup, record_name, "")
