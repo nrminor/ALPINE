@@ -49,16 +49,18 @@ workflow {
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
+		println "Processing" + FILTER_SEQS_TO_GEOGRAPHY.out.count.view() + "sequences from ${params.pathogen}"
+
 		if ( workflow.profile == 'standard' || workflow.profile == 'docker' ){
 
 			REMOVE_FASTA_GAPS ( 
-				FILTER_SEQS_TO_GEOGRAPHY.out
+				FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 			)
 
 		} else {
 
 			REMOVE_FASTA_GAPS ( 
-				FILTER_SEQS_TO_GEOGRAPHY.out
+				FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 					.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" )
 			)
 				
@@ -91,8 +93,10 @@ workflow {
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
+		println "Processing" + FILTER_SEQS_TO_GEOGRAPHY.out.count.view() + "sequences from ${params.geography}"
+
 		REMOVE_FASTA_GAPS ( 
-			FILTER_SEQS_TO_GEOGRAPHY.out
+			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 		)
 
 	}
@@ -186,7 +190,7 @@ workflow {
 	// Steps for re-running pangolin and comparing dates
 	// HIGH_THROUGHPUT_PANGOLIN ( 
 	// 	UPDATE_PANGO_CONTAINER.out.cue,
-	// 	FILTER_SEQS_TO_GEOGRAPHY.out
+	// 	FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 	// 		.splitFasta( by: 5000, file: true )
 	// )
 
@@ -460,11 +464,13 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	path accessions
 
 	output:
-	path "*.fasta"
+	path "*.fasta", emit: fasta
+	env count, emit: count
 
 	script:
 	"""
-	seqtk subseq ${fasta} ${accessions} > filtered_to_geography.fasta 
+	seqtk subseq ${fasta} ${accessions} > filtered_to_geography.fasta && \
+	count=\$(grep -c "^>" filtered_to_geography.fasta)
 	"""
 
 }
@@ -657,7 +663,7 @@ process PREP_CENTROID_FASTAS {
 	script:
 	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
-	count=\$(grep -c "^>" !{fasta})
+	count=\$(grep -c "^>" ${fasta})
 	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
 	"""
 
