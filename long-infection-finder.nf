@@ -50,7 +50,7 @@ workflow {
 		)
 
 		println "Processing the following number of sequences from ${params.pathogen}:"
-		println FILTER_SEQS_TO_GEOGRAPHY.out.count.view()
+		println FILTER_SEQS_TO_GEOGRAPHY.out.count.toInteger().view()
 
 		if ( workflow.profile == 'standard' || workflow.profile == 'docker' ){
 
@@ -95,7 +95,7 @@ workflow {
 		)
 
 		println "Processing the following number of sequences from ${params.pathogen}:"
-		println FILTER_SEQS_TO_GEOGRAPHY.out.count.view()
+		println FILTER_SEQS_TO_GEOGRAPHY.out.count.toInteger().view()
 
 		REMOVE_FASTA_GAPS ( 
 			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
