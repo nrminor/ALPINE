@@ -166,14 +166,13 @@ workflow {
 		DOWNLOAD_REFSEQ.out.ref_id
 	)
 
-	// GENERATE_CLUSTER_REPORT (
-	// 	CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
-	// 	CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
-	// 	BUILD_CENTROID_TREE.out.collect(),
-	// 	COMPUTE_DISTANCE_MATRIX.out.collect(),
-	// 	DOWNLOAD_REFSEQ.out.ref_id,
-	// 	FILTER_TSV_TO_GEOGRAPHY.out.metadata
-	// )
+	GENERATE_CLUSTER_REPORT (
+		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
+		CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
+		COMPUTE_DISTANCE_MATRIX.out.collect(),
+		DOWNLOAD_REFSEQ.out.ref_id,
+		FILTER_TSV_TO_GEOGRAPHY.out.metadata
+	)
 
 	// RUN_META_CLUSTER (
 	// 	GENERATE_CLUSTER_REPORT.out.high_dist_seqs
@@ -815,7 +814,6 @@ process GENERATE_CLUSTER_REPORT {
 	input:
 	path cluster_tables
 	path cluster_fastas
-	path cluster_trees
 	path distance_matrices
 	val ref_id
 	path metadata
