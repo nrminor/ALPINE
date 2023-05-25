@@ -170,9 +170,9 @@ workflow {
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata
 	)
 
-	// RUN_META_CLUSTER (
-	// 	GENERATE_CLUSTER_REPORT.out.high_dist_seqs
-	// )
+	RUN_META_CLUSTER (
+		GENERATE_CLUSTER_REPORT.out.high_dist_seqs
+	)
 
 	// META_CLUSTER_REPORT (
 	// 	RUN_META_CLUSTER.out.cluster_fastas
@@ -689,7 +689,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	path "*-dist-matrix.csv"
 
 	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-aligned", "")
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
 	"""
 	compute-distance-matrix.jl ${fasta} ${yearmonth}
 	"""

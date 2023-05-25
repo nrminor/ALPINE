@@ -13,12 +13,10 @@ metadata <- read.delim(args[1])
 ref_id <- as.character(args[2])
 
 # creating list of year-month combinations to loop through
-yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-centroids-with-ref-dist-matrix.csv"), "-centroids-with-ref-dist-matrix.csv")
+yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-dist-matrix.csv"), "-dist-matrix.csv")
 
 # make an empty data frame to store high distance FASTA sequences
-high_dist_seqs <- data.frame("V1" = as.character(NA))
-colnames(high_dist_seqs) <- NULL
-high_dist_seqs <- high_dist_seqs[NULL,]
+high_dist_seqs <- data.frame()
 
 # make an empty data frame to store high distance metadata 
 high_dist_meta <- matrix(ncol = ncol(metadata), nrow = 0)
@@ -30,36 +28,31 @@ high_dist_meta <- as.data.frame(high_dist_meta)
 first_yearmonth = yearmonths[1]
 for (i in yearmonths){
   
-  # read in the tree file
-  tree <- read.tree(paste(i, ".treefile", sep = ""))
+  # read in distance matrix
+  distmat = read.csv(paste(i, "-dist-matrix.csv", sep = ""))
   
-  # root the tree, if it isn't already
-  if (is.rooted(tree)==F){
-    tree <- root(tree, ref_id, resolve.root = T)
-  }
-  
-  # fixing non-unique node labels
-  node_support <- tree$node.label
-  tree$node.label <- 1:length(node_support)
-  
-  # compute total branch lengths from root to each tip
-  roottotip <- distRoot(tree, tips = tree$tip.label, method = "patristic")
-  roottotip <- roottotip[names(roottotip)!=ref_id]
-  
-  # finding max branch length sample
-  max_distance <- roottotip[roottotip==max(roottotip)]
-  
-  # restoring original isolate name formatting
-  if (grepl("hCoV-19", names(max_distance))){
-    split_name <- unlist(strsplit(names(max_distance), "_EPI"))[1]
-    name <- str_replace_all(split_name, "_", "/")
-  } else {
-    name <- names(max_distance)
+  # define high-distance accession
+  max_distance <- 0
+  distant_acc <- ""
+  for (j in 1:nrow(distmat)){
+    
+    accession <- distmat[j, "Sequence_Name"]
+    new_mean <- mean(as.numeric(distmat[j,2:ncol(distmat)]))
+    
+    if (grepl(ref_id, accession)){
+      next
+    } else if (new_mean > max_distance){
+      max_distance <- new_mean
+      distant_acc <- accession
+    } else {
+      break
+    }
+    
   }
   
   # determining which cluster corresponds to this more evolved virus
   cluster_table <- read.delim(paste(i, "-clusters.uc", sep = ""), header = F)
-  row_hits <- cluster_table[grepl(name, cluster_table$V9),]
+  row_hits <- cluster_table[grepl(distant_acc, cluster_table$V9),]
   if (nrow(row_hits)==0){
     break
   }
@@ -67,7 +60,7 @@ for (i in yearmonths){
   
   # creating table for that cluster and adding branch length to it
   high_dist_cluster <- cluster_table[cluster_table$V2==cluster_number,]
-  high_dist_cluster$root_to_tip_distance <- max(roottotip)
+  high_dist_cluster$mean_nucleotide_distance <- max_distance
   high_dist_cluster$year_month <- i
   high_dist_cluster <- high_dist_cluster[high_dist_cluster$V1!="C",]
   rownames(high_dist_cluster) <- NULL
@@ -90,15 +83,13 @@ for (i in yearmonths){
     # final metadata table
     if (i == first_yearmonth & j == first_accession){
       
-      high_dist_meta <- rbind(high_dist_meta, ncbi_row)
-      high_dist_meta <- cbind(high_dist_meta, high_dist_cluster[high_dist_cluster$V9==j, "root_to_tip_distance"])
-      colnames(high_dist_meta)[ncol(high_dist_meta)] <- "root_to_tip_distance"
-      high_dist_meta <- cbind(high_dist_meta, high_dist_cluster[high_dist_cluster$V9==j, "year_month"])
-      colnames(high_dist_meta)[ncol(high_dist_meta)] <- "year_month"
+      ncbi_row$mean_nucleotide_distance <- high_dist_cluster[high_dist_cluster$V9==j,"mean_nucleotide_distance"]
+      ncbi_row$year_month <- high_dist_cluster[high_dist_cluster$V9==j, "year_month"]
+      high_dist_meta <- ncbi_row
       
     } else {
       
-      ncbi_row$root_to_tip_distance <- high_dist_cluster[high_dist_cluster$V9==j, "root_to_tip_distance"]
+      ncbi_row$mean_nucleotide_distance <- high_dist_cluster[high_dist_cluster$V9==j, "mean_nucleotide_distance"]
       ncbi_row$year_month <- high_dist_cluster[high_dist_cluster$V9==j, "year_month"]
       high_dist_meta <- rbind(high_dist_meta, ncbi_row)
       
@@ -119,5 +110,5 @@ write.table(high_dist_seqs, "high_distance_candidates.fasta", row.names = F, col
 
 # writing candidate metadata, which combines vsearch --clust_fast results with 
 # NCBI metadata and iqTree branch lengths
-high_dist_meta <- high_dist_meta[order(high_dist_meta$root_to_tip_distance, decreasing = T),]
+high_dist_meta <- high_dist_meta[order(high_dist_meta$mean_nucleotide_distance, decreasing = T),]
 write.table(high_dist_meta, "high_distance_candidates.tsv", row.names = F, quote = F, sep = "\t")
