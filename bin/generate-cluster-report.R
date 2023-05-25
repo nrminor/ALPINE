@@ -13,7 +13,7 @@ metadata <- read.delim(args[1])
 ref_id <- as.character(args[2])
 
 # creating list of year-month combinations to loop through
-yearmonths <- str_remove_all(list.files(path = ".", pattern = "*.treefile"), ".treefile")
+yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-centroids-with-ref-dist-matrix.csv"), "-centroids-with-ref-dist-matrix.csv")
 
 # make an empty data frame to store high distance FASTA sequences
 high_dist_seqs <- data.frame("V1" = as.character(NA))
