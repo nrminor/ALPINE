@@ -49,8 +49,6 @@ workflow {
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
-		println "Processing" + FILTER_SEQS_TO_GEOGRAPHY.out.count.view() + "sequences from ${params.pathogen}"
-
 		if ( workflow.profile == 'standard' || workflow.profile == 'docker' ){
 
 			REMOVE_FASTA_GAPS ( 
@@ -92,8 +90,6 @@ workflow {
 			ch_local_fasta,
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
-
-		println "Processing" + FILTER_SEQS_TO_GEOGRAPHY.out.count.view() + "sequences from ${params.geography}"
 
 		REMOVE_FASTA_GAPS ( 
 			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
