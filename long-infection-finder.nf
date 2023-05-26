@@ -740,6 +740,7 @@ process MDS_PLOT {
 	*/
 
 	tag "${yearmonth}"
+	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
