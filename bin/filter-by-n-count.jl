@@ -24,7 +24,7 @@ function filter_by_n(input_fasta_path::String, output_filename::String)
         FastaReader(input_fasta_path) do fr
             @sync for (name, seq) in fr
                 Threads.@spawn begin
-                    max_n_count = floor(length(seq) * 0.2)
+                    max_n_count = floor(length(seq) * 0.1)
                     n_count = count("N", convert(String, seq))
                     if n_count < max_n_count
                         Threads.lock(u) do

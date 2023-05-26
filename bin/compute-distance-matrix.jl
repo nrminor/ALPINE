@@ -30,12 +30,14 @@ set_to_uppercase(fasta_file,tmp)
 # nest the most intensive steps in a function for faster compilation
 function distance_matrix(temp_filename::String, yearmonth::String)
 
-    # Collect both names and sequences
+    # Collect both names, sequences, and masked base counts
     seqs = [seq for (name, seq) in FastaReader(temp_filename)]
+    counts = [count(x -> x == 'N', seq) for seq in seqs]
     names = [name for (name, seq) in FastaReader(temp_filename)]
 
-    # Convert the sequences to BioSequence objects
-    seq_vectors = [LongSequence{DNAAlphabet{4}}(seq) for seq in seqs]
+    # Convert the sequences to BioSequence objects, filtering out 'N' characters
+    filtered_seqs = [replace(seq, 'N' => '-') for seq in seqs]
+    seq_vectors = [LongSequence{DNAAlphabet{4}}(seq) for seq in filtered_seqs]
 
     # Compute the Hamming distance matrix
     dist_matrix = pairwise(Hamming(), seq_vectors, seq_vectors)

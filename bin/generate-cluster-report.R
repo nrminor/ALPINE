@@ -39,6 +39,8 @@ for (i in yearmonths){
     accession <- distmat[j, "Sequence_Name"]
     new_mean <- mean(as.numeric(distmat[j,2:ncol(distmat)]))
     
+    # distmat <- distmat[!grepl(ref_id, distmat$Sequence_Name),!grepl(ref_id, colnames(distmat))]
+    
     if (grepl(ref_id, accession)){
       next
     } else if (new_mean > max_distance){
