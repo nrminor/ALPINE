@@ -37,7 +37,9 @@ for (i in yearmonths){
   for (j in 1:nrow(distmat)){
     
     accession <- distmat[j, "Sequence_Name"]
-    new_mean <- mean(as.numeric(distmat[j,2:ncol(distmat)]))
+    distances <- as.numeric(distmat[j,2:ncol(distmat)])
+    distances <- distances[distances!=0]
+    new_mean <- mean(distances)
     
     # distmat <- distmat[!grepl(ref_id, distmat$Sequence_Name),!grepl(ref_id, colnames(distmat))]
     
