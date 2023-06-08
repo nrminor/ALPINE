@@ -32,24 +32,33 @@ for (i in yearmonths){
   distmat = read.csv(paste(i, "-dist-matrix.csv", sep = ""))
   
   # define high-distance accession
-  max_distance <- 0
-  distant_acc <- ""
-  for (j in 1:nrow(distmat)){
+  if (nrow(distmat)==1){
     
-    accession <- distmat[j, "Sequence_Name"]
-    distances <- as.numeric(distmat[j,2:ncol(distmat)])
-    distances <- distances[distances!=0]
-    new_mean <- mean(distances)
+    max_distance <- distmat[1,2]
+    distant_acc <- distmat[1,1]
     
-    # distmat <- distmat[!grepl(ref_id, distmat$Sequence_Name),!grepl(ref_id, colnames(distmat))]
+  } else {
     
-    if (grepl(ref_id, accession)){
-      next
-    } else if (new_mean > max_distance){
-      max_distance <- new_mean
-      distant_acc <- accession
-    } else {
-      break
+    max_distance <- 0
+    distant_acc <- ""
+    for (j in 1:nrow(distmat)){
+      
+      accession <- distmat[j, "Sequence_Name"]
+      distances <- as.numeric(distmat[j,2:ncol(distmat)])
+      distances <- distances[distances!=0]
+      new_mean <- mean(distances)
+      
+      # distmat <- distmat[!grepl(ref_id, distmat$Sequence_Name),!grepl(ref_id, colnames(distmat))]
+      
+      if (grepl(ref_id, accession)){
+        next
+      } else if (new_mean > max_distance){
+        max_distance <- new_mean
+        distant_acc <- accession
+      } else {
+        break
+      }
+      
     }
     
   }
