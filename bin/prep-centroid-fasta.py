@@ -30,12 +30,9 @@ for seq in sequences:
 # Write the updated sequences to a new FASTA file
 SeqIO.write(sequences, "samelength.fasta", "fasta")
 
-# import same length FASTA
-alignment = AlignIO.read("samelength.fasta", "fasta")
-
 # perform a muscle alignment with the modified alignment and reference
 align_out_file = f"{label}-aligned-centroids.fasta"
-muscle_cline = MuscleCommandline(input=alignment, out=align_out_file, maxiters=1, quiet=True)
+muscle_cline = MuscleCommandline(input="samelength.fasta", out=align_out_file, maxiters=1, quiet=True)
 muscle_cline()
 
 # Replace "/" characters in the deflines with underscores

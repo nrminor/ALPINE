@@ -37,10 +37,12 @@ def find_largest_cluster(cluster_df: pl.DataFrame):
                 continue
 
     # Save the majority cluster to an environmental variable that will be accessed by nextflow
-    os.environ["majority_cluster"] = str(majority_cluster)
+    with open("majority_cluster.txt", "w") as file:
+        file.write(str(majority_cluster))
 
     # Save the majority cemtroid as am environmental variable
-    os.environ["majority_centroid"] = str(majority_centroid)
+    with open("majority_centroid.txt", "w") as file:
+        file.write(majority_centroid)
 
 # define a function that writes the number of clusters to disk
 def count_clusters(cluster_df: pl.DataFrame):
@@ -50,6 +52,8 @@ def count_clusters(cluster_df: pl.DataFrame):
 
     # Save the majority cluster to a file
     os.environ["cluster_count"] = str(cluster_count)
+    with open("cluster_count.txt", "w") as file:
+        file.write(str(cluster_count))
 
 # run the functions
 find_largest_cluster(cluster_df) ; count_clusters(cluster_df)

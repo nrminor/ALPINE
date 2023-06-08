@@ -139,13 +139,13 @@ workflow {
 	)
 
 	FIND_MAJORITY_CLUSTER (
-		CLUSTER_BY_IDENTITY.out.cluster_table
+		CLUSTER_BY_IDENTITY.out.cluster_table,
+		PREP_CENTROID_FASTAS.out
+			.map { fasta, count -> fasta }
 	)
 
 	COMPUTE_DISTANCE_MATRIX (
-		PREP_CENTROID_FASTAS.out
-			.map { fasta, count -> fasta },
-			FIND_MAJORITY_CLUSTER.out
+		FIND_MAJORITY_CLUSTER.out
 	)
 
 	BUILD_CENTROID_TREE (
@@ -687,15 +687,22 @@ process FIND_MAJORITY_CLUSTER {
 	cpus params.max_cpus
 
 	input:
-	path cluster_table
+	each path(cluster_table)
+	each path(fasta)
 
 	output:
-	tuple val(yearmonth), env(majority_cluster), env(majority_centroid), env(cluster_count)
+	tuple path(fasta), val(yearmonth), env(majority_cluster), env(majority_centroid), env(cluster_count)
+
+	when:
+	yearmonth == file(fasta.toString()).getSimpleName().replace("-aligned-centroids", "")
 
 	script:
-	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-centroids", "")
+	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
 	"""
 	find-majority-cluster.py ${cluster_table}
+	cluster_count=`echo cluster_count.txt`
+	majority_cluster=`echo majority_cluster.txt`
+	majority_centroid=`echo majority_centroid.txt`
 	"""
 
 }
@@ -719,17 +726,12 @@ process COMPUTE_DISTANCE_MATRIX {
 	cpus 1
 
 	input:
-	each path(fasta)
-	tuple val(yearmonth), val(majority_cluster), val(majority_centroid), val(cluster_count)
+	tuple path(fasta), val(yearmonth), val(majority_cluster), val(majority_centroid), val(cluster_count)
 
 	output:
 	path "*-dist-matrix.csv"
 
-	when:
-	yearmonth == fasta_yearmonth
-
 	script:
-	fasta_yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
 	compute-distance-matrix.jl ${fasta} ${yearmonth} ${cluster_count} ${majority_centroid}
 	"""
