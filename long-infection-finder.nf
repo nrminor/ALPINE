@@ -135,20 +135,22 @@ workflow {
 	PREP_CENTROID_FASTAS (
 		COUNT_FASTA_RECORDS.out
 			.filter { it[1].toInteger() > 1 }
-			.map { fasta, count -> fasta },
-		DOWNLOAD_REFSEQ.out.ref_fasta
+			.map { fasta, count -> fasta }
+	)
+
+	FIND_MAJORITY_CLUSTER (
+		CLUSTER_BY_IDENTITY.out.cluster_table
 	)
 
 	COMPUTE_DISTANCE_MATRIX (
 		PREP_CENTROID_FASTAS.out
+			.map { fasta, count -> fasta }
 	)
 
 	BUILD_CENTROID_TREE (
 		PREP_CENTROID_FASTAS.out
 			.filter { it[1].toInteger() > 3 }
-			.map { fasta, count -> fasta },
-		DOWNLOAD_REFSEQ.out.ref_fasta,
-		DOWNLOAD_REFSEQ.out.ref_id
+			.map { fasta, count -> fasta }
 	)
 
 	// MDS_PLOT (
@@ -157,10 +159,10 @@ workflow {
 	// 	DOWNLOAD_REFSEQ.out.ref_id,
 	// )
 
-	PLOT_TREE (
-		BUILD_CENTROID_TREE.out,
-		DOWNLOAD_REFSEQ.out.ref_id
-	)
+	// PLOT_TREE (
+	// 	BUILD_CENTROID_TREE.out,
+	// 	DOWNLOAD_REFSEQ.out.ref_id
+	// )
 
 	GENERATE_CLUSTER_REPORT (
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
@@ -649,17 +651,50 @@ process PREP_CENTROID_FASTAS {
 	cpus params.max_cpus
 
 	input:
-	each path(fasta)
-	path refseq
+	path fasta
 
 	output:
-	tuple path("*-centroids-with-ref.fasta"), env(count)
+	tuple path("*-aligned-centroids.fasta"), env(count)
 
 	script:
 	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
 	count=\$(grep -c "^>" ${fasta})
-	prep_tree_fasta.py ${fasta} ${refseq} ${yearmonth}
+	prep-centroid-fasta.py ${fasta} ${yearmonth}
+	"""
+
+}
+
+process FIND_MAJORITY_CLUSTER {
+
+	/*
+	This process replaces the previous "prep_centroid_fasta" approach that brought in
+	the Wuhan-1 sequence with an approach that uses the biggest cluster, representing
+	the majority of sequences from each month, as a sort of "reference." If there is
+	just one additional cluster, the downstream distance matrix step will create
+	a single distance and assign it to the small cluster as a potential 
+	evolutionarily advanced lineage.
+	*/
+
+	tag "${yearmonth}"
+	label "lif_container"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
+
+	cpus params.max_cpus
+
+	input:
+	path cluster_table
+
+	output:
+	tuple val(yearmonth), env(majority_cluster), env(majority_centroid), env(cluster_count)
+
+	script:
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
+	"""
+	find-majority-cluster.py ${cluster_table}
 	"""
 
 }
@@ -683,15 +718,19 @@ process COMPUTE_DISTANCE_MATRIX {
 	cpus 1
 
 	input:
-	tuple path(fasta), val(clust_count)
+	each path(fasta)
+	tuple val(yearmonth), val(majority_cluster), val(majority_centroid), val(cluster_count)
 
 	output:
 	path "*-dist-matrix.csv"
 
+	when:
+	yearmonth == fasta_yearmonth
+
 	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
+	fasta_yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
-	compute-distance-matrix.jl ${fasta} ${yearmonth}
+	compute-distance-matrix.jl ${fasta} ${yearmonth} ${cluster_count} ${majority_centroid}
 	"""
 
 }
@@ -714,17 +753,15 @@ process BUILD_CENTROID_TREE {
 	maxRetries 2
 
 	input:
-	each path(fasta)
-	path refseq
-	val ref_id
+	path fasta
 
 	output:
 	path "*.treefile"
 
 	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids-with-ref", "")
+	yearmonth = file(fasta.toString()).getSimpleName().replace("-aligned-centroids", "")
 	"""
-	iqtree -s ${fasta} -o ${ref_id} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
+	iqtree -s ${fasta} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
 	"""
 
 }
