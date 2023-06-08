@@ -144,7 +144,8 @@ workflow {
 
 	COMPUTE_DISTANCE_MATRIX (
 		PREP_CENTROID_FASTAS.out
-			.map { fasta, count -> fasta }
+			.map { fasta, count -> fasta },
+			FIND_MAJORITY_CLUSTER.out
 	)
 
 	BUILD_CENTROID_TREE (
