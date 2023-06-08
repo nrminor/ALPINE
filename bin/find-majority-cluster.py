@@ -19,6 +19,7 @@ def find_largest_cluster(cluster_df: pl.DataFrame):
     if cluster_df.select(pl.count())[0,0] == 2:
 
         majority_cluster = cluster_df['column_2'].unique()[0]
+        majority_centroid = cluster_df['column_9'].unique()[0]
 
     else:
 

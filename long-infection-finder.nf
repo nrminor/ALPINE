@@ -693,7 +693,7 @@ process FIND_MAJORITY_CLUSTER {
 	tuple val(yearmonth), env(majority_cluster), env(majority_centroid), env(cluster_count)
 
 	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
+	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-centroids", "")
 	"""
 	find-majority-cluster.py ${cluster_table}
 	"""
