@@ -6,7 +6,7 @@ using FastaIO, BioSequences, Distances, Statistics, DataFrames, CSV
 # parse supplied command line arguments to locate files and set parameters
 const fasta_file = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
 const yearmonth = ARGS[2]
-const count = Int64(ARGS[3])
+const count = parse(Int, ARGS[3])
 const majority_centroid = ARGS[4]
 
 # replace lowercase n symbols with uppercase Ns
@@ -64,9 +64,6 @@ function distance_matrix(temp_filename::String, yearmonth::String)
         # as the only row
         filter!(:Sequence_Name => !=(majority_centroid), dist_df)
         select!(dist_df, Not(Symbol(dist_df[1,:1])))
-
-        # constrain down to a simple one by one
-        dist_df = dist_df[2,1:2]
 
         # Write the distance matrix to a CSV file
         CSV.write("$yearmonth-dist-matrix.csv", dist_df)

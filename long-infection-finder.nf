@@ -141,7 +141,6 @@ workflow {
 	FIND_MAJORITY_CLUSTER (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		PREP_CENTROID_FASTAS.out
-			.map { fasta, count -> fasta }
 	)
 
 	COMPUTE_DISTANCE_MATRIX (
@@ -688,21 +687,21 @@ process FIND_MAJORITY_CLUSTER {
 
 	input:
 	each path(cluster_table)
-	each path(fasta)
+	tuple path(fasta), val(count)
 
 	output:
 	tuple path(fasta), val(yearmonth), env(majority_cluster), env(majority_centroid), env(cluster_count)
 
 	when:
-	yearmonth == file(fasta.toString()).getSimpleName().replace("-aligned-centroids", "")
+	file(fasta.toString()).getSimpleName().contains(file(cluster_table.toString()).getSimpleName().replace("-clusters", ""))
 
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
 	"""
 	find-majority-cluster.py ${cluster_table}
-	cluster_count=`echo cluster_count.txt`
-	majority_cluster=`echo majority_cluster.txt`
-	majority_centroid=`echo majority_centroid.txt`
+	cluster_count=`cat cluster_count.txt`
+	majority_cluster=`cat majority_cluster.txt`
+	majority_centroid=`cat majority_centroid.txt`
 	"""
 
 }
