@@ -5,6 +5,7 @@ test_dataset/
 resources/
 sandbox/
 results/pipeline_run_info/
+deprecated/
 
 results/report.html*
 results/
