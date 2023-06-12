@@ -91,7 +91,7 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
 
 # Install Julia packages
 ENV JULIA_DEPOT_PATH=/opt/julia_packages
-RUN julia -e 'using Pkg; Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("FastaIO"); Pkg.add("FileIO"); Pkg.add("Distances"); Pkg.activate("."); Pkg.precompile()'
+RUN julia -e 'using Pkg; Pkg.activate("long-infection-finder"); Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("FastaIO"); Pkg.add("FileIO"); Pkg.add("Distances"); Pkg.instantiate()'
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV PATH=/usr/local/bin:/opt/julia-1.9.0/bin:$PATH
