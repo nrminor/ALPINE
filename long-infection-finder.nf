@@ -517,7 +517,7 @@ process FILTER_BY_MASKED_BASES {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus params.max_cpus
+	cpus 4
 
 	input:
 	path fasta

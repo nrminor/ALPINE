@@ -90,11 +90,12 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
     rm julia-1.9.0-linux-x86_64.tar.gz
 
 # Install Julia packages
-ENV JULIA_DEPOT_PATH=/opt/julia_packages
-RUN julia -e 'using Pkg; Pkg.activate("long-infection-finder"); Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("FastaIO"); Pkg.add("FileIO"); Pkg.add("Distances"); Pkg.instantiate()'
+# ENV JULIA_DEPOT_PATH=/opt/julia_packages
+RUN julia -e 'using Pkg; Pkg.activate("long-infection-finder.jl"); Pkg.add("BioSequences"); Pkg.add("CSV"); Pkg.add("DataFrames"); Pkg.add("FastaIO"); Pkg.add("FileIO"); Pkg.add("Distances"); Pkg.instantiate()' && \
+    chmod -R +rw /opt/julia_packages/compiled/v1.9/*
 
 # Make sure nothing is amiss and that julia is still in the path
-ENV PATH=/usr/local/bin:/opt/julia-1.9.0/bin:$PATH
+ENV PATH=/usr/local/bin:/opt/julia-1.9.0/bin:/opt/julia_packages/compiled/v1.9:/opt/julia_packages/packages:$PATH
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \
