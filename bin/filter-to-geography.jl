@@ -11,7 +11,7 @@ const geo = ARGS[2]
 function filter_by_geo(input_tsv::String,geography::String)
 
     # Read in the TSV file with metadata
-    metadata_df = CSV.read(metadata_path, DataFrame, delim="\t")
+    metadata_df = CSV.read(input_tsv, DataFrame, delim="\t")
 
     # Double check the column name for geographic locations
     if "Geographic location" in names(metadata_df)

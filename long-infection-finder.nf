@@ -690,7 +690,7 @@ process FIND_MAJORITY_CLUSTER {
 	tuple path(fasta), val(count)
 
 	output:
-	tuple path(fasta), val(yearmonth), env(majority_cluster), env(majority_centroid), env(cluster_count)
+	tuple path(fasta), path(cluster_table), val(yearmonth), env(majority_cluster), env(majority_centroid), env(cluster_count)
 
 	when:
 	file(fasta.toString()).getSimpleName().contains(file(cluster_table.toString()).getSimpleName().replace("-clusters", ""))
@@ -725,14 +725,17 @@ process COMPUTE_DISTANCE_MATRIX {
 	cpus 1
 
 	input:
-	tuple path(fasta), val(yearmonth), val(majority_cluster), val(majority_centroid), val(cluster_count)
+	tuple path(fasta), path(cluster_table), val(yearmonth), val(majority_cluster), val(majority_centroid), val(cluster_count)
 
 	output:
 	path "*-dist-matrix.csv"
 
 	script:
 	"""
-	compute-distance-matrix.jl ${fasta} ${yearmonth} ${cluster_count} ${majority_centroid}
+	compute-distance-matrix.jl \
+	${fasta} \
+	${cluster_table} \
+	${yearmonth} ${cluster_count} ${majority_centroid}
 	"""
 
 }
