@@ -37,7 +37,7 @@ function weight_by_cluster_size(seq_name::String, cluster_table::DataFrame)
     centroids = filter(:1 => x -> x == "C", cluster_table)
 
     # filter down to hits only
-    hits = filter(:1 => x -> x == "H", cluster_table)
+    hits = filter(:1 => x -> x != "C", cluster_table)
     if nrow(hits) == 0
         month_total = 1
     else
