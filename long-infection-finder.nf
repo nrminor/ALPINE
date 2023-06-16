@@ -147,15 +147,16 @@ workflow {
 		FIND_MAJORITY_CLUSTER.out
 	)
 
-	BUILD_CENTROID_TREE (
-		PREP_CENTROID_FASTAS.out
-			.filter { it[1].toInteger() > 3 }
-			.map { fasta, count -> fasta }
-	)
+	// BUILD_CENTROID_TREE (
+	// 	PREP_CENTROID_FASTAS.out
+	// 		.filter { it[1].toInteger() > 3 }
+	// 		.map { fasta, count -> fasta }
+	// )
 
 	MDS_PLOT (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		PREP_CENTROID_FASTAS.out
+			.map { fasta, count -> fasta }
 	)
 
 	// PLOT_TREE (
@@ -788,7 +789,7 @@ process MDS_PLOT {
 	maxRetries 2
 
 	input:
-	each path(cluster_table)
+	path cluster_table
 	each path(centroid_fasta)
 
 	output:

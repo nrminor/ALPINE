@@ -32,72 +32,109 @@ for (i in yearmonths){
   distmat = read.csv(paste(i, "-dist-matrix.csv", sep = ""))
   
   # define high-distance accession
-  max_distance <- 0
-  distant_acc <- ""
+  min_distance <- 100.0
+  distant_accs <- ""
+  least_distant_acc <- ""
+  distmat$Sum_weighted_distances <- 0.0
   for (j in 1:nrow(distmat)){
     
     accession <- distmat[j, "Sequence_Name"]
     distances <- as.numeric(distmat[j,2:ncol(distmat)])
     distances <- distances[distances!=0]
-    new_mean <- mean(distances)
+    new_sum <- sum(distances)
     
+    distmat$Sum_weighted_distances[j] <- new_sum
+
     # distmat <- distmat[!grepl(ref_id, distmat$Sequence_Name),!grepl(ref_id, colnames(distmat))]
+    
+    # minimum version
     
     if (grepl(ref_id, accession)){
       next
-    } else if (new_mean > max_distance){
-      max_distance <- new_mean
-      distant_acc <- accession
+    } else if (new_sum < min_distance){
+      min_distance <- new_sum
+      least_distant_acc <- accession
     } else {
-      break
+      next
     }
     
   }
+  distmat <- distmat[order(distmat$Sequence_Name),] ; rownames(distmat) <- NULL
   
-  # determining which cluster corresponds to this more evolved virus
+  # collating cluster metadata with distances
   cluster_table <- read.delim(paste(i, "-clusters.uc", sep = ""), header = F)
-  row_hits <- cluster_table[grepl(distant_acc, cluster_table$V9),]
-  if (nrow(row_hits)==0){
-    break
+  centroids <- cluster_table[cluster_table$V1=="C",]
+  centroids <- centroids[order(centroids$V9),] ; rownames(centroids) <- NULL
+  stopifnot(nrow(distmat) == nrow(centroids))
+  stopifnot(unique(distmat$Sequence_Name == centroids$V9) == TRUE)
+  distmat$Cluster_Size <- 0
+  distmat$Cluster_Size <- centroids$V3
+  distmat <- distmat[order(distmat$Sum_weighted_distances, decreasing = T),] ; rownames(distmat) <- NULL
+  distmat$Month <- i 
+  distmat$Cluster <- centroids$V2
+  
+  # new cluster table
+  all_seqs <- distmat[, 
+                      c("Sequence_Name", "Sum_weighted_distances", 
+                        "Cluster_Size", "Month", "Cluster")]
+  
+  # adding all cluster sequences
+  hits <- cluster_table[cluster_table$V1 == "H",]
+  for (j in 1:nrow(hits)){
+    
+    # record accession and the centroid for that accession
+    accession <- hits$V9[j]
+    centroid <- hits$V10[j]
+    distance <- all_seqs[all_seqs$Sequence_Name==centroid, "Sum_weighted_distances"]
+    cluster_size <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster_Size"]
+    month <- i
+    cluster <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster"]
+    
+    # construct a new row for the all_seqs dataframe
+    new_row <- c(accession, distance, cluster_size, month, cluster)
+    
+    # bind to table
+    all_seqs <- rbind(all_seqs, new_row)
+    
   }
-  cluster_number <- as.numeric(unique(row_hits$V2))
+  all_seqs <- all_seqs[order(all_seqs$Sum_weighted_distances),]
+  rownames(all_seqs) <- NULL
   
-  # creating table for that cluster and adding branch length to it
-  high_dist_cluster <- cluster_table[cluster_table$V2==cluster_number,]
-  high_dist_cluster$mean_nucleotide_distance <- max_distance
-  high_dist_cluster$year_month <- i
-  high_dist_cluster <- high_dist_cluster[high_dist_cluster$V1!="C",]
-  rownames(high_dist_cluster) <- NULL
-  
-  # bring in FASTA
-  cluster_seqs <- read.delim(paste(i, "-cluster-seqs", cluster_number, sep = ""), header = F)
-  
-  # add that FASTA to a growing FASTA object of all hits, which will be exported
-  # after normalizing later
-  high_dist_seqs <- rbind(high_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
-  
-  # isolate the high distance cluster metadata from NCBI, and save it in its own
-  # data frame that will be exported later
-  first_accession <- high_dist_cluster$V9[1]
-  for (j in high_dist_cluster$V9){
+  # bring these new data into the NCBI metadata
+  for (j in 1:nrow(all_seqs)){
     
-    ncbi_row <- metadata[metadata$Accession==j,]
+    accession <- all_seqs$Sequence_Name[j]
     
-    # Add in some useful columns from the vsearch --clust_fast results to the
-    # final metadata table
-    if (i == first_yearmonth & j == first_accession){
+    if (!("Sum_weighted_distances" %in% colnames(metadata))){
       
-      ncbi_row$mean_nucleotide_distance <- high_dist_cluster[high_dist_cluster$V9==j,"mean_nucleotide_distance"]
-      ncbi_row$year_month <- high_dist_cluster[high_dist_cluster$V9==j, "year_month"]
-      high_dist_meta <- ncbi_row
-      
-    } else {
-      
-      ncbi_row$mean_nucleotide_distance <- high_dist_cluster[high_dist_cluster$V9==j, "mean_nucleotide_distance"]
-      ncbi_row$year_month <- high_dist_cluster[high_dist_cluster$V9==j, "year_month"]
-      high_dist_meta <- rbind(high_dist_meta, ncbi_row)
+      # create new columns to fill
+      metadata$Sum_weighted_distances <- 0.0
+      metadata$Cluster_Size <- 0
+      metadata$Month_Cluster <- NA
       
     }
+    
+    # fill in distmat data in the NCBI metadata
+    metadata[metadata$Accession==accession, 
+             "Sum_weighted_distances"] <- as.numeric(all_seqs$Sum_weighted_distances[j])
+    metadata[metadata$Accession==accession, 
+             "Cluster_Size"] <- as.numeric(all_seqs$Cluster_Size[j])
+    metadata[metadata$Accession==accession, 
+             "Month_Cluster"] <- paste(all_seqs$Month[j], all_seqs$Cluster[j], sep = "_")
+    
+    
+  }
+  
+  # bring in FASTAs
+  fastas <- list.files(path = ".", pattern = "*-cluster-seqs*")
+  for (j in fastas){
+    
+    # bring in FASTA
+    cluster_seqs <- read.delim(j, header = F)
+    
+    # add that FASTA to a growing FASTA object of all hits, which will be exported
+    # after normalizing later
+    high_dist_seqs <- rbind(high_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
     
   }
   
@@ -106,8 +143,8 @@ for (i in yearmonths){
 # normalizing year-month by down-prioritizing branches that are not exceptionally
 # long compared to all other year-months. I do this here by retaining only sequences that
 # are in clusters above the 90% quantile of distances, which pulls out true outliers.
-retention_threshold = quantile(high_dist_meta$mean_nucleotide_distance, seq(0, 1, 0.1))[10]
-high_dist_meta <- subset(high_dist_meta, mean_nucleotide_distance >= retention_threshold)
+retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.01))[98]
+high_dist_meta <- subset(metadata, Sum_weighted_distances >= retention_threshold)
 high_dist_seqs$keep <- NA
 high_dist_seqs$keep <- vapply(high_dist_seqs$V1, function(i){
   
