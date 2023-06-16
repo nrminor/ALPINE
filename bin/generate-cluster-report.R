@@ -179,5 +179,5 @@ write.table(high_dist_seqs, "high_distance_candidates.fasta", row.names = F, col
 
 # writing candidate metadata, which combines vsearch --clust_fast results with 
 # NCBI metadata and iqTree branch lengths
-high_dist_meta <- high_dist_meta[order(high_dist_meta$mean_nucleotide_distance, decreasing = T),]
+high_dist_meta <- high_dist_meta[order(high_dist_meta$Sum_weighted_distances, decreasing = T),]
 write.table(high_dist_meta, "high_distance_candidates.tsv", row.names = F, quote = F, sep = "\t")
