@@ -862,6 +862,7 @@ process GENERATE_CLUSTER_REPORT {
 	output:
 	path "*.tsv", emit: metadata
 	path "*.fasta", emit: high_dist_seqs
+	path "*.pdf", emit: plots
 
 	script:
 	"""

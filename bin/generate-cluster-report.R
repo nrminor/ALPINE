@@ -140,10 +140,23 @@ for (i in yearmonths){
   
 }
 
+# define retention threshold based on the data
+retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.01))[98]
+
+# plot distribution of summed weighted distances
+pdf("distance_distribution.pdf", width = 7, height = 5.5)
+hist(metadata$Sum_weighted_distances, freq = FALSE, col = "lightblue", ylim = c(0, 0.15), 
+     xlab = "Cluster Size Weighted Distances", ylab = "Frequency", 
+     main = "Frequency Distribution of Nucleotide Distances")
+lines(density(metadata$Sum_weighted_distances), col = "darkblue", lwd = 2)
+abline(v = retention_threshold, col = "red", lwd = 3)
+text(x = retention_threshold+5, y = (0.15/2), adj = 0,
+     labels = paste("Retention Threshold:\n", retention_threshold ))
+dev.off()
+
 # normalizing year-month by down-prioritizing branches that are not exceptionally
 # long compared to all other year-months. I do this here by retaining only sequences that
 # are in clusters above the 90% quantile of distances, which pulls out true outliers.
-retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.01))[98]
 high_dist_meta <- subset(metadata, Sum_weighted_distances >= retention_threshold)
 high_dist_seqs$keep <- NA
 high_dist_seqs$keep <- vapply(high_dist_seqs$V1, function(i){
