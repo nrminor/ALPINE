@@ -431,6 +431,9 @@ process FILTER_TSV_TO_GEOGRAPHY {
 	path "*.tsv", emit: metadata
 	path "*.txt", emit: accessions
 
+	when:
+	params.download_only == false
+
 	script:
 	"""
 	filter-to-geography.jl ${metadata} ${params.geography}
@@ -469,8 +472,8 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	script:
 	"""
-	seqtk subseq ${fasta} ${accessions} > filtered_to_geography.fasta && \
-	count=\$(grep -c "^>" filtered_to_geography.fasta)
+	subseq_rs ${fasta} ${accessions} && \
+	count=\$(grep -c "^>" filtered-to-geography.fasta)
 	"""
 
 }

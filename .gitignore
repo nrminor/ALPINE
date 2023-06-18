@@ -6,6 +6,7 @@ resources/
 sandbox/
 results/pipeline_run_info/
 deprecated/
+.vscode/
 
 results/report.html*
 results/

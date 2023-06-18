@@ -65,7 +65,8 @@ RUN mamba install -y -c bioconda -c anaconda -c conda-forge psutil biopython pan
 # pangolin=4.2
 
 # Install R channel packages
-RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape r-adephylo 
+RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse 
+# r-ape r-adephylo 
 
 # Install nextflow
 RUN wget -qO- https://get.nextflow.io | bash && \
@@ -73,15 +74,15 @@ RUN wget -qO- https://get.nextflow.io | bash && \
     nextflow self-update
 
 # Install seqtk
-RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
-    tar -zxvf v1.3.tar.gz && \
-    cd seqtk-1.3 && \
-    make && \
-    mv seqtk /usr/local/bin/ && \
-    cd .. && \
-    rm -rf seqtk-1.3 v1.3.tar.gz && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
+#     tar -zxvf v1.3.tar.gz && \
+#     cd seqtk-1.3 && \
+#     make && \
+#     mv seqtk /usr/local/bin/ && \
+#     cd .. && \
+#     rm -rf seqtk-1.3 v1.3.tar.gz && \
+#     apt-get clean && \
+#     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
@@ -96,8 +97,20 @@ RUN julia -e 'using Pkg; \
             Pkg.add(["BioSequences", "CSV", "DataFrames", "FastaIO", "FileIO", "Distances"]); \
             Pkg.instantiate()'
 
+# create directory for Rust projects
+RUN mkdir /rust_projects
+
+# copy subseq_rs into /rust_projects and compile
+COPY subseq_rs/ /rust_projects/subseq_rs/
+
+# install Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    cd /rust_projects/subseq_rs && \
+    $HOME/.cargo/bin/cargo build --release && \
+    ln -s /rust_projects/subseq_rs/target/release/subseq_rs /usr/local/bin/subseq_rs
+
 # Make sure nothing is amiss and that julia is still in the path
-ENV PATH=/usr/local/bin:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:$PATH
+ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \
