@@ -10,7 +10,7 @@ library(adephylo)
 metadata <- read.delim(args[1])
 
 # defining Reference Sequence Accession number
-ref_id <- as.character(args[2])
+# ref_id <- as.character(args[2])
 
 # creating list of year-month combinations to loop through
 yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-dist-matrix.csv"), "-dist-matrix.csv")
@@ -49,14 +49,14 @@ for (i in yearmonths){
     
     # minimum version
     
-    if (grepl(ref_id, accession)){
-      next
-    } else if (new_sum < min_distance){
-      min_distance <- new_sum
-      least_distant_acc <- accession
-    } else {
-      next
-    }
+    # if (grepl(ref_id, accession)){
+    #   next
+    # } else if (new_sum < min_distance){
+    #   min_distance <- new_sum
+    #   least_distant_acc <- accession
+    # } else {
+    #   next
+    # }
     
   }
   distmat <- distmat[order(distmat$Sequence_Name),] ; rownames(distmat) <- NULL

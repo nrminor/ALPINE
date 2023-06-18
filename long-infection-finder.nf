@@ -18,7 +18,7 @@ workflow {
 	}
 
 	// Data setup steps
-	DOWNLOAD_REFSEQ ( )
+	// DOWNLOAD_REFSEQ ( )
 
 	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen ${params.pathogen}"
 	
@@ -168,7 +168,6 @@ workflow {
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
 		CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
 		COMPUTE_DISTANCE_MATRIX.out.collect(),
-		DOWNLOAD_REFSEQ.out.ref_id,
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata
 	)
 
@@ -856,7 +855,6 @@ process GENERATE_CLUSTER_REPORT {
 	path cluster_tables
 	path cluster_fastas
 	path distance_matrices
-	val ref_id
 	path metadata
 
 	output:
@@ -866,7 +864,7 @@ process GENERATE_CLUSTER_REPORT {
 
 	script:
 	"""
-	generate-cluster-report.R ${metadata} ${ref_id}
+	generate-cluster-report.R ${metadata}
 	"""
 
 }
