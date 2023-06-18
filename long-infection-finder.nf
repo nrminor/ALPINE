@@ -236,6 +236,10 @@ else {
     params.publishMode = 'copy'
 }
 
+if ( params.pathogen == "SARS-CoV-2" || params.pathogen == "sars-cov-2" ){
+	pathogen = "2697049"
+}
+
 // Making a date-stamped results folder
 params.dated_results = params.results + "/" + params.date
 
@@ -297,7 +301,7 @@ process DOWNLOAD_REFSEQ {
 
 	script:
 	"""
-	datasets download virus genome taxon ${params.pathogen} \
+	datasets download virus genome taxon ${pathogen} \
 	--refseq && \
 	unzip ncbi_dataset.zip
 	mv ncbi_dataset/data/genomic.fna ./${params.pathogen}_refseq.fasta
@@ -343,7 +347,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 
 	script:
 	"""
-	datasets download virus genome taxon ${params.pathogen} --complete-only
+	datasets download virus genome taxon ${pathogen} --complete-only
 	"""	
 
 }

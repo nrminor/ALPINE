@@ -3,14 +3,9 @@ args = commandArgs(trailingOnly=TRUE)
 
 # load necessary packages
 library(tidyverse)
-library(ape)
-library(adephylo)
 
 # Bringing in NCBI metadata
 metadata <- read.delim(args[1])
-
-# defining Reference Sequence Accession number
-# ref_id <- as.character(args[2])
 
 # creating list of year-month combinations to loop through
 yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-dist-matrix.csv"), "-dist-matrix.csv")
@@ -44,19 +39,6 @@ for (i in yearmonths){
     new_sum <- sum(distances)
     
     distmat$Sum_weighted_distances[j] <- new_sum
-
-    # distmat <- distmat[!grepl(ref_id, distmat$Sequence_Name),!grepl(ref_id, colnames(distmat))]
-    
-    # minimum version
-    
-    # if (grepl(ref_id, accession)){
-    #   next
-    # } else if (new_sum < min_distance){
-    #   min_distance <- new_sum
-    #   least_distant_acc <- accession
-    # } else {
-    #   next
-    # }
     
   }
   distmat <- distmat[order(distmat$Sequence_Name),] ; rownames(distmat) <- NULL
