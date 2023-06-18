@@ -20,7 +20,7 @@ workflow {
 	// Data setup steps
 	// DOWNLOAD_REFSEQ ( )
 
-	println "This run will process NCBI Reference Sequence and GenBank data for the pathogen ${params.pathogen}"
+	println "This run will search NCBI GenBank data for the pathogen ${params.pathogen}"
 	
 	if ( params.compare_lineage_dates == true ){
 
