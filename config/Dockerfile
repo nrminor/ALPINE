@@ -74,15 +74,15 @@ RUN wget -qO- https://get.nextflow.io | bash && \
     nextflow self-update
 
 # Install seqtk
-# RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
-#     tar -zxvf v1.3.tar.gz && \
-#     cd seqtk-1.3 && \
-#     make && \
-#     mv seqtk /usr/local/bin/ && \
-#     cd .. && \
-#     rm -rf seqtk-1.3 v1.3.tar.gz && \
-#     apt-get clean && \
-#     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
+    tar -zxvf v1.3.tar.gz && \
+    cd seqtk-1.3 && \
+    make && \
+    mv seqtk /usr/local/bin/ && \
+    cd .. && \
+    rm -rf seqtk-1.3 v1.3.tar.gz && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \

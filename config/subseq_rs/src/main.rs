@@ -59,6 +59,7 @@ fn main() {
 
     }
 
+
     // Process the last record in the file if it matches an accession of interest
     if is_sequence_of_interest && !current_sequence.is_empty() {
         write_record(&mut writer, &current_accession, &current_sequence);
@@ -84,21 +85,7 @@ fn load_accessions(filename: &str) -> std::io::Result<HashSet<String>> {
 fn write_record(writer: &mut LineWriter<File>, accession: &str, sequence: &str) {
     writeln!(writer, ">{}", accession).expect("Failed to write record name");
 
-    const MAX_BUFFERED_CHUNKS: usize = 1000;
-    let mut buffer: Vec<String> = Vec::with_capacity(MAX_BUFFERED_CHUNKS);
-
     for chunk in sequence.as_bytes().chunks(80) {
-        buffer.push(String::from_utf8_lossy(chunk).to_string());
-
-        if buffer.len() == MAX_BUFFERED_CHUNKS {
-            writeln!(writer, "{}", buffer.join("\n")).expect("Failed to write sequence");
-            buffer.clear();
-        }
-    
-
-        if !buffer.is_empty() {
-            writeln!(writer, "{}", buffer.join("\n")).expect("Failed to write sequence");
-        }
+        writeln!(writer, "{}", String::from_utf8_lossy(chunk)).expect("Failed to write sequence");
     }
-
 }
