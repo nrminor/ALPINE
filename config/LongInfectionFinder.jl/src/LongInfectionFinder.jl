@@ -1,8 +1,3 @@
-#!/usr/bin/env julia
-
-using Pkg
-Pkg.generate("LongInfectionFinder")
-
 module LongInfectionFinder
 
 # load dependencies

@@ -90,11 +90,13 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
     ln -s /opt/julia-1.9.0/bin/julia /usr/local/bin/julia && \
     rm julia-1.9.0-linux-x86_64.tar.gz
 
-# Install Julia packages
+# Copy Julia functions to precompile as a module
 ENV JULIA_DEPOT_PATH=/root/.julia
+COPY LongInfectionFinder.jl/ /root/.julia/environments/v1.9
+
+# Install Julia packages
 RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
-            Pkg.add(["BioSequences", "CSV", "DataFrames", "FastaIO", "FileIO", "Distances"]); \
             Pkg.instantiate()'
 
 # create directory for Rust projects
