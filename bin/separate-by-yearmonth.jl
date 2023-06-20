@@ -16,4 +16,4 @@ metadata_df = CSV.read(input_tsv_path, DataFrame, delim="\t")
 accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
 
 # run the function
-separate_by_month(fasta_path)
+separate_by_month(fasta_path, accession_to_date)

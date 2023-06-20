@@ -113,7 +113,7 @@ function lookup_date(record_name::String, lookup::Dict)
 end
 
 # function that pulls in metadata to separate each sequence into a FASTA for the month it was collected in
-function separate_by_month(input_fasta::String)
+function separate_by_month(input_fasta::String, accession_to_date::Dict)
 
     # creating a dictionary of FastaWriters for each year_month
     open_writers = Dict{String, FastaWriter}()
