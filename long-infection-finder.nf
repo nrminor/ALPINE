@@ -454,7 +454,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	bite-sized pieces of ~5,000 sequences.
 	*/
 
-	label "lif_container"
+	// label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
@@ -472,7 +472,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	script:
 	"""
-	subseq_rs ${fasta} ${accessions} && \
+	${params.subseq_exe} ${fasta} ${accessions} && \
 	count=\$(grep -c "^>" filtered-to-geography.fasta)
 	"""
 

@@ -7,6 +7,7 @@ sandbox/
 results/pipeline_run_info/
 deprecated/
 .vscode/
+config/subseq_rs/target
 
 results/report.html*
 results/

@@ -37,8 +37,11 @@ fn main() {
             // Process the previous record if it matches an accession of interest and is not empty
             if is_sequence_of_interest && !current_sequence.is_empty() {
                 write_record(&mut writer, &current_accession, &current_sequence);
-                current_sequence.clear();
             }
+
+            // clear accession and sequence contents now that we are onto the next record
+            current_sequence.clear();
+            current_accession.clear();
     
             // Update the current accession
             let parts: Vec<&str> = line.trim().split_whitespace().collect();
@@ -58,7 +61,6 @@ fn main() {
     line.clear();
 
     }
-
 
     // Process the last record in the file if it matches an accession of interest
     if is_sequence_of_interest && !current_sequence.is_empty() {
