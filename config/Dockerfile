@@ -65,8 +65,7 @@ RUN mamba install -y -c bioconda -c anaconda -c conda-forge psutil biopython pan
 # pangolin=4.2
 
 # Install R channel packages
-RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse 
-# r-ape r-adephylo 
+RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape
 
 # Install nextflow
 RUN wget -qO- https://get.nextflow.io | bash && \
