@@ -19,4 +19,4 @@ set_to_uppercase(fasta_file,tmp)
 cluster_table = CSV.read(table_path, DataFrame, delim="\t", header=false)
 
 # run the function
-distance_matrix(tmp, cluster_table, count, yearmonth)
+distance_matrix(tmp, cluster_table, count, majority_centroid, yearmonth)

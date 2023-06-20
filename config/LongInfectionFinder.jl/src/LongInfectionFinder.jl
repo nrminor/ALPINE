@@ -192,7 +192,7 @@ function weight_by_cluster_size(seq_name::String, cluster_table::DataFrame)
 end
 
 # compute cluster-size-weighted weighted distance matrices
-function distance_matrix(temp_filename::String, cluster_table::DataFrame, count::Int, yearmonth::String)
+function distance_matrix(temp_filename::String, cluster_table::DataFrame, count::Int, majority_centroid::String, yearmonth::String)
 
     # Collect both names and sequences
     seqs = [seq for (name, seq) in FastaReader(temp_filename)]
