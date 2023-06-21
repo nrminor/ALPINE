@@ -45,6 +45,9 @@ for (i in yearmonths){
   
   # collating cluster metadata with distances
   cluster_table <- read.delim(paste(i, "-clusters.uc", sep = ""), header = F)
+  if (nrow(distmat)==1){
+    cluster_table <- cluster_table[cluster_table$V9==distmat$Sequence_Name[1],]
+  }
   centroids <- cluster_table[cluster_table$V1=="C",]
   centroids <- centroids[order(centroids$V9),] ; rownames(centroids) <- NULL
   stopifnot(nrow(distmat) == nrow(centroids))
@@ -61,14 +64,33 @@ for (i in yearmonths){
                         "Cluster_Size", "Month", "Cluster")]
   
   # adding all cluster sequences
-  hits <- cluster_table[cluster_table$V1 == "H",]
-  for (j in 1:nrow(hits)){
+  if ("H" %in% cluster_table$V1){
+    hits <- cluster_table[cluster_table$V1 == "H",]
+    for (j in 1:nrow(hits)){
+      
+      # record accession and the centroid for that accession
+      accession <- hits$V9[j]
+      centroid <- hits$V10[j]
+      distance <- all_seqs[all_seqs$Sequence_Name==centroid, "Sum_weighted_distances"]
+      cluster_size <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster_Size"]
+      month <- i
+      cluster <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster"]
+      
+      # construct a new row for the all_seqs dataframe
+      new_row <- c(accession, distance, cluster_size, month, cluster)
+      
+      # bind to table
+      all_seqs <- rbind(all_seqs, new_row)
+      
+    }
+    
+  } else {
     
     # record accession and the centroid for that accession
-    accession <- hits$V9[j]
-    centroid <- hits$V10[j]
-    distance <- all_seqs[all_seqs$Sequence_Name==centroid, "Sum_weighted_distances"]
-    cluster_size <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster_Size"]
+    accession <- centroids$V9[j]
+    centroid <- centroids$V9[j]
+    distance <- as.numeric(all_seqs[all_seqs$Sequence_Name==centroid, "Sum_weighted_distances"])
+    cluster_size <- as.numeric(all_seqs[all_seqs$Sequence_Name==centroid, "Cluster_Size"])
     month <- i
     cluster <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster"]
     
@@ -79,8 +101,10 @@ for (i in yearmonths){
     all_seqs <- rbind(all_seqs, new_row)
     
   }
+  
   all_seqs <- all_seqs[order(all_seqs$Sum_weighted_distances),]
   rownames(all_seqs) <- NULL
+  
   
   # bring these new data into the NCBI metadata
   for (j in 1:nrow(all_seqs)){
@@ -107,19 +131,23 @@ for (i in yearmonths){
     
   }
   
-  # bring in FASTAs
-  fastas <- list.files(path = ".", pattern = "*-cluster-seqs*")
-  for (j in fastas){
-    
-    # bring in FASTA
-    cluster_seqs <- read.delim(j, header = F)
-    
-    # add that FASTA to a growing FASTA object of all hits, which will be exported
-    # after normalizing later
-    high_dist_seqs <- rbind(high_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
-    
-  }
-  
+}
+
+# check to make sure metadata has clustering information in it
+stopifnot(nrow(metadata[!is.na(metadata$Month_Cluster),])>0)
+metadata <- metadata[metadata$Sum_weighted_distances>0,] ; rownames(metadata) <- NULL
+
+# bring in FASTAs
+fastas <- list.files(path = ".", pattern = "*-cluster-seqs*")
+for (fa in fastas){
+
+  # bring in FASTA
+  cluster_seqs <- read.delim(fa, header = F)
+
+  # add that FASTA to a growing FASTA object of all hits, which will be exported
+  # after normalizing later
+  high_dist_seqs <- rbind(high_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
+
 }
 
 # define retention threshold based on the data

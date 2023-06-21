@@ -156,6 +156,7 @@ workflow {
 	MDS_PLOT (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		PREP_CENTROID_FASTAS.out
+			.filter { it[1].toInteger() > 2 }
 			.map { fasta, count -> fasta }
 	)
 
