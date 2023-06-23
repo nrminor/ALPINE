@@ -28,6 +28,8 @@ fn main() {
     let mut current_accession = String::new();
     let mut current_sequence = String::new();
     let mut is_sequence_of_interest = false;
+    let mut buffer = Vec::new();
+    let buffer_limit = 5000000;
 
     let mut line = String::new();
     while reader.read_line(&mut line).unwrap() > 0 {
@@ -36,7 +38,7 @@ fn main() {
 
             // Process the previous record if it matches an accession of interest and is not empty
             if is_sequence_of_interest && !current_sequence.is_empty() {
-                write_record(&mut writer, &current_accession, &current_sequence);
+                write_record(&mut writer, &current_accession, &current_sequence, &mut buffer, buffer_limit);
             }
 
             // clear accession and sequence contents now that we are onto the next record
@@ -64,9 +66,11 @@ fn main() {
 
     // Process the last record in the file if it matches an accession of interest
     if is_sequence_of_interest && !current_sequence.is_empty() {
-        write_record(&mut writer, &current_accession, &current_sequence);
+        write_record(&mut writer, &current_accession, &current_sequence, &mut buffer, buffer_limit);
     }
 
+    // Flush the buffer at the end
+    flush_buffer(&mut writer, &mut buffer);
 
     println!("FASTA subsetting completed!");
 }
@@ -84,10 +88,23 @@ fn load_accessions(filename: &str) -> std::io::Result<HashSet<String>> {
     Ok(accessions)
 }
 
-fn write_record(writer: &mut LineWriter<File>, accession: &str, sequence: &str) {
-    writeln!(writer, ">{}", accession).expect("Failed to write record name");
+fn write_record(writer: &mut LineWriter<File>, accession: &str, sequence: &str, buffer: &mut Vec<String>, buffer_limit: usize) {
+    buffer.push(format!(">{}", accession));
 
     for chunk in sequence.as_bytes().chunks(80) {
-        writeln!(writer, "{}", String::from_utf8_lossy(chunk)).expect("Failed to write sequence");
+        buffer.push(String::from_utf8_lossy(chunk).into_owned());
+    }
+
+    // Check if the buffer size has reached the limit
+    if buffer.len() >= buffer_limit {
+        flush_buffer(writer, buffer);
     }
 }
+
+fn flush_buffer(writer: &mut LineWriter<File>, buffer: &mut Vec<String>) {
+    for line in buffer.drain(..) {
+        writeln!(writer, "{}", line).expect("Failed to write sequence");
+    }
+    writer.flush().expect("Failed to flush writer");
+}
+
