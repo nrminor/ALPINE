@@ -6,7 +6,7 @@ library(tidyverse)
 library(compiler)
 
 # set just-in-time compilation setting so that top-level loops are JIT compiled
-compiler::enableJIT(2)
+compiler::enableJIT(3)
 
 # Bringing in NCBI metadata
 metadata <- read.delim(args[1])
