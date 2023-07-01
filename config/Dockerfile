@@ -101,14 +101,14 @@ RUN julia -e 'using Pkg; \
 # create directory for Rust projects
 RUN mkdir /rust_projects
 
-# copy subseq_rs into /rust_projects and compile
+# copy subseq.rs into /rust_projects and compile
 COPY subseq.rs/ /rust_projects/subseq.rs/
 
 # install Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
     cd /rust_projects/subseq.rs && \
     $HOME/.cargo/bin/cargo build --release && \
-    ln -s /rust_projects/subseq_rs/target/release/subseq_rs /usr/local/bin/subseq_rs
+    ln -s /rust_projects/subseq.rs/target/release/subseq_rs /usr/local/bin/subseq_rs
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env
