@@ -997,7 +997,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	script:
 	"""
-	compare_lineage_prevalences.R ${csv} ${task.cpus}
+	compare-lineage-prevalences.R ${csv} ${task.cpus}
 	"""
 }
 
