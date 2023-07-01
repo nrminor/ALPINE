@@ -165,7 +165,7 @@ workflow {
 	// 	DOWNLOAD_REFSEQ.out.ref_id
 	// )
 
-	GENERATE_CLUSTER_REPORT (
+	SUMMARIZE_CANDIDATES (
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
 		CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
 		COMPUTE_DISTANCE_MATRIX.out.collect(),
@@ -173,7 +173,7 @@ workflow {
 	)
 
 	RUN_META_CLUSTER (
-		GENERATE_CLUSTER_REPORT.out.high_dist_seqs
+		SUMMARIZE_CANDIDATES.out.high_dist_seqs
 			.filter { it[1].toInteger() > 2 }
 			.map { fasta, count -> fasta }
 	)
@@ -845,7 +845,7 @@ process PLOT_TREE {
 
 }
 
-process GENERATE_CLUSTER_REPORT {
+process SUMMARIZE_CANDIDATES {
 
 	/*
 	In this process, the clustering results are combined with metadata
@@ -874,7 +874,7 @@ process GENERATE_CLUSTER_REPORT {
 
 	script:
 	"""
-	generate-cluster-report.R ${metadata} && \
+	report-high-dist-candidates.R ${metadata} && \
 	count=\$(grep -c "^>" high_distance_candidates.fasta)
 	"""
 
