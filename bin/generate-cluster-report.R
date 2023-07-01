@@ -170,15 +170,17 @@ for (fa in fastas){
 retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.001))[995]
 
 # plot distribution of summed weighted distances
-pdf("distance_distribution.pdf", width = 7, height = 5.5)
-hist(metadata$Sum_weighted_distances, freq = FALSE, col = "lightblue", ylim = c(0, 0.15), 
-     xlab = "Cluster Size Weighted Distances", ylab = "Frequency", 
-     main = "Frequency Distribution of Nucleotide Distances")
-lines(density(metadata$Sum_weighted_distances), col = "darkblue", lwd = 2)
-abline(v = retention_threshold, col = "red", lwd = 3)
-text(x = retention_threshold+5, y = (0.15/2), adj = 0,
-     labels = paste("Retention Threshold:\n", retention_threshold ))
-dev.off()
+if nrow(metadata > 1){
+  pdf("distance_distribution.pdf", width = 7, height = 5.5)
+  hist(metadata$Sum_weighted_distances, freq = FALSE, col = "lightblue", ylim = c(0, 0.15), 
+       xlab = "Cluster Size Weighted Distances", ylab = "Frequency", 
+       main = "Frequency Distribution of Nucleotide Distances")
+  lines(density(metadata$Sum_weighted_distances), col = "darkblue", lwd = 2)
+  abline(v = retention_threshold, col = "red", lwd = 3)
+  text(x = retention_threshold+5, y = (0.15/2), adj = 0,
+       labels = paste("Retention Threshold:\n", retention_threshold ))
+  dev.off()
+}
 
 # normalizing year-month by down-prioritizing branches that are not exceptionally
 # long compared to all other year-months. I do this here by retaining only sequences that

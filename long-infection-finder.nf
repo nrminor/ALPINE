@@ -174,6 +174,8 @@ workflow {
 
 	RUN_META_CLUSTER (
 		GENERATE_CLUSTER_REPORT.out.high_dist_seqs
+			.filter { it[1].toInteger() > 2 }
+			.map { fasta, count -> fasta }
 	)
 
 	// META_CLUSTER_REPORT (
@@ -473,7 +475,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	script:
 	"""
-	${params.subseq_exe} ${fasta} ${accessions} && \
+	subseq_rs ${fasta} ${accessions} && \
 	count=\$(grep -c "^>" filtered-to-geography.fasta)
 	"""
 
@@ -867,12 +869,13 @@ process GENERATE_CLUSTER_REPORT {
 
 	output:
 	path "*.tsv", emit: metadata
-	path "*.fasta", emit: high_dist_seqs
+	tuple path("*.fasta"), env(count), emit: high_dist_seqs
 	path "*.pdf", emit: plots
 
 	script:
 	"""
-	generate-cluster-report.R ${metadata}
+	generate-cluster-report.R ${metadata} && \
+	count=\$(grep -c "^>" high_distance_candidates.fasta)
 	"""
 
 }
