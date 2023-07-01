@@ -134,11 +134,11 @@ process_meta <- function(yearmonths, metadata){
       metadata[metadata$Accession==accession, 
                "Month_Cluster"] <- paste(all_seqs$Month[j], all_seqs$Cluster[j], sep = "_")
       
-      return(metadata)
-      
     }
     
   }
+  
+  return(metadata)
   
 }
 # compile the metadata function
