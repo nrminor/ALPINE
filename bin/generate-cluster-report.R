@@ -170,7 +170,7 @@ for (fa in fastas){
 retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.001))[995]
 
 # plot distribution of summed weighted distances
-if (nrow(metadata > 1)){
+if (nrow(metadata) > 1){
   pdf("distance_distribution.pdf", width = 7, height = 5.5)
   hist(metadata$Sum_weighted_distances, freq = FALSE, col = "lightblue", ylim = c(0, 0.15), 
        xlab = "Cluster Size Weighted Distances", ylab = "Frequency", 

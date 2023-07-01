@@ -15,4 +15,5 @@ results/lineage_designation_dates.csv
 results/pango_consensus_sequences.fasta
 .nextflow.log*
 .DS_Store
-._*=
+._*
+.Rhistory
