@@ -4,12 +4,13 @@ args = commandArgs(trailingOnly=TRUE)
 # load necessary packages
 library(tidyverse)
 library(compiler)
+library(Biostrings)
 
 # set just-in-time compilation setting so that top-level loops are JIT compiled
 compiler::enableJIT(3)
 
 # Bringing in NCBI metadata
-metadata <- read.delim(args[1])
+metadata <- read_tsv(args[1])
 
 # creating list of year-month combinations to loop through
 yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-dist-matrix.csv"), "-dist-matrix.csv")
@@ -151,18 +152,18 @@ stopifnot(nrow(metadata[!is.na(metadata$Month_Cluster),])>0)
 metadata <- metadata[metadata$Sum_weighted_distances>0,] ; rownames(metadata) <- NULL
 
 # make an empty data frame to store high distance FASTA sequences
-high_dist_seqs <- data.frame()
+high_dist_seqs <- DNAStringSet()
 
 # bring in FASTAs
 fastas <- list.files(path = ".", pattern = "*-cluster-seqs*")
 for (fa in fastas){
   
   # bring in FASTA
-  cluster_seqs <- read.delim(fa, header = F)
+  cluster_seqs <- readDNAStringSet(fa)
   
   # add that FASTA to a growing FASTA object of all hits, which will be exported
   # after normalizing later
-  high_dist_seqs <- rbind(high_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
+  high_dist_seqs <- c(high_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
   
 }
 
@@ -187,31 +188,8 @@ if (nrow(metadata) > 1){
 # are in clusters above the 90% quantile of distances, which pulls out true outliers.
 high_dist_meta <- subset(metadata, Sum_weighted_distances >= retention_threshold)
 normalize_meta <- function(high_dist_seqs, high_dist_meta){
-  high_dist_seqs$keep <- NA
-  high_dist_seqs$keep <- vapply(high_dist_seqs$V1, function(i){
-    
-    if (grepl(">", i) && !(str_remove(i, ">") %in% high_dist_meta$Accession)){
-      keep_value <- FALSE
-    } else if (grepl(">", i) && str_remove(i, ">") %in% high_dist_meta$Accession){
-      keep_value <- TRUE
-    } else {
-      keep_value <- NA
-    }
-    
-    return(keep_value)
-    
-  }, logical(1))
-  for (i in 1:nrow(high_dist_seqs)){
-    
-    if (grepl(">", high_dist_seqs$V1[i])){
-      next
-    } else {
-      high_dist_seqs$keep[i] <- high_dist_seqs$keep[i-1]
-    }
-    
-  }
-  high_dist_seqs <- as.data.frame(high_dist_seqs[high_dist_seqs$keep==T,1]) ; colnames(high_dist_seqs) <- NULL
   
+  high_dist_seqs <- high_dist_seqs[names(high_dist_seqs) %in% high_dist_meta$Accession]
   return(high_dist_seqs)
 }
 
@@ -222,11 +200,11 @@ normalize_meta_cp <- cmpfun(normalize_meta)
 high_dist_seqs <- normalize_meta_cp(high_dist_seqs, high_dist_meta)
 
 # check here to prevent silent errors
-stopifnot(as.numeric(table(grepl(">",high_dist_seqs[,1]))[2]) == nrow(high_dist_meta))
+stopifnot(as.numeric(length(high_dist_seqs)) == nrow(high_dist_meta))
 
 # writing candidate FASTA of high-distance sequences that passed normalization and 
 # filtering
-write.table(high_dist_seqs, "high_distance_candidates.fasta", row.names = F, col.names = F, quote = F, sep = "\t")
+writeXStringSet(high_dist_seqs, "high_distance_candidates.fasta")
 
 # writing candidate metadata, which combines vsearch --clust_fast results with 
 # NCBI metadata and iqTree branch lengths
