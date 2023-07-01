@@ -168,7 +168,7 @@ for (fa in fastas){
 }
 
 # define retention threshold based on the data
-retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.001))[985]
+retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.001))[980]
 
 # plot distribution of summed weighted distances
 pdf("distance_distribution.pdf", width = 7, height = 5.5)
