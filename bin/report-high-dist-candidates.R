@@ -51,14 +51,14 @@ process_meta <- function(yearmonths, metadata){
     
     # collating cluster metadata with distances
     cluster_table <- read.delim(paste(i, "-clusters.uc", sep = ""), header = F)
-    cluster_table <- if (nrow(distmat)==1){
+    if (nrow(distmat)==1){
       cluster_table <- cluster_table[cluster_table$V9==distmat$Sequence_Name[1],]
     }
     centroids <- cluster_table[cluster_table$V1=="C",]
     centroids <- centroids[order(centroids$V9),] ; rownames(centroids) <- NULL
     stopifnot(nrow(distmat) == nrow(centroids))
     stopifnot(unique(distmat$Sequence_Name == centroids$V9) == TRUE)
-    distmat$Cluster_Size <- 0
+    distmat$Cluster <- 0
     distmat$Cluster_Size <- centroids$V3
     distmat <- distmat[order(distmat$Sum_weighted_distances, decreasing = T),] ; rownames(distmat) <- NULL
     distmat$Month <- i 
