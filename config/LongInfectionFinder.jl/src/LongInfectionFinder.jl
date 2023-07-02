@@ -1,7 +1,7 @@
 module LongInfectionFinder
 
 # load dependencies
-using DelimitedFiles, DataFrames, CSV, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics
+using FileIO, DelimitedFiles, DataFrames, Arrow, CSV, FastaIO, Dates, BioSequences, Distances, Statistics, Pipe
 import Base.Threads
 
 export filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, set_to_uppercase, weight_by_cluster_size, distance_matrix, prep_for_clustering
