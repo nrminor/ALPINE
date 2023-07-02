@@ -4,7 +4,7 @@ module LongInfectionFinder
 using DelimitedFiles, DataFrames, CSV, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics
 import Base.Threads
 
-export filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, set_to_uppercase, weight_by_cluster_size, distance_matrix, prep_for_clustering
+export filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, set_to_uppercase, weight_by_cluster_size, distance_matrix
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
@@ -240,6 +240,12 @@ function distance_matrix(temp_filename::String, cluster_table::DataFrame, count:
 
 end
 
+### ------------------------------------------------------------------------- ###
+
+
+
+### FUNCTION THAT IS A COMBINATION OF THE ABOVE FUNCTIONS TO COMPLETE ALL DESIRED OPERATIONS ### 
+### ---------------------------------------------------------------------------------------- ###
 function prep_for_clustering(ncbi_metadata::String, desired_geography::String, ncbi_fasta::String)
 
     # ------------------------------------------------------------------------
@@ -273,6 +279,6 @@ function prep_for_clustering(ncbi_metadata::String, desired_geography::String, n
 
 end
 
-### ------------------------------------------------------------------------- ###
+### ---------------------------------------------------------------------------------------- ###
 
-end # LongInfectionFinder
+end # LongInfectionFinder module
