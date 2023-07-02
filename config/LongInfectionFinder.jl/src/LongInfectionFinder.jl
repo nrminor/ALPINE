@@ -240,6 +240,39 @@ function distance_matrix(temp_filename::String, cluster_table::DataFrame, count:
 
 end
 
+function prep_for_clustering(ncbi_metadata::String, desired_geography::String, ncbi_fasta::String)
+
+    # ------------------------------------------------------------------------
+    # Note that the custom functions below are defined and precompiled in the
+    # LongInfectionFinder.jl module created for this project. These functions
+    # are best run in the context of the project Docker container, the Dockerfile 
+    # for which is provided and built in the config subdirectory of the project
+    # root directory.
+    # ------------------------------------------------------------------------
+    
+    # filter metadata to determine which accessions will be retained downstream
+    filter_by_geo(ncbi_metadata, desired_geography)
+
+    # use rust script to filter FASTA so that only records with the above accessions
+    # will be retained
+    run(Cmd(`subseq_rs $ncbi_fasta accession.txt`))
+
+    # Quickly go through the FASTA and replace all "-" characters with "N" characters
+    replace_gaps("filtered-to-geography.fasta", "no-gaps.fasta")
+
+    # Now that "-" characters have been substituted for "N" characters, go through all
+    # the sequences from the geographic region of interest, and remove any records 
+    # with sequences whose bases are >10% N
+    filter_by_n("no-gaps.fasta", "filtered-by-n.fasta")
+
+    # Finally, we figure out which months each sequence comes from, and separate them 
+    # out into one FASTA per month (or more specifically, per year-month)
+    metadata_df = CSV.read("filtered-to-geography.tsv", DataFrame, delim="\t")
+    accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
+    separate_by_month("filtered-by-n.fasta", accession_to_date)
+
+end
+
 ### ------------------------------------------------------------------------- ###
 
 end # LongInfectionFinder
