@@ -95,7 +95,8 @@ COPY LongInfectionFinder.jl/ /root/.julia/environments/v1.9
 # Install Julia packages
 RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
-            Pkg.instantiate()'
+            Pkg.instantiate(); \
+            Pkg.precompile()'
 
 # create directory for Rust projects
 RUN mkdir /rust_projects
