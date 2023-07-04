@@ -61,8 +61,7 @@ ENV PATH=/opt/conda/bin:$PATH
 RUN conda install -y -c conda-forge mamba
 
 # Install packages with mamba
-RUN mamba install -y -c bioconda -c anaconda -c conda-forge psutil biopython pandas polars vsearch ncbi-datasets-cli=14.2.2 iqtree=1.6.7
-# pangolin=4.2
+RUN mamba install -y -c bioconda -c anaconda -c conda-forge psutil biopython pandas polars vsearch ncbi-datasets-cli=14.2.2 iqtree=1.6.7 numba
 
 # Install R channel packages
 RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape bioconductor-biostrings

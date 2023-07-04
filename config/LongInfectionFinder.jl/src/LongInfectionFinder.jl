@@ -1,14 +1,14 @@
 module LongInfectionFinder
 
 # load dependencies
-using FileIO, DelimitedFiles, DataFrames, Arrow, CSV, FastaIO, Dates, BioSequences, Distances, Statistics, Pipe
+using DelimitedFiles, DataFrames, CSV, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib
 import Base.Threads
 
-export filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, set_to_uppercase, weight_by_cluster_size, distance_matrix, prep_for_clustering
+export filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, set_to_uppercase, weight_by_cluster_size, prep_for_clustering
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
-function filter_by_geo(input_tsv::String,geography::String)
+function filter_by_geo(input_tsv::String,fasta_path::String,geography::String)
 
     # Read in the TSV file with metadata
     metadata_df = CSV.read(input_tsv, DataFrame, delim="\t")
@@ -20,16 +20,40 @@ function filter_by_geo(input_tsv::String,geography::String)
     end
 
     # filter metadata based on desired geography
-    filtered = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
+    filtered_meta = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
 
     # Writing filtered metadata
-    CSV.write("filtered-to-geography.tsv", filtered, delim="\t")
+    CSV.write("filtered-to-geography.tsv", filtered_meta, delim="\t")
 
     # separating out accessions
-    accessions = filtered[!,"Accession"]
+    accessions = filtered_meta[!,"Accession"]
 
-    # Writing accessions to a text file for use by seqtk
-    writedlm("accessions.txt", accessions, "\n")
+    # create a file lock to prevent threads from corrupting the output file
+    u = ReentrantLock()
+
+    # create the output file
+    filtered_seqs = "filtered-to-geography.fasta.zst"
+
+    # use accessions list to filter FASTA records into a ZSTD
+    # compressed FASTA
+    open(ZstdCompressorStream, filtered_seqs, "w") do outstream
+        FastaWriter(outstream) do fa
+            FastaReader(fasta_path) do fr
+                @sync for (name, seq) in fr
+                    Threads.@spawn begin
+                        accession = split(name, " ")[1]
+                        if accession in accessions
+                            Threads.lock(u) do
+                                writeentry(fa, accession, seq)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return filtered_seqs
 
 end
 
@@ -45,8 +69,8 @@ function replace_gaps(fasta_path::String, output_filename::String)
     touch(output_filename)
 
     # iterate through each line in the FASTA to minimuze memory usage
-    open(fasta_path) do infile
-        open(output_filename, "w") do outfile
+    open(ZstdDecompressorStream, fasta_path, "r") do infile
+        open(GzipCompressorStream, output_filename, "w") do outfile
             # Read, replace, and write one line at a time
             for line in eachline(infile)
                 if startswith(line, ">")
@@ -256,26 +280,22 @@ function prep_for_clustering(ncbi_metadata::String, desired_geography::String, n
     # root directory.
     # ------------------------------------------------------------------------
     
-    # filter metadata to determine which accessions will be retained downstream
-    filter_by_geo(ncbi_metadata, desired_geography)
-
-    # use rust script to filter FASTA so that only records with the above accessions
-    # will be retained
-    run(Cmd(`subseq_rs $ncbi_fasta accession.txt`))
+    # filter metadata and fasta to determine which accessions will be retained downstream
+    fasta = filter_by_geo(ncbi_metadata,ncbi_fasta,desired_geography)
 
     # Quickly go through the FASTA and replace all "-" characters with "N" characters
-    replace_gaps("filtered-to-geography.fasta", "no-gaps.fasta")
+    replace_gaps(fasta, "no-gaps.fasta.gz")
 
     # Now that "-" characters have been substituted for "N" characters, go through all
     # the sequences from the geographic region of interest, and remove any records 
     # with sequences whose bases are >10% N
-    filter_by_n("no-gaps.fasta", "filtered-by-n.fasta")
+    filter_by_n("no-gaps.fasta.gz", "filtered-by-n.fasta.gz")
 
     # Finally, we figure out which months each sequence comes from, and separate them 
     # out into one FASTA per month (or more specifically, per year-month)
     metadata_df = CSV.read("filtered-to-geography.tsv", DataFrame, delim="\t")
     accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
-    separate_by_month("filtered-by-n.fasta", accession_to_date)
+    separate_by_month("filtered-by-n.fasta.gz", accession_to_date)
 
 end
 
