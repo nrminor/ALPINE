@@ -399,6 +399,7 @@ process UNZIP_NCBI_FASTA {
 	from the lightweight NCBI zip archive.
 	*/
 
+	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
