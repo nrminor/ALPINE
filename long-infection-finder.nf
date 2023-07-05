@@ -49,20 +49,9 @@ workflow {
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
-		if ( workflow.profile == 'standard' || workflow.profile == 'docker' ){
-
-			REMOVE_FASTA_GAPS ( 
-				FILTER_SEQS_TO_GEOGRAPHY.out.fasta
-			)
-
-		} else {
-
-			REMOVE_FASTA_GAPS ( 
-				FILTER_SEQS_TO_GEOGRAPHY.out.fasta
-					.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" )
-			)
-				
-		}
+		REMOVE_FASTA_GAPS ( 
+			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
+		)
 
 	} else {
 
@@ -411,7 +400,7 @@ process EXTRACT_NCBI_FASTA {
 	path zip
 
 	output:
-	path "*.fasta"
+	path "*.fasta.zst"
 
 	script:
 	"""
