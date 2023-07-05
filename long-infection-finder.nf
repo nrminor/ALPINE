@@ -474,7 +474,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	script:
 	"""
-	zstd -d ${fasta} -o tmp.fasta && \
+	zstd -d `realpath ${fasta}` -o tmp.fasta && \
 	subseq_rs tmp.fasta ${accessions} && \
 	rm tmp.fasta && \
 	count=\$(grep -c "^>" filtered-to-geography.fasta) && \
