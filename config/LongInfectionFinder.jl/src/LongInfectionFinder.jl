@@ -8,6 +8,31 @@ export filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month,
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
+function filter_tsv_by_geo(input_tsv::String,geography::String)
+
+    # Read in the TSV file with metadata
+    metadata_df = CSV.read(input_tsv, DataFrame, delim="\t")
+
+    # Double check the column name for geographic locations
+    if "Geographic location" in names(metadata_df)
+        idx = findfirst(isequal("Geographic location"), names(metadata_df))
+        rename!(metadata_df, names(metadata_df)[idx] => "Geographic Location")
+    end
+
+    # filter metadata based on desired geography
+    filtered = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
+
+    # Writing filtered metadata
+    CSV.write("filtered-to-geography.tsv", filtered, delim="\t")
+
+    # separating out accessions
+    accessions = filtered[!,"Accession"]
+
+    # Writing accessions to a text file for use by seqtk subseq or subseq.rs
+    writedlm("accessions.txt", accessions, "\n")
+    
+end
+
 function filter_by_geo(input_tsv::String,fasta_path::String,geography::String)
 
     # Read in the TSV file with metadata

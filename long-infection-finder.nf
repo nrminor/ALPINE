@@ -599,7 +599,7 @@ process PREP_FOR_CLUSTERING {
 	output:
 	path "2*.fasta", emit: month_fasta
 	path "filtered-to-geography.tsv", emit: metadata
-	path "filtered-to-geography.fasta.tsv", emit: fasta
+	path "filtered-to-geography.fasta.zst", emit: fasta
 
 	script:
 	"""
