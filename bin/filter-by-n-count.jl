@@ -8,7 +8,7 @@ import Base.Threads
 const fasta_path = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
 
 # create the output file
-const out = "filtered-by-n.fasta"
+const out = "filtered-by-n.fasta.gz"
 
 # run the function
 filter_by_n(fasta_path, out)

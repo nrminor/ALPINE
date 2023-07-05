@@ -91,6 +91,10 @@ workflow {
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
+		COMPRESS_FASTA (
+			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
+		)
+
 		REMOVE_FASTA_GAPS ( 
 			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 		)
@@ -410,7 +414,7 @@ process UNZIP_NCBI_FASTA {
 
 	script:
 	"""
-	unzip -p ${zip} ncbi_dataset/data/genomic.fna | cat > genbank_sequences.fasta
+	unzip -p ${zip} ncbi_dataset/data/genomic.fna | zst -o genbank_sequences.fasta.zst
 	"""
 
 }
@@ -475,13 +479,16 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	path accessions
 
 	output:
-	path "*.fasta", emit: fasta
+	path "*.fasta.zst", emit: fasta
 	env count, emit: count
 
 	script:
 	"""
-	subseq_rs ${fasta} ${accessions} && \
-	count=\$(grep -c "^>" filtered-to-geography.fasta)
+	zstd -d ${fasta} -o tmp.fasta && \
+	subseq_rs tmp.fasta ${accessions} && \
+	rm tmp.fasta && \
+	count=\$(grep -c "^>" filtered-to-geography.fasta) && 
+	zstd filtered-to-geography.fasta -o filtered-to-geography.fasta.zst
 	"""
 
 }
@@ -506,7 +513,7 @@ process REMOVE_FASTA_GAPS {
 	path fasta
 
 	output:
-	path "*.fasta"
+	path "*.fasta.gz"
 
 	when:
 	params.make_distance_matrix == true
@@ -537,11 +544,10 @@ process FILTER_BY_MASKED_BASES {
 	path fasta
 
 	output:
-	path "*.fasta"
+	path "*.fasta.gz"
 
 	script:
 	"""
-	JULIA_NUM_THREADS=${task.cpus} \
 	filter-by-n-count.jl ${fasta}
 	"""
 
