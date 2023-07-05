@@ -26,7 +26,7 @@ function filter_by_geo(input_tsv::String,fasta_path::String,geography::String)
     CSV.write("filtered-to-geography.tsv", filtered_meta, delim="\t")
 
     # separating out accessions
-    accessions = filtered_meta[!,"Accession"]
+    accessions = Set(filtered_meta[!,"Accession"])
 
     # create a file lock to prevent threads from corrupting the output file
     u = ReentrantLock()
@@ -39,14 +39,20 @@ function filter_by_geo(input_tsv::String,fasta_path::String,geography::String)
     open(ZstdCompressorStream, filtered_seqs, "w") do outstream
         FastaWriter(outstream) do fa
             FastaReader(fasta_path) do fr
-                @sync for (name, seq) in fr
-                    Threads.@spawn begin
-                        accession = split(name, " ")[1]
-                        if accession in accessions
-                            Threads.lock(u) do
-                                writeentry(fa, accession, seq)
-                            end
-                        end
+                # @sync for (name, seq) in fr
+                #     Threads.@spawn begin
+                #         accession = split(name, " ")[1]
+                #         if accession in accessions
+                #             Threads.lock(u) do
+                #                 writeentry(fa, accession, seq)
+                #             end
+                #         end
+                #     end
+                # end
+                for (name, seq) in fr
+                    accession = split(name, " ")[1]
+                    if accession in accessions
+                        writeentry(fa, accession, seq)
                     end
                 end
             end
@@ -96,23 +102,23 @@ function filter_by_n(input_fasta_path::String, output_filename::String)
     touch(output_filename)
 
     # create a file lock to prevent threads from corrupting the output file
-    u = ReentrantLock()
+    # u = ReentrantLock()
 
     # creating a loop that goes through sequence records and writes out
     # any sequences that have less than the minimum N count
     FastaWriter(output_filename , "a") do fa
         FastaReader(input_fasta_path) do fr
-            @sync for (name, seq) in fr
-                Threads.@spawn begin
-                    max_n_count = floor(length(seq) * 0.1)
-                    n_count = count("N", convert(String, seq))
-                    if n_count < max_n_count
-                        Threads.lock(u) do
-                            writeentry(fa, name, seq)
-                        end
-                    end
-                end
+            # @sync for (name, seq) in fr
+                # Threads.@spawn begin
+            max_n_count = floor(length(seq) * 0.1)
+            n_count = count("N", convert(String, seq))
+            if n_count < max_n_count
+                        # Threads.lock(u) do
+                writeentry(fa, name, seq)
+                        # end
             end
+                # end
+            # end
         end
     end
 
