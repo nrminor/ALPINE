@@ -36,7 +36,7 @@ workflow {
 			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
 		)
 
-		UNZIP_NCBI_FASTA (
+		EXTRACT_NCBI_FASTA (
 			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
 		)
 
@@ -45,7 +45,7 @@ workflow {
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
-			UNZIP_NCBI_FASTA.out,
+			EXTRACT_NCBI_FASTA.out,
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
@@ -130,7 +130,7 @@ workflow {
 
 	// PREP_FOR_CLUSTERING (
 	// 	UNZIP_NCBI_METADATA.out,
-	// 	UNZIP_NCBI_FASTA.out
+	// 	EXTRACT_NCBI_FASTA.out
 	// )
 
 	CLUSTER_BY_IDENTITY (
@@ -392,7 +392,7 @@ process UNZIP_NCBI_METADATA {
 
 }
 
-process UNZIP_NCBI_FASTA {
+process EXTRACT_NCBI_FASTA {
 
 	/*
 	Here the pathogen sequences in FASTA format are extracted 
