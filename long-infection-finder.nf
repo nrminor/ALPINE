@@ -909,7 +909,7 @@ process SUMMARIZE_CANDIDATES {
 
 	script:
 	"""
-	report-high-dist-candidates.R ${metadata} && \
+	report-high-dist-candidates.R ${metadata} ${params.strictness_mode} && \
 	count=\$(grep -c "^>" high_distance_candidates.fasta)
 	"""
 

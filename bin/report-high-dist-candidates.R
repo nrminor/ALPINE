@@ -12,6 +12,17 @@ compiler::enableJIT(3)
 # Bringing in NCBI metadata
 metadata <- read_tsv(args[1])
 
+# Defining strictness level
+if (args[2] == "strict") {
+  stringency <- 995
+} else if (args[2] == "intermediate") {
+  stringency <- 990
+} else if (args[2] == "lenient") {
+  stringency <- 990
+} else {
+  stringency <- 995
+}
+
 # creating list of year-month combinations to loop through
 yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-dist-matrix.csv"), "-dist-matrix.csv")
 
@@ -168,7 +179,7 @@ for (fa in fastas){
 }
 
 # define retention threshold based on the data
-retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.001))[995]
+retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.001))[stringency]
 
 # plot distribution of summed weighted distances
 pdf("distance_distribution.pdf", width = 7, height = 5.5)
