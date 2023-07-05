@@ -414,7 +414,7 @@ process UNZIP_NCBI_FASTA {
 
 	script:
 	"""
-	unzip -p ${zip} ncbi_dataset/data/genomic.fna | zst -o genbank_sequences.fasta.zst
+	unzip -p ${zip} ncbi_dataset/data/genomic.fna | zstd -o genbank_sequences.fasta.zst
 	"""
 
 }
