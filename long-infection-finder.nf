@@ -477,7 +477,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	zstd -d ${fasta} -o tmp.fasta && \
 	subseq_rs tmp.fasta ${accessions} && \
 	rm tmp.fasta && \
-	count=\$(grep -c "^>" filtered-to-geography.fasta) && 
+	count=\$(grep -c "^>" filtered-to-geography.fasta) && \
 	zstd filtered-to-geography.fasta -o filtered-to-geography.fasta.zst
 	"""
 
