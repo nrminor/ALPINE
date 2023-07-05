@@ -46,8 +46,8 @@ if (length(labels(fasta_data)) > 1){
     geom_text(aes(label = Size), vjust = 2.5, size = 3, show.legend = FALSE) +
     labs(title = paste("Multidimensional Scaling of", no_seqs, "clusters in", yearmonth, sep = " "), 
          x = "Dimension 1", y = "Dimension 2") +
-    theme(text = element_text(size = 12)) 
-  # + scale_size(range = c(1, 10)) 
+    theme(text = element_text(size = 12)) +
+    scale_size(range = c(1, 10))
   
   # Save the plot as a PDF
   ggsave(paste(yearmonth, "mds_plot.pdf", sep = "_"), width = 7, height = 5)

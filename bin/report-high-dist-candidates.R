@@ -18,7 +18,7 @@ if (args[2] == "strict") {
 } else if (args[2] == "intermediate") {
   stringency <- 990
 } else if (args[2] == "lenient") {
-  stringency <- 990
+  stringency <- 980
 } else {
   stringency <- 995
 }
