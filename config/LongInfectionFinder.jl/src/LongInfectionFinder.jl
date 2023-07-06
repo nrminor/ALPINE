@@ -54,7 +54,7 @@ function filter_by_geo(input_tsv::String,fasta_path::String,geography::String)
     accessions = Set(filtered_meta[!,"Accession"])
 
     # create a file lock to prevent threads from corrupting the output file
-    u = ReentrantLock()
+    # u = ReentrantLock()
 
     # create the output file
     filtered_seqs = "filtered-to-geography.fasta.zst"
@@ -147,7 +147,6 @@ function filter_by_n(input_fasta_path::String, output_filename::String)
             end
         end
     end
-
 end
 
 ### ----------------------------------------------------------------------------- ###
