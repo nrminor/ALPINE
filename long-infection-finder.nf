@@ -450,10 +450,6 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	FILTER_TSV_TO_GEOGRAPHY and filters down the full FASTA
 	to those accessions, ensuring that both the metadata and
 	the sequences reflect the same geography filtering.
-
-	This process is parallelized, meaning that it splits up
-	the large genbank FASTA into many more computationally
-	bite-sized pieces of ~5,000 sequences.
 	*/
 
 	label "lif_container"
