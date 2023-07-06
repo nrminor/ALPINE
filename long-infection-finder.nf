@@ -565,7 +565,6 @@ process SEPARATE_BY_MONTH {
 
 	script:
 	"""
-	JULIA_NUM_THREADS=${task.cpus} \
 	separate-by-yearmonth.jl ${fasta} ${metadata}
 	"""
 
