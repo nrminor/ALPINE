@@ -245,10 +245,10 @@ if ( params.pathogen == "SARS-CoV-2" || params.pathogen == "sars-cov-2" ){
 params.dated_results = params.results + "/" + params.date
 
 // handling the case where no geography or date filters are provided
-if( params.geography == "" || params.min_date == "" || params.max_date == "" ){
+if( params.geography == "" ){
 	params.ncbi_results = params.dated_results + "/GenBank"
 } else {
-	params.ncbi_results = params.dated_results + "/GenBank_" + params.geography + "_" + params.min_date + "_to_" + params.max_date
+	params.ncbi_results = params.dated_results + "/GenBank_" + params.geography
 }
 
 // creating results subfolders for the three orthogonal anachronistic
@@ -418,6 +418,7 @@ process FILTER_TSV_TO_GEOGRAPHY {
 	the metadata down to a geography of interest.
 	*/
 
+	tag "${params.geography}"
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode, pattern: "*.tsv"
 
@@ -452,6 +453,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	the sequences reflect the same geography filtering.
 	*/
 
+	tag "${params.geography}"
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode
 
