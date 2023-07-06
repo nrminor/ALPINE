@@ -720,8 +720,6 @@ process FIND_MAJORITY_CLUSTER {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus params.max_cpus
-
 	input:
 	each path(cluster_table)
 	tuple path(fasta), val(count)
