@@ -115,8 +115,8 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
 ENV PATH=$PATH/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env:/rust_projects/subseq.rs/target/release/subseq_rs
 
 # make sure bin files are executable
-RUN chmod +x /opt/nextflow/bin* && \
-    chmod +x /opt/seqtk/bin* && \
+RUN chmod +x /opt/nextflow/bin/* && \
+    chmod +x /opt/seqtk/bin/* && \
     chmod +x /opt/julia-1.9.0/bin/* && \
     chmod +x /opt/conda/bin/*
 
