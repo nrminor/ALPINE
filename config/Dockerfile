@@ -61,22 +61,24 @@ ENV PATH=/opt/conda/bin:$PATH
 RUN conda install -y -c conda-forge mamba
 
 # Install packages with mamba
-RUN mamba install -y -c bioconda -c anaconda -c conda-forge psutil biopython pandas polars vsearch ncbi-datasets-cli=14.2.2 iqtree=1.6.7 numba
+RUN conda install -y -c bioconda -c anaconda -c conda-forge psutil biopython pandas polars vsearch ncbi-datasets-cli=14.2.2 iqtree=1.6.7 numba
 
 # Install R channel packages
-RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape bioconductor-biostrings
+RUN conda install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape bioconductor-biostrings
 
 # Install nextflow
 RUN wget -qO- https://get.nextflow.io | bash && \
-    mv nextflow /usr/local/bin/ && \
-    nextflow self-update
+    mkdir -p /opt/nextflow/bin && \
+    mv nextflow /opt/nextflow/bin
+ENV PATH=/opt/nextflow/bin:$PATH
 
 # Install seqtk
 RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
     tar -zxvf v1.3.tar.gz && \
     cd seqtk-1.3 && \
     make && \
-    mv seqtk /usr/local/bin/ && \
+    mkdir -p /opt/seqtk/bin && \
+    mv seqtk /opt/seqtk/bin && \
     cd .. && \
     rm -rf seqtk-1.3 v1.3.tar.gz && \
     apt-get clean && \
@@ -85,8 +87,8 @@ RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
     tar -xzf julia-1.9.0-linux-x86_64.tar.gz -C /opt && \
-    ln -s /opt/julia-1.9.0/bin/julia /usr/local/bin/julia && \
     rm julia-1.9.0-linux-x86_64.tar.gz
+ENV PATH=/opt/julia-1.9.0/bin:$PATH
 
 # Copy Julia functions to precompile as a module
 ENV JULIA_DEPOT_PATH=/root/.julia
@@ -107,14 +109,14 @@ COPY subseq.rs/ /rust_projects/subseq.rs/
 # install Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
     cd /rust_projects/subseq.rs && \
-    $HOME/.cargo/bin/cargo build --release && \
-    ln -s /rust_projects/subseq.rs/target/release/subseq_rs /usr/local/bin/subseq_rs
+    $HOME/.cargo/bin/cargo build --release
 
 # Make sure nothing is amiss and that julia is still in the path
-ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env
+ENV PATH=$PATH/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env:/rust_projects/subseq.rs/target/release/subseq_rs
 
 # make sure bin files are executable
-RUN chmod +x /usr/local/bin/* && \
+RUN chmod +x /opt/nextflow/bin* && \
+    chmod +x /opt/seqtk/bin* && \
     chmod +x /opt/julia-1.9.0/bin/* && \
     chmod +x /opt/conda/bin/*
 
