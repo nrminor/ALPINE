@@ -725,7 +725,7 @@ process FIND_MAJORITY_CLUSTER {
 	tuple path(fasta), val(count)
 
 	output:
-	tuple path(fasta), path(cluster_table), val(yearmonth), env(majority_cluster), env(majority_centroid), env(cluster_count)
+	tuple path(fasta), path(cluster_table), val(yearmonth), path("*.txt")
 
 	when:
 	file(fasta.toString()).getSimpleName().contains(file(cluster_table.toString()).getSimpleName().replace("-clusters", ""))
@@ -734,9 +734,6 @@ process FIND_MAJORITY_CLUSTER {
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
 	"""
 	find-majority-cluster.py ${cluster_table}
-	cluster_count=`cat cluster_count.txt`
-	majority_cluster=`cat majority_cluster.txt`
-	majority_centroid=`cat majority_centroid.txt`
 	"""
 
 }
@@ -760,17 +757,22 @@ process COMPUTE_DISTANCE_MATRIX {
 	cpus 1
 
 	input:
-	tuple path(fasta), path(cluster_table), val(yearmonth), val(majority_cluster), val(majority_centroid), val(cluster_count)
+	tuple path(fasta), path(cluster_table), val(yearmonth), path(cluster_stats)
 
 	output:
 	path "*-dist-matrix.csv"
 
 	script:
 	"""
+	
+	cluster_count=`cat cluster_count.txt`
+	majority_centroid=`cat majority_centroid.txt`
+
 	compute-distance-matrix.jl \
 	${fasta} \
 	${cluster_table} \
 	${yearmonth} ${cluster_count} ${majority_centroid}
+
 	"""
 
 }
