@@ -112,13 +112,14 @@ RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
     $HOME/.cargo/bin/cargo build --release
 
 # Make sure nothing is amiss and that julia is still in the path
-ENV PATH=$PATH/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env:/rust_projects/subseq.rs/target/release/subseq_rs
+ENV PATH=$PATH/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env:/rust_projects/subseq.rs/target/release
 
 # make sure bin files are executable
 RUN chmod +x /opt/nextflow/bin/* && \
     chmod +x /opt/seqtk/bin/* && \
     chmod +x /opt/julia-1.9.0/bin/* && \
-    chmod +x /opt/conda/bin/*
+    chmod +x /opt/conda/bin/* && \
+    chmod +x /rust_projects/subseq.rs/target/release/subseq_rs
 
 # Set working directory
 WORKDIR /scratch
