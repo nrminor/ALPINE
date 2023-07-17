@@ -80,10 +80,6 @@ workflow {
 			FILTER_TSV_TO_GEOGRAPHY.out.accessions
 		)
 
-		COMPRESS_FASTA (
-			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
-		)
-
 		REMOVE_FASTA_GAPS ( 
 			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 		)
@@ -764,7 +760,7 @@ process COMPUTE_DISTANCE_MATRIX {
 
 	script:
 	"""
-	
+
 	cluster_count=`cat cluster_count.txt`
 	majority_centroid=`cat majority_centroid.txt`
 
