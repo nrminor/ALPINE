@@ -467,13 +467,20 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	env count, emit: count
 
 	script:
-	"""
-	zstd -d `realpath ${fasta}` -o tmp.fasta && \
-	subseq_rs tmp.fasta ${accessions} && \
-	rm tmp.fasta && \
-	count=\$(grep -c "^>" filtered-to-geography.fasta) && \
-	zstd filtered-to-geography.fasta -o filtered-to-geography.fasta.zst
-	"""
+	if (file(fasta.toString()).getName().contains(".zstd"))
+		"""
+		zstd -d `realpath ${fasta}` -o tmp.fasta && \
+		subseq_rs tmp.fasta ${accessions} && \
+		rm tmp.fasta && \
+		count=\$(grep -c "^>" filtered-to-geography.fasta) && \
+		zstd filtered-to-geography.fasta -o filtered-to-geography.fasta.zst
+		"""
+	else
+		"""
+		subseq_rs ${fasta} ${accessions} && \
+		count=\$(grep -c "^>" filtered-to-geography.fasta) && \
+		zstd filtered-to-geography.fasta -o filtered-to-geography.fasta.zst
+		"""
 
 }
 

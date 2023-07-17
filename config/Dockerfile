@@ -68,17 +68,14 @@ RUN conda install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape bi
 
 # Install nextflow
 RUN wget -qO- https://get.nextflow.io | bash && \
-    mkdir -p /opt/nextflow/bin && \
-    mv nextflow /opt/nextflow/bin
-ENV PATH=/opt/nextflow/bin:$PATH
+    mv nextflow /usr/local/bin/
 
 # Install seqtk
 RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
     tar -zxvf v1.3.tar.gz && \
     cd seqtk-1.3 && \
     make && \
-    mkdir -p /opt/seqtk/bin && \
-    mv seqtk /opt/seqtk/bin && \
+    mv seqtk /usr/local/bin/ && \
     cd .. && \
     rm -rf seqtk-1.3 v1.3.tar.gz && \
     apt-get clean && \
@@ -87,8 +84,8 @@ RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
     tar -xzf julia-1.9.0-linux-x86_64.tar.gz -C /opt && \
+    ln -s /opt/julia-1.9.0/bin/julia /usr/local/bin/julia && \
     rm julia-1.9.0-linux-x86_64.tar.gz
-ENV PATH=/opt/julia-1.9.0/bin:$PATH
 
 # Copy Julia functions to precompile as a module
 ENV JULIA_DEPOT_PATH=/root/.julia
@@ -109,17 +106,16 @@ COPY subseq.rs/ /rust_projects/subseq.rs/
 # install Rust
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
     cd /rust_projects/subseq.rs && \
-    $HOME/.cargo/bin/cargo build --release
+    $HOME/.cargo/bin/cargo build --release && \
+    ln -s /rust_projects/subseq.rs/target/release/subseq_rs /usr/local/bin/subseq_rs
 
 # Make sure nothing is amiss and that julia is still in the path
-ENV PATH=$PATH/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env:/rust_projects/subseq.rs/target/release
+ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env
 
 # make sure bin files are executable
-RUN chmod +x /opt/nextflow/bin/* && \
-    chmod +x /opt/seqtk/bin/* && \
+RUN chmod +x /usr/local/bin/* && \
     chmod +x /opt/julia-1.9.0/bin/* && \
-    chmod +x /opt/conda/bin/* && \
-    chmod +x /rust_projects/subseq.rs/target/release/subseq_rs
+    chmod +x /opt/conda/bin/*
 
 # Set working directory
 WORKDIR /scratch
