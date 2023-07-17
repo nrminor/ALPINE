@@ -467,7 +467,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	env count, emit: count
 
 	script:
-	if (file(fasta.toString()).getName().contains(".zstd"))
+	if (file(fasta.toString()).getName().contains(".zst"))
 		"""
 		zstd -d `realpath ${fasta}` -o tmp.fasta && \
 		subseq_rs tmp.fasta ${accessions} && \
