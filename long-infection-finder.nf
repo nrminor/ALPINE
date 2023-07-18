@@ -172,13 +172,11 @@ workflow {
 			.map { fasta, count -> fasta }
 	)
 
-	// META_CLUSTER_REPORT (
-	// 	RUN_META_CLUSTER.out.cluster_fastas
-	// 		.flatten(),
-	// 	RUN_META_CLUSTER.out.cluster_fastas
-	// 		.flatten()
-	// 		.map { fasta, yearmonth -> file(fasta).countFasta() }
-	// )
+	META_CLUSTER_REPORT (
+		RUN_META_CLUSTER.out.cluster_table,
+		RUN_META_CLUSTER.out.cluster_fastas,
+		SUMMARIZE_CANDIDATES.out.metadata
+	)
 	
 	// Steps for re-running pangolin and comparing dates
 	// HIGH_THROUGHPUT_PANGOLIN ( 
@@ -921,7 +919,6 @@ process RUN_META_CLUSTER {
 	*/
 
 	label "lif_container"
-	publishDir params.repeat_lineages, mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
@@ -930,6 +927,7 @@ process RUN_META_CLUSTER {
 
 	input:
 	path fasta
+	path metadata
 
 	output:
 	path "*.uc", emit: cluster_table
@@ -960,19 +958,17 @@ process META_CLUSTER_REPORT {
 
 	publishDir params.repeat_lineages, mode: 'copy'
 
-	cpus params.max_cpus
-
 	input:
-	path fasta
-	path seq_count
+	path cluster_table
+	path fastas
 
 	output:
-
-	when:
-	seq_count.toInteger() > 1
+	path "*.fasta"
+	path "*.tsv"
 
 	script:
 	"""
+	report-repeat-lineages.R ${cluster_table}
 	"""
 
 }
