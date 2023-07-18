@@ -717,7 +717,8 @@ process FIND_MAJORITY_CLUSTER {
 
 	tag "${yearmonth}"
 	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+	publishDir "${params.clustering_results}/${yearmonth}", pattern: '*.uc', mode: 'copy'
+	publishDir "${params.clustering_results}/${yearmonth}", pattern: '*.fasta', mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
@@ -957,7 +958,7 @@ process META_CLUSTER_REPORT {
 	indicating that they do not stem from prolonged infections
 	sampled multiple times, no report will be generated.
 	*/
-	
+
 	label "lif_container"
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
