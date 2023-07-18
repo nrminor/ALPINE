@@ -175,7 +175,8 @@ workflow {
 	META_CLUSTER_REPORT (
 		RUN_META_CLUSTER.out.cluster_table,
 		RUN_META_CLUSTER.out.cluster_fastas,
-		SUMMARIZE_CANDIDATES.out.metadata
+		SUMMARIZE_CANDIDATES.out.metadata,
+		RUN_META_CLUSTER.out.repeat_count
 	)
 	
 	// Steps for re-running pangolin and comparing dates
@@ -927,7 +928,6 @@ process RUN_META_CLUSTER {
 
 	input:
 	path fasta
-	path metadata
 
 	output:
 	path "*.uc", emit: cluster_table
@@ -963,6 +963,7 @@ process META_CLUSTER_REPORT {
 	input:
 	path cluster_table
 	path fastas
+	path metadata
 	val repeat_count
 
 	output:
@@ -973,7 +974,7 @@ process META_CLUSTER_REPORT {
 
 	script:
 	"""
-	report-repeat-lineages.R ${cluster_table}
+	report-repeat-lineages.R ${cluster_table} ${metadata}
 	"""
 
 }
