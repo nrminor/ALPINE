@@ -933,6 +933,7 @@ process RUN_META_CLUSTER {
 	path "*.uc", emit: cluster_table
 	path "*meta-centroids.fasta", emit: centroid_fasta
 	path "*meta-cluster-seqs*", emit: cluster_fastas
+	env num_repeats, emit: repeat_count
 
 	script:
 	"""
@@ -941,7 +942,8 @@ process RUN_META_CLUSTER {
 	--centroids meta-centroids.fasta \
 	--uc meta-clusters.uc \
 	--clusters meta-cluster-seqs \
-	--threads ${task.cpus}
+	--threads ${task.cpus} && \
+	num_repeats = `cut -f 2 meta-clusters.uc | sort | uniq -d | wc -l`
 	"""
 }
 
@@ -961,9 +963,13 @@ process META_CLUSTER_REPORT {
 	input:
 	path cluster_table
 	path fastas
+	val repeat_count
 
 	output:
 	path "*"
+
+	when:
+	repeat_count.toInteger() > 0
 
 	script:
 	"""
