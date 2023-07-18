@@ -943,7 +943,7 @@ process RUN_META_CLUSTER {
 	--uc meta-clusters.uc \
 	--clusters meta-cluster-seqs \
 	--threads ${task.cpus} && \
-	num_repeats = `cut -f 2 meta-clusters.uc | sort | uniq -d | wc -l`
+	num_repeats=`cut -f 2 meta-clusters.uc | sort | uniq -d | wc -l`
 	"""
 }
 
@@ -957,6 +957,11 @@ process META_CLUSTER_REPORT {
 	indicating that they do not stem from prolonged infections
 	sampled multiple times, no report will be generated.
 	*/
+	
+	label "lif_container"
+
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	publishDir params.repeat_lineages, mode: 'copy'
 

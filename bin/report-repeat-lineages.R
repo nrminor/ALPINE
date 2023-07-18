@@ -26,7 +26,7 @@ main <- function(cluster_table_path, metadata_path){
     arrange(X2)
   
   stopifnot(length(unique(cluster_df$X9))==nrow(cluster_df))
-  stopifnot(nrow(cluster_df)>2)
+  stopifnot(nrow(cluster_df)>1)
   
   # compile FASTA sequences for the above clusters
   seq_tally <- vapply(1:length(unique(cluster_df$X2)), FUN = function(i){
