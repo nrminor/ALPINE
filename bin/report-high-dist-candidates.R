@@ -183,7 +183,7 @@ retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.001)
 
 # plot distribution of summed weighted distances
 pdf("distance_distribution.pdf", width = 7, height = 5.5)
-hist(metadata$Sum_weighted_distances, freq = FALSE, col = "lightblue", ylim = c(0, 0.15), 
+hist(metadata$Sum_weighted_distances, freq = FALSE, col = "lightblue",
       xlab = "Cluster Size Weighted Distances", ylab = "Frequency", 
       main = "Frequency Distribution of Nucleotide Distances")
 lines(density(metadata$Sum_weighted_distances), col = "darkblue", lwd = 2)
