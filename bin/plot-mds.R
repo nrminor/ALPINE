@@ -22,10 +22,10 @@ if (length(labels(fasta_data)) > 1){
   dist_matrix <- ape::dist.dna(fasta_data, model = "N")
   
   # Perform MDS
-  mds_result <- stats::cmdscale(dist_matrix) %>% 
+  mds_result <- stats::cmdscale(dist_matrix, k = 3) %>% 
     as.data.frame()
   mds_result <- cbind(row.names(mds_result), mds_result) ; rownames(mds_result) <- NULL
-  colnames(mds_result) <- c("Accession", "Dim1", "Dim2")
+  colnames(mds_result) <- c("Accession", "Dim1", "Dim2", "Dim3")
   
   # Read TSV table
   tsv_data <- readr::read_tsv(tsv_path,col_names=F)
@@ -46,11 +46,31 @@ if (length(labels(fasta_data)) > 1){
     geom_text(aes(label = Size), vjust = 2.5, size = 3, show.legend = FALSE) +
     labs(title = paste("Multidimensional Scaling of", no_seqs, "clusters in", yearmonth, sep = " "), 
          x = "Dimension 1", y = "Dimension 2") +
-    theme(text = element_text(size = 12)) +
-    scale_size(range = c(1, 10))
+    theme(text = element_text(size = 12),
+          legend.position = "none") +
+    scale_size(range = c(1, 35))
   
   # Save the plot as a PDF
   ggsave(paste(yearmonth, "mds_plot.pdf", sep = "_"), width = 7, height = 5)
+  
+  # plotly code for interactive 3D-plotting
+  library(plotly)
+  library(htmlwidgets)
+  p <- plot_ly(data = merged_data, x = ~Dim1, y = ~Dim2, z = ~Dim3,
+          color = ~Cluster, size = ~Size,
+          type = "scatter3d", mode = "markers") %>%
+    add_markers(text = ~Accession, hoverinfo = "text",
+                marker = list(sizemode = "diameter", sizeref = 1)) %>%
+    layout(title = paste("Multidimensional Scaling of", no_seqs, "clusters in", yearmonth, sep = " "),
+           scene = list(
+             xaxis = list(title = "Dimension 1"),
+             yaxis = list(title = "Dimension 2"),
+             zaxis = list(title = "Dimension 3")
+           ),
+           showlegend = FALSE,
+           hoverlabel = list(bgcolor = "white",
+                             font = list(size = 12)))
+  saveWidget(p, file = paste(yearmonth, "3D_interactive.html", sep = "_"))
   
   # Save MDS results as a CSV
   write.csv(merged_data, paste(yearmonth, "mds_results.csv", sep = "_"),
