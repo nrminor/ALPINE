@@ -963,8 +963,7 @@ process META_CLUSTER_REPORT {
 	path fastas
 
 	output:
-	path "*.fasta"
-	path "*.tsv"
+	path "*"
 
 	script:
 	"""
