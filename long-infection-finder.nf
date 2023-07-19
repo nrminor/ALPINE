@@ -682,7 +682,6 @@ process PREP_CENTROID_FASTAS {
 
 	tag "${yearmonth}"
 	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2

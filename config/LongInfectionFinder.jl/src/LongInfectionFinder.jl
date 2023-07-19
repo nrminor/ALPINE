@@ -230,18 +230,19 @@ function weight_by_cluster_size(seq_name::String, cluster_table::DataFrame)
     centroids = filter(:1 => x -> x == "C", cluster_table)
 
     # filter down to hits only
-    hits = filter(:1 => x -> x != "C", cluster_table)
-    if nrow(hits) == 0
-        month_total = 1
-    else
-        month_total = nrow(hits)
-    end
+    # hits = filter(:1 => x -> x != "C", cluster_table)
+    # if nrow(hits) == 0
+    #     month_total = 1
+    # else
+    #     month_total = nrow(hits)
+    # end
 
     # find the number of sequences for the accession in question
-    cluster_size = filter(:9 => x -> x == seq_name, centroids)[:,2]
+    cluster_size = filter(:9 => x -> x == seq_name, centroids)[:,3][1]
 
     # return the weight for this centroid's distance
-    weight = cluster_size / month_total
+    # weight = cluster_size / month_total
+    weight = 1 / cluster_size
     return weight
 
 end
@@ -267,7 +268,7 @@ function distance_matrix(temp_filename::String, cluster_table::DataFrame, count:
     # weight distance estimates by relative cluster size
     for seq in names(dist_df)
         col_weight = weight_by_cluster_size(seq, cluster_table)
-        dist_df[!, seq] = dist_df[!, seq] * col_weight
+        dist_df[!, seq] = dist_df[!, seq] .* col_weight
     end
 
     # Add a column for the sequence names
