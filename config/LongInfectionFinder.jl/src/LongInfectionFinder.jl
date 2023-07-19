@@ -237,8 +237,8 @@ function weight_by_cluster_size(seq_name::String, cluster_table::DataFrame)
         month_total = nrow(hits)
     end
 
-    # find the number of rows for the accession in question
-    cluster_size = nrow(filter(:9 => x -> x == seq_name, centroids))
+    # find the number of sequences for the accession in question
+    cluster_size = filter(:9 => x -> x == seq_name, centroids)[:,2]
 
     # return the weight for this centroid's distance
     weight = cluster_size / month_total
