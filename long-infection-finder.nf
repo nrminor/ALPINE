@@ -176,7 +176,7 @@ workflow {
 		RUN_META_CLUSTER.out.cluster_table,
 		RUN_META_CLUSTER.out.cluster_fastas,
 		SUMMARIZE_CANDIDATES.out.metadata,
-		RUN_META_CLUSTER.out.repeat_count
+		RUN_META_CLUSTER.out.whether_repeats
 	)
 	
 	// Steps for re-running pangolin and comparing dates
@@ -933,7 +933,7 @@ process RUN_META_CLUSTER {
 	path "*.uc", emit: cluster_table
 	path "*meta-centroids.fasta", emit: centroid_fasta
 	path "*meta-cluster-seqs*", emit: cluster_fastas
-	env num_repeats, emit: repeat_count
+	env repeats, emit: whether_repeats
 
 	script:
 	"""
@@ -943,7 +943,11 @@ process RUN_META_CLUSTER {
 	--uc meta-clusters.uc \
 	--clusters meta-cluster-seqs \
 	--threads ${task.cpus} && \
-	num_repeats=`cut -f 2 meta-clusters.uc | sort | uniq -d | wc -l`
+	if grep -q "H" <(cut -f 1 meta-clusters.uc); then
+		repeats="true"
+	else
+		repeats="false"
+	fi
 	"""
 }
 
@@ -969,13 +973,13 @@ process META_CLUSTER_REPORT {
 	path cluster_table
 	path fastas
 	path metadata
-	val repeat_count
+	val whether_repeats
 
 	output:
 	path "*"
 
 	when:
-	repeat_count.toInteger() > 0
+	whether_repeats == "true"
 
 	script:
 	"""
