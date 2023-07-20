@@ -10,7 +10,8 @@ library(Biostrings)
 compiler::enableJIT(3)
 
 # Bringing in NCBI metadata
-metadata <- read_tsv(args[1])
+metadata <- read_tsv(args[1], 
+                     show_col_types = FALSE, trim_ws = TRUE)
 
 # Defining strictness level
 if (args[2] == "strict") {
@@ -186,7 +187,9 @@ pdf("distance_distribution.pdf", width = 7, height = 5.5)
 hist(metadata$Sum_weighted_distances, freq = FALSE, col = "lightblue",
       xlab = "Cluster Size Weighted Distances", ylab = "Frequency", 
       main = "Frequency Distribution of Nucleotide Distances")
-lines(density(metadata$Sum_weighted_distances), col = "darkblue", lwd = 2)
+if (nrow(metadata) > 1){
+  lines(density(metadata$Sum_weighted_distances), col = "darkblue", lwd = 2)
+}
 abline(v = retention_threshold, col = "red", lwd = 3)
 text(x = retention_threshold+5, y = (0.15/2), adj = 0,
       labels = paste("Retention Threshold:\n", retention_threshold ))
