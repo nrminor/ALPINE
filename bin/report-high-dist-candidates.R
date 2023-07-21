@@ -28,7 +28,7 @@ if (args[2] == "strict") {
 yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-dist-matrix.csv"), "-dist-matrix.csv")
 
 # create function to process metadata
-process_meta <- function(yearmonths, metadata){
+process_meta <- cmpfun(function(yearmonths, metadata){
   
   # make an empty data frame to store high distance metadata 
   high_dist_meta <- matrix(ncol = ncol(metadata), nrow = 0)
@@ -47,12 +47,10 @@ process_meta <- function(yearmonths, metadata){
     min_distance <- 100.0
     distant_accs <- ""
     least_distant_acc <- ""
-    distmat$Sum_weighted_distances <- 0.0
-    distmat$Sum_weighted_distances <- vapply(1:nrow(distmat), FUN = 
+    distmat$Distance_Score <- vapply(2:ncol(distmat), FUN = 
                                                function(j){
                                                  
-                                                 accession <- distmat[j, "Sequence_Name"]
-                                                 distances <- as.numeric(distmat[j,2:ncol(distmat)])
+                                                 distances <- as.numeric(distmat[,j])
                                                  distances <- distances[distances!=0]
                                                  new_sum <- sum(distances)
                                                  
@@ -72,13 +70,13 @@ process_meta <- function(yearmonths, metadata){
     stopifnot(unique(distmat$Sequence_Name == centroids$V9) == TRUE)
     distmat$Cluster <- 0
     distmat$Cluster_Size <- centroids$V3
-    distmat <- distmat[order(distmat$Sum_weighted_distances, decreasing = T),] ; rownames(distmat) <- NULL
+    distmat <- distmat[order(distmat$Distance_Score, decreasing = T),] ; rownames(distmat) <- NULL
     distmat$Month <- i 
     distmat$Cluster <- centroids$V2
     
     # new cluster table
     all_seqs <- distmat[, 
-                        c("Sequence_Name", "Sum_weighted_distances", 
+                        c("Sequence_Name", "Distance_Score", 
                           "Cluster_Size", "Month", "Cluster")]
     
     # adding all cluster sequences
@@ -89,7 +87,7 @@ process_meta <- function(yearmonths, metadata){
         # record accession and the centroid for that accession
         accession <- hits$V9[j]
         centroid <- hits$V10[j]
-        distance <- all_seqs[all_seqs$Sequence_Name==centroid, "Sum_weighted_distances"]
+        distance <- all_seqs[all_seqs$Sequence_Name==centroid, "Distance_Score"]
         cluster_size <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster_Size"]
         month <- i
         cluster <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster"]
@@ -107,7 +105,7 @@ process_meta <- function(yearmonths, metadata){
       # record accession and the centroid for that accession
       accession <- centroids$V9[1]
       centroid <- centroids$V9[1]
-      distance <- as.numeric(all_seqs[all_seqs$Sequence_Name==centroid, "Sum_weighted_distances"])
+      distance <- as.numeric(all_seqs[all_seqs$Sequence_Name==centroid, "Distance_Score"])
       cluster_size <- as.numeric(all_seqs[all_seqs$Sequence_Name==centroid, "Cluster_Size"])
       month <- i
       cluster <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster"]
@@ -120,7 +118,7 @@ process_meta <- function(yearmonths, metadata){
       
     }
     
-    all_seqs <- all_seqs[order(all_seqs$Sum_weighted_distances),]
+    all_seqs <- all_seqs[order(all_seqs$Distance_Score),]
     rownames(all_seqs) <- NULL
     
     
@@ -129,10 +127,10 @@ process_meta <- function(yearmonths, metadata){
       
       accession <- all_seqs$Sequence_Name[j]
       
-      if (!("Sum_weighted_distances" %in% colnames(metadata))){
+      if (!("Distance_Score" %in% colnames(metadata))){
         
         # create new columns to fill
-        metadata$Sum_weighted_distances <- 0.0
+        metadata$Distance_Score <- 0.0
         metadata$Cluster_Size <- 0
         metadata$Month_Cluster <- NA
         
@@ -140,7 +138,7 @@ process_meta <- function(yearmonths, metadata){
       
       # fill in distmat data in the NCBI metadata
       metadata[metadata$Accession==accession, 
-               "Sum_weighted_distances"] <- as.numeric(all_seqs$Sum_weighted_distances[j])
+               "Distance_Score"] <- as.numeric(all_seqs$Distance_Score[j])
       metadata[metadata$Accession==accession, 
                "Cluster_Size"] <- as.numeric(all_seqs$Cluster_Size[j])
       metadata[metadata$Accession==accession, 
@@ -152,16 +150,14 @@ process_meta <- function(yearmonths, metadata){
   
   return(metadata)
   
-}
-# compile the metadata function
-process_meta_cp <- cmpfun(process_meta)
+})
 
 # run the metadata function in a parallelized fashion
-metadata <- process_meta_cp(yearmonths, metadata)
+metadata <- process_meta(yearmonths, metadata)
 
 # check to make sure metadata has clustering information in it
 stopifnot(nrow(metadata[!is.na(metadata$Month_Cluster),])>0)
-metadata <- metadata[metadata$Sum_weighted_distances>0,] ; rownames(metadata) <- NULL
+metadata <- metadata[metadata$Distance_Score>0,] ; rownames(metadata) <- NULL
 
 # make an empty data frame to store high distance FASTA sequences
 high_dist_seqs <- DNAStringSet()
@@ -180,36 +176,34 @@ for (fa in fastas){
 }
 
 # define retention threshold based on the data
-retention_threshold = quantile(metadata$Sum_weighted_distances, seq(0, 1, 0.001))[stringency]
+retention_threshold = quantile(metadata$Distance_Score, seq(0, 1, 0.001))[stringency]
 
 # plot distribution of summed weighted distances
 pdf("distance_distribution.pdf", width = 7, height = 5.5)
-hist(metadata$Sum_weighted_distances, freq = FALSE, col = "lightblue",
-      xlab = "Cluster Size Weighted Distances", ylab = "Frequency", 
+hist_vector <- hist(metadata$Distance_Score)
+hist(metadata$Distance_Score, freq = FALSE, col = "lightblue",
+      xlab = "Distance Score", ylab = "Frequency", 
       main = "Frequency Distribution of Nucleotide Distances")
 if (nrow(metadata) > 1){
-  lines(density(metadata$Sum_weighted_distances), col = "darkblue", lwd = 2)
+  lines(density(metadata$Distance_Score), col = "darkblue", lwd = 2)
 }
 abline(v = retention_threshold, col = "red", lwd = 3)
-text(x = retention_threshold+5, y = (0.15/2), adj = 0,
+text(x = retention_threshold+5, y = (max(hist_vector$counts)/2), adj = 0,
       labels = paste("Retention Threshold:\n", retention_threshold ))
 dev.off()
 
 # normalizing year-month by down-prioritizing branches that are not exceptionally
 # long compared to all other year-months. I do this here by retaining only sequences that
 # are in clusters above the 90% quantile of distances, which pulls out true outliers.
-high_dist_meta <- subset(metadata, Sum_weighted_distances >= retention_threshold)
-normalize_meta <- function(high_dist_seqs, high_dist_meta){
+high_dist_meta <- subset(metadata, Distance_Score >= retention_threshold)
+normalize_meta <- cmpfun(function(high_dist_seqs, high_dist_meta){
   
   high_dist_seqs <- high_dist_seqs[names(high_dist_seqs) %in% high_dist_meta$Accession]
   return(high_dist_seqs)
-}
-
-# compile normalize function
-normalize_meta_cp <- cmpfun(normalize_meta)
+})
 
 # run the function
-high_dist_seqs <- normalize_meta_cp(high_dist_seqs, high_dist_meta)
+high_dist_seqs <- normalize_meta(high_dist_seqs, high_dist_meta)
 
 # check here to prevent silent errors
 stopifnot(as.numeric(length(high_dist_seqs)) == nrow(high_dist_meta))
@@ -220,5 +214,5 @@ writeXStringSet(high_dist_seqs, "high_distance_candidates.fasta")
 
 # writing candidate metadata, which combines vsearch --clust_fast results with 
 # NCBI metadata and iqTree branch lengths
-high_dist_meta <- high_dist_meta[order(high_dist_meta$Sum_weighted_distances, decreasing = T),]
+high_dist_meta <- high_dist_meta[order(high_dist_meta$Distance_Score, decreasing = T),]
 write.table(high_dist_meta, "high_distance_candidates.tsv", row.names = F, quote = F, sep = "\t")

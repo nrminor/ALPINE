@@ -267,8 +267,8 @@ function distance_matrix(temp_filename::String, cluster_table::DataFrame, count:
 
     # weight distance estimates by relative cluster size
     for seq in names(dist_df)
-        col_weight = weight_by_cluster_size(seq, cluster_table)
-        dist_df[!, seq] = dist_df[!, seq] .* col_weight
+        col_weights = weight_by_cluster_size(seq, dist_df, cluster_table)
+        dist_df[!, seq] = dist_df[!, seq] .* col_weights
     end
 
     # Add a column for the sequence names
