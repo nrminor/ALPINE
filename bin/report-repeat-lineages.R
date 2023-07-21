@@ -51,7 +51,7 @@ main <- function(cluster_table_path, metadata_path){
   merged_metadata <- merge(metadata, repeat_clusts, by = "Accession", all.x = TRUE) %>%
     filter(!is.na(`Repeat Cluster Number`)) %>%
     arrange(`Repeat Cluster Number`) %>%
-    select(!c("Sum_weighted_distances", "Cluster_Size"))
+    select(!c("Distance_Score", "Cluster_Size"))
   stopifnot(nrow(merged_metadata)==nrow(cluster_df))
   
   # write repeat lineage metadata

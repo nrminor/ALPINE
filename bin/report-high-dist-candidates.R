@@ -48,15 +48,15 @@ process_meta <- cmpfun(function(yearmonths, metadata){
     distant_accs <- ""
     least_distant_acc <- ""
     distmat$Distance_Score <- vapply(2:ncol(distmat), FUN = 
-                                               function(j){
-                                                 
-                                                 distances <- as.numeric(distmat[,j])
-                                                 distances <- distances[distances!=0]
-                                                 new_sum <- sum(distances)
-                                                 
-                                                 return(new_sum)
-                                                 
-                                               }, numeric(1))
+                                       function(j){
+                                         
+                                         distances <- as.numeric(distmat[,j])
+                                         distances <- distances[distances!=0]
+                                         new_sum <- sum(distances)
+                                         
+                                         return(new_sum)
+                                         
+                                       }, numeric(1))
     distmat <- distmat[order(distmat$Sequence_Name),] ; rownames(distmat) <- NULL
     
     # collating cluster metadata with distances
@@ -180,16 +180,15 @@ retention_threshold = quantile(metadata$Distance_Score, seq(0, 1, 0.001))[string
 
 # plot distribution of summed weighted distances
 pdf("distance_distribution.pdf", width = 7, height = 5.5)
-hist_vector <- hist(metadata$Distance_Score)
-hist(metadata$Distance_Score, freq = FALSE, col = "lightblue",
-      xlab = "Distance Score", ylab = "Frequency", 
-      main = "Frequency Distribution of Nucleotide Distances")
+hist_vector <-hist(metadata$Distance_Score, freq = FALSE, col = "lightblue",
+                   xlab = "Distance Score", ylab = "Frequency", 
+                   main = "Frequency Distribution of Nucleotide Distances")
 if (nrow(metadata) > 1){
   lines(density(metadata$Distance_Score), col = "darkblue", lwd = 2)
 }
 abline(v = retention_threshold, col = "red", lwd = 3)
 text(x = retention_threshold+5, y = (max(hist_vector$counts)/2), adj = 0,
-      labels = paste("Retention Threshold:\n", retention_threshold ))
+     labels = paste("Retention Threshold:\n", retention_threshold ))
 dev.off()
 
 # normalizing year-month by down-prioritizing branches that are not exceptionally
