@@ -61,10 +61,22 @@ ENV PATH=/opt/conda/bin:$PATH
 RUN conda install -y -c conda-forge mamba
 
 # Install packages with mamba
-RUN mamba install -y -c bioconda -c anaconda -c conda-forge psutil biopython pandas polars vsearch ncbi-datasets-cli=14.2.2 iqtree=1.6.7 numba
+RUN mamba install -y -c bioconda -c anaconda -c conda-forge \
+    psutil \
+    biopython pandas polars \
+    vsearch \
+    ncbi-datasets-cli=14.2.2 \
+    iqtree=1.6.7 \
+    nextstrain \
+    seqkit \
+    pangolin
 
 # Install R channel packages
-RUN mamba install -y -c conda-forge -c r -c bioconda r-base r-tidyverse r-ape r-plotly bioconductor-biostrings
+RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
+    r-tidyverse \
+    r-ape \
+    r-plotly \
+    bioconductor-biostrings
 
 # Install nextflow
 RUN wget -qO- https://get.nextflow.io | bash && \
@@ -97,20 +109,8 @@ RUN julia -e 'using Pkg; \
             Pkg.instantiate(); \
             Pkg.precompile()'
 
-# create directory for Rust projects
-RUN mkdir /rust_projects
-
-# copy subseq.rs into /rust_projects and compile
-COPY subseq.rs/ /rust_projects/subseq.rs/
-
-# install Rust
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-    cd /rust_projects/subseq.rs && \
-    $HOME/.cargo/bin/cargo build --release && \
-    ln -s /rust_projects/subseq.rs/target/release/subseq_rs /usr/local/bin/subseq_rs
-
 # Make sure nothing is amiss and that julia is still in the path
-ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:$HOME/.cargo/bin:$HOME/.cargo/env
+ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \

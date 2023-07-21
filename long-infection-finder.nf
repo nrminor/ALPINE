@@ -399,7 +399,7 @@ process EXTRACT_NCBI_FASTA {
 
 	script:
 	"""
-	unzip -p ${zip} ncbi_dataset/data/genomic.fna | zstd -o genbank_sequences.fasta.zst
+	unzip -p ${zip} ncbi_dataset/data/genomic.fna | zstd -10 -o genbank_sequences.fasta.zst
 	"""
 
 }
@@ -455,7 +455,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus 1
+	cpus 8
 
 	input:
 	each path(fasta)
@@ -466,20 +466,10 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	env count, emit: count
 
 	script:
-	if (file(fasta.toString()).getName().contains(".zst"))
-		"""
-		zstd -d `realpath ${fasta}` -o tmp.fasta && \
-		subseq_rs tmp.fasta ${accessions} && \
-		rm tmp.fasta && \
-		count=\$(grep -c "^>" filtered-to-geography.fasta) && \
-		zstd --rm filtered-to-geography.fasta -o filtered-to-geography.fasta.zst
-		"""
-	else
-		"""
-		subseq_rs ${fasta} ${accessions} && \
-		count=\$(grep -c "^>" filtered-to-geography.fasta) && \
-		zstd --rm filtered-to-geography.fasta -o filtered-to-geography.fasta.zst
-		"""
+	"""
+	seqkit grep -j ${task.cpus} -f ${accessions} ${fasta} -o filtered-to-geography.fasta.zst
+	count=\$(cat ${accessions} | wc -l)
+	"""
 
 }
 
