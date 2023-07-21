@@ -223,7 +223,7 @@ function set_to_uppercase(fasta_filename::String, temp_filename::String)
     end
 end
 
-# determine how many sequences are in each cluster to compute weighted Distances
+# determine how many sequences are in each cluster to compute weighted distances
 function weight_by_cluster_size(seq_name::String, dist_df::DataFrame, cluster_table::DataFrame)
 
     # filter down to centroid rows only
@@ -237,11 +237,15 @@ function weight_by_cluster_size(seq_name::String, dist_df::DataFrame, cluster_ta
     # sequences in the distance matrix
     all_sizes = centroids[:,3]
 
+    # filter down to hits only
+    hits = filter(:1 => x -> x != "C", cluster_table)
+    month_total = nrow(hits) == 0 ? 1 : nrow(hits)
+
     # find the number of sequences for the accession in question
-    # cluster_size = filter(:9 => x -> x == seq_name, centroids)[:,3][1]
+    cluster_freq = filter(:9 => x -> x == seq_name, centroids)[:,3][1] / month_total
 
     # return the weight for this centroid's distance
-    weights = all_sizes #.* cluster_size
+    weights = (all_sizes .* (1 - cluster_freq)) ./ month_total
     @assert length(weights) == nrow(dist_df)
     return weights
 
