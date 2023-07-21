@@ -24,9 +24,6 @@ if (args[2] == "strict") {
   stringency <- 995
 }
 
-# creating list of year-month combinations to loop through
-yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-dist-matrix.csv"), "-dist-matrix.csv")
-
 # create function to process metadata
 process_meta <- cmpfun(function(yearmonths, metadata){
   
@@ -44,9 +41,6 @@ process_meta <- cmpfun(function(yearmonths, metadata){
     distmat = read.csv(paste(i, "-dist-matrix.csv", sep = ""))
     
     # define high-distance accession
-    min_distance <- 100.0
-    distant_accs <- ""
-    least_distant_acc <- ""
     distmat$Distance_Score <- vapply(2:ncol(distmat), FUN = 
                                        function(j){
                                          
@@ -152,66 +146,80 @@ process_meta <- cmpfun(function(yearmonths, metadata){
   
 })
 
-# run the metadata function in a parallelized fashion
-metadata <- process_meta(yearmonths, metadata)
-
-# check to make sure metadata has clustering information in it
-stopifnot(nrow(metadata[!is.na(metadata$Month_Cluster),])>0)
-metadata <- metadata[metadata$Distance_Score>0,] ; rownames(metadata) <- NULL
-
-# make an empty data frame to store high distance FASTA sequences
-high_dist_seqs <- DNAStringSet()
-
-# bring in FASTAs
-fastas <- list.files(path = ".", pattern = "*-cluster-seqs*")
-for (fa in fastas){
-  
-  # bring in FASTA
-  cluster_seqs <- readDNAStringSet(fa)
-  
-  # add that FASTA to a growing FASTA object of all hits, which will be exported
-  # after normalizing later
-  high_dist_seqs <- c(high_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
-  
-}
-
-# define retention threshold based on the data
-retention_threshold = quantile(metadata$Distance_Score, seq(0, 1, 0.001))[stringency]
-
-# plot distribution of summed weighted distances
-pdf("distance_distribution.pdf", width = 7, height = 5.5)
-hist_vector <-hist(metadata$Distance_Score, freq = FALSE, col = "lightblue",
-                   xlab = "Distance Score", ylab = "Frequency", 
-                   main = "Frequency Distribution of Nucleotide Distances")
-if (nrow(metadata) > 1){
-  lines(density(metadata$Distance_Score), col = "darkblue", lwd = 2)
-}
-abline(v = retention_threshold, col = "red", lwd = 3)
-text(x = retention_threshold+5, y = (max(hist_vector$counts)/2), adj = 0,
-     labels = paste("Retention Threshold:\n", retention_threshold ))
-dev.off()
-
-# normalizing year-month by down-prioritizing branches that are not exceptionally
-# long compared to all other year-months. I do this here by retaining only sequences that
-# are in clusters above the 90% quantile of distances, which pulls out true outliers.
-high_dist_meta <- subset(metadata, Distance_Score >= retention_threshold)
+# create a function to normalize metadata
 normalize_meta <- cmpfun(function(high_dist_seqs, high_dist_meta){
   
   high_dist_seqs <- high_dist_seqs[names(high_dist_seqs) %in% high_dist_meta$Accession]
   return(high_dist_seqs)
 })
 
-# run the function
-high_dist_seqs <- normalize_meta(high_dist_seqs, high_dist_meta)
+# candidate-identifying function to tie it all together
+find_candidates <- cmpfun(function(metadata, stringency){
+  
+  # creating list of year-month combinations to loop through
+  yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-dist-matrix.csv"), "-dist-matrix.csv")
+  
+  # run the metadata function in a parallelized fashion
+  metadata <- process_meta(yearmonths, metadata)
+  
+  # check to make sure metadata has clustering information in it
+  stopifnot(nrow(metadata[!is.na(metadata$Month_Cluster),])>0)
+  metadata <- metadata[metadata$Distance_Score>0,] ; rownames(metadata) <- NULL
+  
+  # make an empty data frame to store high distance FASTA sequences
+  high_dist_seqs <- DNAStringSet()
+  
+  # bring in FASTAs
+  fastas <- list.files(path = ".", pattern = "*-cluster-seqs*")
+  for (fa in fastas){
+    
+    # bring in FASTA
+    cluster_seqs <- readDNAStringSet(fa)
+    
+    # add that FASTA to a growing FASTA object of all hits, which will be exported
+    # after normalizing later
+    high_dist_seqs <- c(high_dist_seqs, cluster_seqs) ; remove(cluster_seqs)
+    
+  }
+  
+  # define retention threshold based on the data
+  retention_threshold = quantile(metadata$Distance_Score, seq(0, 1, 0.001))[stringency]
+  
+  # plot distribution of summed weighted distances
+  pdf("distance_distribution.pdf", width = 7, height = 5.5)
+  hist_vector <-hist(metadata$Distance_Score, freq = FALSE, col = "lightblue",
+                     xlab = "Distance Score", ylab = "Frequency", 
+                     main = "Frequency Distribution of Nucleotide Distances")
+  if (nrow(metadata) > 1){
+    lines(density(metadata$Distance_Score), col = "darkblue", lwd = 2)
+  }
+  abline(v = retention_threshold, col = "red", lwd = 3)
+  text(x = retention_threshold+5, y = (max(hist_vector$counts)/2), adj = 0,
+       labels = paste("Retention Threshold:\n", retention_threshold ))
+  dev.off()
+  
+  # normalizing year-month by down-prioritizing branches that are not exceptionally
+  # long compared to all other year-months. I do this here by retaining only sequences that
+  # are in clusters above the 90% quantile of distances, which pulls out true outliers.
+  high_dist_meta <- subset(metadata, Distance_Score >= retention_threshold)
+  
+  # run the function
+  high_dist_seqs <- normalize_meta(high_dist_seqs, high_dist_meta)
+  
+  # check here to prevent silent errors
+  stopifnot(as.numeric(length(high_dist_seqs)) == nrow(high_dist_meta))
+  
+  # writing candidate FASTA of high-distance sequences that passed normalization and 
+  # filtering
+  writeXStringSet(high_dist_seqs, "high_distance_candidates.fasta")
+  
+  # writing candidate metadata, which combines vsearch --clust_fast results with 
+  # NCBI metadata and iqTree branch lengths
+  high_dist_meta <- high_dist_meta[order(high_dist_meta$Distance_Score, decreasing = T),]
+  write.table(high_dist_meta, "high_distance_candidates.tsv", row.names = F, quote = F, sep = "\t")
+  
+})
 
-# check here to prevent silent errors
-stopifnot(as.numeric(length(high_dist_seqs)) == nrow(high_dist_meta))
+# run the candidate-finder
+find_candidates(metadata, stringency)
 
-# writing candidate FASTA of high-distance sequences that passed normalization and 
-# filtering
-writeXStringSet(high_dist_seqs, "high_distance_candidates.fasta")
-
-# writing candidate metadata, which combines vsearch --clust_fast results with 
-# NCBI metadata and iqTree branch lengths
-high_dist_meta <- high_dist_meta[order(high_dist_meta$Distance_Score, decreasing = T),]
-write.table(high_dist_meta, "high_distance_candidates.tsv", row.names = F, quote = F, sep = "\t")
