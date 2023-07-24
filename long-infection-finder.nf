@@ -191,7 +191,9 @@ workflow {
 	// )
 
 	// FIND_CANDIDATE_LINEAGES_BY_DATE (
-	// 	HIGH_THROUGHPUT_PANGOLIN.out
+	// 	HIGH_THROUGHPUT_PANGOLIN.out.collectFile(),
+	// 	FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
+	// 	FILTER_SEQS_TO_GEOGRAPHY.out.metadata
 	// )
 
 	// Steps for inspecting NCBI metadata
@@ -207,6 +209,18 @@ workflow {
 	// COLLATE_NCBI_METADATA_CANDIDATES (
 	// 	SEARCH_NCBI_METADATA.out
 	// )
+
+	// Steps for analyzing and visualizing the results from the 
+	// approaches above
+	// PREP_FOR_ESCAPE_CALC ()
+
+	// RUN_ESCAPE_CALC ()
+
+	// BUILD_NEXTSTRAIN_TREE ()
+
+	// PREP_FOR_USHER ()
+
+	// PLACE_WITH_USHER ()
 	
 
 }
@@ -1099,6 +1113,20 @@ process COLLATE_NCBI_METADATA_CANDIDATES {
 	"""
 
 }
+
+// process PREP_FOR_ESCAPE_CALC {}
+
+// process RUN_ESCAPE_CALC {}
+
+// process BUILD_NEXTSTRAIN_TREE {
+
+// 	script:
+// 	"""
+// 	augur tree \
+//     --alignment ${fasta} \
+//     --output augur_output/wi_sequences_tree_raw.nwk
+// 	"""
+// }
 
 
 // --------------------------------------------------------------- //

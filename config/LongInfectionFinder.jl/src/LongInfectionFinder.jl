@@ -245,7 +245,6 @@ function weight_by_cluster_size(seq_name::String, stringency::String, dist_df::D
     cluster_freq = filter(:9 => x -> x == seq_name, centroids)[:,3][1] / month_total
 
     # return the weight for this centroid's distance
-    weights = (all_sizes .* (1 - cluster_freq)) ./ month_total
     weights = stringency == "strict" ? ((all_sizes .* -log(cluster_freq)) ./ month_total) : ((all_sizes .* (1 - cluster_freq)) ./ month_total)
     @assert length(weights) == nrow(dist_df)
     return weights
