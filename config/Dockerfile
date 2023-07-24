@@ -69,7 +69,8 @@ RUN mamba install -y -c bioconda -c anaconda -c conda-forge \
     iqtree=1.6.7 \
     nextstrain \
     seqkit \
-    pangolin
+    pangolin \
+    usher
 
 # Install R channel packages
 RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
