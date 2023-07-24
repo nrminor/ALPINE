@@ -763,7 +763,8 @@ process COMPUTE_DISTANCE_MATRIX {
 	compute-distance-matrix.jl \
 	${fasta} \
 	${cluster_table} \
-	${yearmonth} \$cluster_count \$majority_centroid
+	${yearmonth} \$cluster_count \$majority_centroid \
+	${params.strictness_mode}
 
 	"""
 

@@ -224,7 +224,7 @@ function set_to_uppercase(fasta_filename::String, temp_filename::String)
 end
 
 # determine how many sequences are in each cluster to compute weighted distances
-function weight_by_cluster_size(seq_name::String, dist_df::DataFrame, cluster_table::DataFrame)
+function weight_by_cluster_size(seq_name::String, stringency::String, dist_df::DataFrame, cluster_table::DataFrame)
 
     # filter down to centroid rows only
     centroids = filter(:1 => x -> x == "C", cluster_table)
@@ -246,6 +246,7 @@ function weight_by_cluster_size(seq_name::String, dist_df::DataFrame, cluster_ta
 
     # return the weight for this centroid's distance
     weights = (all_sizes .* (1 - cluster_freq)) ./ month_total
+    weights = stringency == "strict" ? ((all_sizes .* -log(cluster_freq)) ./ month_total) : ((all_sizes .* (1 - cluster_freq)) ./ month_total)
     @assert length(weights) == nrow(dist_df)
     return weights
 

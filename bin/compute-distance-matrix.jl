@@ -9,6 +9,7 @@ const table_path = islink(ARGS[2]) ? readlink(ARGS[2]) : ARGS[2] # this will be 
 const yearmonth = ARGS[3]
 const count = parse(Int, ARGS[4])
 const majority_centroid = ARGS[5]
+const stringency = ARGS[6]
 
 # replace lowercase n symbols with uppercase Ns
 const tmp = "tmp.fasta"
