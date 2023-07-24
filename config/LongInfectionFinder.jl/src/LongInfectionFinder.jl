@@ -253,7 +253,7 @@ function weight_by_cluster_size(seq_name::String, stringency::String, dist_df::D
 end
 
 # compute cluster-size-weighted weighted distance matrices
-function distance_matrix(temp_filename::String, cluster_table::DataFrame, count::Int, majority_centroid::String, yearmonth::String)
+function distance_matrix(temp_filename::String, cluster_table::DataFrame, count::Int, majority_centroid::String, yearmonth::String, stringency::String)
 
     # Collect both names and sequences
     seqs = [seq for (name, seq) in FastaReader(temp_filename)]
@@ -272,7 +272,7 @@ function distance_matrix(temp_filename::String, cluster_table::DataFrame, count:
 
     # weight distance estimates by relative cluster size
     for seq in names(dist_df)
-        col_weights = weight_by_cluster_size(seq, dist_df, cluster_table)
+        col_weights = weight_by_cluster_size(seq, stringency, dist_df, cluster_table)
         dist_df[!, seq] = dist_df[!, seq] .* col_weights
     end
 
