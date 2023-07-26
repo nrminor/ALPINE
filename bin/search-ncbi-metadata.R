@@ -1,7 +1,11 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 
+library(tidyverse)
 library(parallel)
+
+# set just-in-time compilation setting so that top-level loops are JIT compiled
+compiler::enableJIT(3)
 
 # reading in filtered metadata and pango lineage dates
 metadata <- read.delim(args[1], na.strings = c("NA", ""))

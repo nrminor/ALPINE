@@ -8,25 +8,19 @@ nextflow.enable.dsl = 2
 // --------------------------------------------------------------- //
 workflow {
 	
-	if ( params.update_pango == true ){
+	if ( params.compare_lineage_dates == true ){
 
 		UPDATE_PANGO_CONTAINER ( )
 
 		println "This workflow will use the following Pangolin version:"
 		UPDATE_PANGO_CONTAINER.out.cue.view()
 
-	}
-
-	// Data setup steps
-	// DOWNLOAD_REFSEQ ( )
-
-	println "This run will search NCBI GenBank data for the pathogen ${params.pathogen}"
-	
-	if ( params.compare_lineage_dates == true ){
-
 		GET_DESIGNATION_DATES ( )
 
 	}
+
+	// Data setup steps
+	DOWNLOAD_REFSEQ ( )
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
 
@@ -141,23 +135,12 @@ workflow {
 		FIND_MAJORITY_CLUSTER.out
 	)
 
-	// BUILD_CENTROID_TREE (
-	// 	PREP_CENTROID_FASTAS.out
-	// 		.filter { it[1].toInteger() > 3 }
-	// 		.map { fasta, count -> fasta }
-	// )
-
 	MDS_PLOT (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		PREP_CENTROID_FASTAS.out
 			.filter { it[1].toInteger() > 2 }
 			.map { fasta, count -> fasta }
 	)
-
-	// PLOT_TREE (
-	// 	BUILD_CENTROID_TREE.out,
-	// 	DOWNLOAD_REFSEQ.out.ref_id
-	// )
 
 	SUMMARIZE_CANDIDATES (
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
@@ -180,35 +163,23 @@ workflow {
 	)
 	
 	// Steps for re-running pangolin and comparing dates
-	// HIGH_THROUGHPUT_PANGOLIN ( 
-	// 	UPDATE_PANGO_CONTAINER.out.cue,
-	// 	FILTER_SEQS_TO_GEOGRAPHY.out.fasta
-	// 		.splitFasta( by: 5000, file: true )
-	// )
+	CLASSIFY_SC2_WITH_PANGOLIN ( 
+		UPDATE_PANGO_CONTAINER.out.cue,
+		FILTER_SEQS_TO_GEOGRAPHY.out.fasta
+	)
 
-	// CONCAT_PANGOLIN_REPORTS (
-	// 	HIGH_THROUGHPUT_PANGOLIN.out.collect()
-	// )
-
-	// FIND_CANDIDATE_LINEAGES_BY_DATE (
-	// 	HIGH_THROUGHPUT_PANGOLIN.out.collectFile(),
-	// 	FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
-	// 	FILTER_SEQS_TO_GEOGRAPHY.out.metadata
-	// )
+	FIND_CANDIDATE_LINEAGES_BY_DATE (
+		CLASSIFY_SC2_WITH_PANGOLIN.out
+			.collectFile(name: 'new_pango_calls.csv', newLine: true),
+		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
+		FILTER_TSV_TO_GEOGRAPHY.out.metadata
+	)
 
 	// Steps for inspecting NCBI metadata
-	// FILTER_NCBI_METADATA (
-	// 	FILTER_TSV_TO_GEOGRAPHY.out.metadata
-	// )
-
-	// SEARCH_NCBI_METADATA ( 
-	// 	FILTER_NCBI_METADATA.out,
-	// 	GET_DESIGNATION_DATES.out
-	// )
-
-	// COLLATE_NCBI_METADATA_CANDIDATES (
-	// 	SEARCH_NCBI_METADATA.out
-	// )
+	SEARCH_NCBI_METADATA ( 
+		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
+		GET_DESIGNATION_DATES.out
+	)
 
 	// Steps for analyzing and visualizing the results from the 
 	// approaches above
@@ -299,6 +270,7 @@ process DOWNLOAD_REFSEQ {
 	available, is downloaded for downstream usage.
 	*/
 
+	label "lif_container"
 	tag "${params.pathogen}"
 	publishDir params.resources, mode: 'copy'
 
@@ -324,11 +296,15 @@ process GET_DESIGNATION_DATES {
 	// This process downloads a table of pangolin lineage designation dates
 	// from Cornelius Roemer's GitHub. These dates represent when each lineage was
 	// added to pangolin, after which point sequences could be classified as such 
-	
+
+	label "lif_container"
 	publishDir params.resources, mode: 'copy', overwrite: true
 	
 	output:
 	path "*.csv"
+
+	when:
+	params.pathogen == "SARS-CoV-2"
 	
 	script:
 	"""
@@ -369,6 +345,8 @@ process UNZIP_NCBI_METADATA {
 	lightweight NCBI zip archive.
 	*/
 
+	tag "${params.pathogen}"
+
 	publishDir params.ncbi_results, mode: params.publishMode
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
@@ -396,6 +374,8 @@ process EXTRACT_NCBI_FASTA {
 	Here the pathogen sequences in FASTA format are extracted 
 	from the lightweight NCBI zip archive.
 	*/
+
+	tag "${params.pathogen}"
 
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode
@@ -427,7 +407,7 @@ process FILTER_TSV_TO_GEOGRAPHY {
 	the metadata down to a geography of interest.
 	*/
 
-	tag "${params.geography}"
+	tag "${params.pathogen}, ${params.geography}"
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode, pattern: "*.tsv"
 
@@ -462,7 +442,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	the sequences reflect the same geography filtering.
 	*/
 
-	tag "${params.geography}"
+	tag "${params.pathogen}, ${params.geography}"
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode
 
@@ -784,37 +764,6 @@ process COMPUTE_DISTANCE_MATRIX {
 
 }
 
-process BUILD_CENTROID_TREE {
-
-	/*
-	Next, we take the centroid sequences aligned with Wuhan-1
-	and build a tree with Wuhan-1 as the outgroup. The goal is
-	to identify which centroid has the longest branch length 
-	for each year-month. The sequences that cluster with that
-	long-branch centroid will be classified as a evolutionarily
-	advanced.
-	*/
-
-	tag "${yearmonth}"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
-
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
-
-	input:
-	path fasta
-
-	output:
-	path "*.treefile"
-
-	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-aligned-centroids", "")
-	"""
-	iqtree -s ${fasta} -pre ${yearmonth} -m MFP -bb 1000 -nt ${task.cpus}
-	"""
-
-}
-
 process MDS_PLOT {
 
 	/*
@@ -846,36 +795,6 @@ process MDS_PLOT {
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
 	"""
 	plot-mds.R ${yearmonth} ${cluster_table} ${centroid_fasta}
-	"""
-
-}
-
-process PLOT_TREE {
-
-	/*
-	This process builds a simple phylogeny plot to show how the 
-	centroid sequences from each month are related to each other
-	and to the pathogen RefSeq.
-	*/
-
-	tag "${yearmonth}"
-	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
-
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
-
-	input:
-	path treefile
-	val ref_id
-
-	output:
-	path "*.pdf"
-
-	script:
-	yearmonth = file(treefile.toString()).getSimpleName().replace(".treefile", "")
-	"""
-	plot-tree.R ${treefile} ${yearmonth} ${ref_id}
 	"""
 
 }
@@ -993,62 +912,56 @@ process META_CLUSTER_REPORT {
 
 }
 
-process HIGH_THROUGHPUT_PANGOLIN {
+process CLASSIFY_SC2_WITH_PANGOLIN {
 	
-	cpus 4
 	errorStrategy 'retry'
 	maxRetries 1
+
+	cpus params.max_cpus
 	
 	input:
-	each cue
-	path fasta
+	val cue
+	each path(fasta)
 	
 	output:
 	path "*.csv"
 
 	script:
 	"""
+	zstd -d `realpath ${fasta}` -o ./decompressed_genbank.fasta && \
 	pangolin \
 	--skip-scorpio --skip-designation-cache \
 	--threads ${task.cpus} \
 	--outfile lineage_report.csv \
-	"${fasta}"
+	decompressed_genbank.fasta && \
+	rm -f decompressed_genbank.fasta
 	"""
 
-}
-
-process CONCAT_PANGOLIN_REPORTS {
-
-	input:
-	path lineage_report, stageAs: 'report??.csv'
-
-	output:
-	path csv
-
-	script:
-	"""
-	"""
 }
 
 process FIND_CANDIDATE_LINEAGES_BY_DATE {
-
+	
+	tag "${params.pathogen}, ${params.geography}"
+	label "lif_container"
 	publishDir params.anachronistic_candidates, mode: 'copy'
 
-	cpus params.max_cpus
-
 	input:
-	path csv
+	path lineages
+	path fasta
+	path metadata
 
 	output:
 	path "*putative_long_infections_ncbi*.csv"
 
 	script:
 	"""
-	compare-lineage-prevalences.R ${csv} ${task.cpus}
+	zstd -d `realpath ${fasta}` -o ./decompressed_genbank.fasta && \
+	compare-lineage-prevalences.R ${lineages} "filtered-to-geography.fasta" ${metadata} ${task.cpus} && \
+	rm -f decompressed_genbank.fasta
 	"""
 }
 
-process FILTER_NCBI_METADATA {
+process SEARCH_NCBI_METADATA {
 
 	/* 
 	In parallel with the distance matrix method, this pipeline also pans
@@ -1060,28 +973,11 @@ process FILTER_NCBI_METADATA {
 	dates and pango lineages.
 	*/
 
-	input:
-	path tsv
+	tag "${params.pathogen}, ${params.geography}"
+	label "lif_container"
+	publishDir params.metadata_candidates, mode: 'copy'
 
-	output:
-	path "*.tsv"
-
-	when:
-	params.inspect_ncbi_metadata == true && params.update_pango == false
-
-	script:
-	"""
-	filter_ncbi_metadata.R ${tsv} \
-	${params.min_date} ${params.max_date} \
-	${params.geography}
-	"""
-}
-
-process SEARCH_NCBI_METADATA {
-
-	publishDir params.ncbi_results, mode: 'copy'
-
-	cpus 7
+	cpus params.max_cpus
 
 	input:
 	path metadata
@@ -1095,21 +991,7 @@ process SEARCH_NCBI_METADATA {
 		
 	script:
 	"""
-	search_ncbi_metadata.R ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus}
-	"""
-
-}
-
-process COLLATE_NCBI_METADATA_CANDIDATES {
-
-	input:
-	tuple val(accession), val(duration)
-
-	output:
-	path "*.fasta"
-
-	script:
-	"""
+	search-ncbi-metadata.R ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus}
 	"""
 
 }

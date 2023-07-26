@@ -77,22 +77,15 @@ RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
     r-tidyverse \
     r-ape \
     r-plotly \
+    r-fst \
+    r-devtools \
+    r-units \
+    r-sf \
     bioconductor-biostrings
 
 # Install nextflow
 RUN wget -qO- https://get.nextflow.io | bash && \
     mv nextflow /usr/local/bin/
-
-# Install seqtk
-RUN wget https://github.com/lh3/seqtk/archive/refs/tags/v1.3.tar.gz && \
-    tar -zxvf v1.3.tar.gz && \
-    cd seqtk-1.3 && \
-    make && \
-    mv seqtk /usr/local/bin/ && \
-    cd .. && \
-    rm -rf seqtk-1.3 v1.3.tar.gz && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
@@ -109,6 +102,10 @@ RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
             Pkg.instantiate(); \
             Pkg.precompile()'
+
+# Install outbreak.info and cdc R packages
+RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library/')"
+RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library/')"
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9
