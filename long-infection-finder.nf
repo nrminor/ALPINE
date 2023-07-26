@@ -963,7 +963,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	zstd -d `realpath ${fasta}` -o ./decompressed_genbank.fasta && \
 	compare-lineage-prevalences.R \
 	${lineages} \
-	"filtered-to-geography.fasta" \
+	decompressed_genbank.fasta \
 	${metadata} && \
 	rm -f decompressed_genbank.fasta
 	"""

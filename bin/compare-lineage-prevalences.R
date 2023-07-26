@@ -27,16 +27,20 @@ print("This data was obtained from GISAID via the outbreak.info API.")
 date_pango_calls <- cmpfun(function(report_path, metadata){
   
   # Read in pangolin report columns
-  pango_report <- read_csv(report_path, col_select = c(`Sequence name`, Lineage),
+  pango_report <- read_csv(report_path, col_select = c(`taxon`, lineage),
                            show_col_types = FALSE, trim_ws = TRUE) %>%
-    filter(!grepl("taxon", `Sequence name`))
+    filter(!grepl("taxon", `taxon`))
+  
+  pango_report$taxon <- str_split_i(pango_report$taxon,
+                                  " Severe acute respiratory syndrome coronavirus 2 isolate ",
+                                  i = 1)
   
   # joining the desired columns
   pango_with_dates <- pango_report %>% 
     left_join(metadata %>% select(Accession, `Isolate Collection date`), 
-              by = c("Sequence name" = "Accession"), keep = TRUE) %>%
+              by = c("taxon" = "Accession"), keep = TRUE) %>%
     select(-Accession) %>%
-    arrange(`Sequence name`)
+    arrange(`taxon`)
   
   return(pango_with_dates)
   
@@ -57,7 +61,7 @@ subset_metadata <- cmpfun(function(metadata_path, report_path){
   
   # sort metadata so that accessions is in the same order as the pango report
   metadata <- arrange(metadata, Accession)
-  stopifnot(!(FALSE %in% (metadata$Accession == pango_report$`Sequence name`)))
+  stopifnot(!(FALSE %in% (metadata$Accession == pango_report$`taxon`)))
   
   # create vectorized function for identifying the HHS regions and determining
   # whether the probability that a given lineage has persisted is marginal
@@ -136,7 +140,7 @@ subset_metadata <- cmpfun(function(metadata_path, report_path){
            return(anachronicity), 
            return(0))
     
-  }, lineages = pango_report$Lineage, 
+  }, lineages = pango_report$lineage, 
   dates = pango_report$`Isolate Collection date`,
   numeric(1))
   
