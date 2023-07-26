@@ -10,6 +10,9 @@ workflow {
 	
 	if ( params.compare_lineage_dates == true ){
 
+		ch_gisaid_token = Channel
+			.fromPath ( params.gisaid_token )
+
 		UPDATE_PANGO_CONTAINER ( )
 
 		println "This workflow will use the following Pangolin version:"
@@ -172,7 +175,8 @@ workflow {
 		CLASSIFY_SC2_WITH_PANGOLIN.out
 			.collectFile(name: 'new_pango_calls.csv', newLine: true),
 		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
-		FILTER_TSV_TO_GEOGRAPHY.out.metadata
+		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
+		ch_gisaid_token
 	)
 
 	// Steps for inspecting NCBI metadata
@@ -949,6 +953,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	path lineages
 	path fasta
 	path metadata
+	path token
 
 	output:
 	path "*putative_long_infections_ncbi*.csv"
@@ -956,7 +961,10 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	script:
 	"""
 	zstd -d `realpath ${fasta}` -o ./decompressed_genbank.fasta && \
-	compare-lineage-prevalences.R ${lineages} "filtered-to-geography.fasta" ${metadata} ${task.cpus} && \
+	compare-lineage-prevalences.R \
+	${lineages} \
+	"filtered-to-geography.fasta" \
+	${metadata} && \
 	rm -f decompressed_genbank.fasta
 	"""
 }

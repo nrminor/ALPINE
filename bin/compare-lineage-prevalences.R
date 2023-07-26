@@ -18,7 +18,7 @@ fasta_path <- args[2]
 metadata_path <- args[3]
 
 # launch authentication prompt to get GISAID token
-authenticateUser()
+# authenticateUser()
 
 # printing GISAID Disclaimer
 print("This data was obtained from GISAID via the outbreak.info API.")
