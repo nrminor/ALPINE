@@ -956,7 +956,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	path token
 
 	output:
-	path "*putative_long_infections_ncbi*.csv"
+	path "*.tsv"
 
 	script:
 	"""
