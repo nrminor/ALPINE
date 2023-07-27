@@ -138,7 +138,7 @@ workflow {
 		FIND_MAJORITY_CLUSTER.out
 	)
 
-	MDS_PLOT (
+	MULTIDIMENSIONAL_SCALING (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		PREP_CENTROID_FASTAS.out
 			.filter { it[1].toInteger() > 2 }
@@ -187,6 +187,8 @@ workflow {
 
 	// Steps for analyzing and visualizing the results from the 
 	// approaches above
+	// FIND_DOUBLE_CANDIDATES ()
+
 	// PREP_FOR_ESCAPE_CALC ()
 
 	// RUN_ESCAPE_CALC ()
@@ -768,7 +770,7 @@ process COMPUTE_DISTANCE_MATRIX {
 
 }
 
-process MDS_PLOT {
+process MULTIDIMENSIONAL_SCALING {
 
 	/*
 	This plot runs multi-dimensional scaling to produce a "bee-swarm"
@@ -917,9 +919,15 @@ process META_CLUSTER_REPORT {
 }
 
 process CLASSIFY_SC2_WITH_PANGOLIN {
-	
-	errorStrategy 'retry'
-	maxRetries 1
+
+	/*
+	*/
+
+	tag "${params.pathogen}, ${params.geography}"
+	label "lif_container"
+
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	cpus params.max_cpus
 	
@@ -944,10 +952,16 @@ process CLASSIFY_SC2_WITH_PANGOLIN {
 }
 
 process FIND_CANDIDATE_LINEAGES_BY_DATE {
+
+	/*
+	*/
 	
 	tag "${params.pathogen}, ${params.geography}"
 	label "lif_container"
 	publishDir params.anachronistic_candidates, mode: 'copy'
+	
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	input:
 	path lineages
@@ -984,6 +998,9 @@ process SEARCH_NCBI_METADATA {
 	tag "${params.pathogen}, ${params.geography}"
 	label "lif_container"
 	publishDir params.metadata_candidates, mode: 'copy'
+	
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
 
 	cpus params.max_cpus
 
@@ -1003,6 +1020,20 @@ process SEARCH_NCBI_METADATA {
 	"""
 
 }
+
+// process FIND_DOUBLE_CANDIDATES {
+
+// 	/*
+// 	*/
+
+// 	tag "${params.pathogen}, ${params.geography}"
+// 	label "lif_container"
+// 	publishDir params.metadata_candidates, mode: 'copy'
+	
+// 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+// 	maxRetries 2
+
+// }
 
 // process PREP_FOR_ESCAPE_CALC {}
 
