@@ -185,6 +185,8 @@ workflow {
 		SUMMARIZE_CANDIDATES.out.metadata,
 		FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
 		FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
+			.filter { it[1].toInteger() > 2 }
+			.map { fasta, count -> fasta }
 	)
 
 	// PREP_FOR_ESCAPE_CALC ()
@@ -904,7 +906,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	label "lif_container"
 	publishDir params.anachronistic_candidates, mode: 'copy'
 	
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	errorStrategy { task.attempt < 3 ? {sleep(Math.pow(2, task.attempt) * 2000 as long); return 'retry'} : 'ignore' }
 	maxRetries 2
 
 	input:
@@ -915,7 +917,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	output:
 	path "*.tsv", emit: metadata
-	path "*.fasta", emit: sequences
+	tuple path("*.fasta"), env(sample_size), emit: sequences
 
 	script:
 	"""
@@ -924,7 +926,8 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	${lineages} \
 	decompressed_genbank.fasta \
 	${metadata} && \
-	rm -f decompressed_genbank.fasta
+	rm -f decompressed_genbank.fasta && \
+	sample_size=\$(grep -c "^>" anachronistic_seq_candidates.fasta)
 	"""
 }
 

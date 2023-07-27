@@ -32,7 +32,7 @@ date_pango_calls <- cmpfun(function(report_path, metadata){
     filter(!grepl("taxon", `taxon`))
   
   pango_report$taxon <- str_split_i(pango_report$taxon,
-                                  " Severe acute respiratory syndrome coronavirus 2 isolate ",
+                                  " ",
                                   i = 1)
   
   # joining the desired columns
@@ -46,12 +46,84 @@ date_pango_calls <- cmpfun(function(report_path, metadata){
   
 })
 
+# function to create lookup of "rare dates" for the pango lineages in the 
+# current pango report
+create_rarity_lookup <- cmpfun(function(pango_report){
+  
+  # create vector of unique lineages to iterate through
+  lineages <- unique(pango_report$lineage)
+  
+  # create rarity lookup vector with vapply
+  rarity_lookup <- vapply(lineages, function(lineage){
+    
+    # creating an empty table where we will fill in
+    # prevalences
+    prevalence_table <- getPrevalence(pangolin_lineage = lineage, 
+                                      location = "United States")
+    
+    # Then, we get rid of zeroes, which will
+    # skew our methods below. We also get
+    # rid of 1.0's, which are likely
+    # erroneous.
+    prevalence_table <- prevalence_table[prevalence_table$proportion > 0 &
+                                           prevalence_table$proportion < 1,]
+    
+    if (nrow(prevalence_table) > 0){
+      
+      # Next, we use a rather crude method to identify
+      # when the wave for a lineage in question has
+      # "crested". This is the date of peak prevalence
+      # for the lineage in the HHS region.
+      crest_date <- max(prevalence_table[
+        prevalence_table$proportion==max(prevalence_table$proportion), 
+        "date"])
+      
+      # We use the same logic to compute when a given
+      # lineage has become rare, which we consider to
+      # be in the lowest 10% quantile of prevalence
+      # throughout its spread in the HHS, which will
+      # be out cutoff for identifying prolonged
+      # infection candidates. Importantly, it is
+      # possible for a lineage to experience ups and
+      # downs in its prevalence. To guarantee that we
+      # don't erroneously call a sample anachronistic
+      # based on a temporary prevalence low point, we
+      # use the *last* date at which a lineage is in
+      # its lowest 10% of prevalence in the HHS region
+      # in question.
+      q <- quantile(prevalence_table$proportion, 0.01)
+      rare_prev <- prevalence_table$proportion[
+        which.min(
+          abs(prevalence_table$proportion - q))]
+      rare_date <- max(prevalence_table[
+        prevalence_table$proportion==rare_prev, "date"]) + 30
+      
+    } else {
+      
+      rare_date <- Sys.Date()
+      
+    }
+    
+    return(rare_date)
+    
+  }, Date(1))
+  
+  # coerce the lookup to be properly date-formatted
+  rarity_lookup <- as.Date(rarity_lookup)
+  
+  # make sure each item can be accessed by lineage name
+  names(rarity_lookup) <- lineages
+  
+  return(rarity_lookup)
+  
+})
+
 # define metadata function
 subset_metadata <- cmpfun(function(metadata_path, report_path){
   
   # gathering long table of U.S. HHS regions
-  data(hhs_regions)
-  hhs_regions <- data.frame(hhs_regions)
+  # data(hhs_regions)
+  # hhs_regions <- data.frame(hhs_regions)
   
   # Read in metadata
   metadata <- read_tsv(metadata_path, show_col_types = FALSE, trim_ws = TRUE)
@@ -63,85 +135,26 @@ subset_metadata <- cmpfun(function(metadata_path, report_path){
   metadata <- arrange(metadata, Accession)
   stopifnot(!(FALSE %in% (metadata$Accession == pango_report$`taxon`)))
   
+  # create rare-date lookup with the outbreak.info API
+  rarity_lookup <- create_rarity_lookup(pango_report)
+  
   # create vectorized function for identifying the HHS regions and determining
   # whether the probability that a given lineage has persisted is marginal
   metadata$`Anachronicity (days)` <- vapply(1:nrow(pango_report), 
-                                            function(i, lineages, dates){
-    
-    # identifying all states in each HHS region. All
-    # prevalences will be based on U.S. HHS region
-    # rather than individual states. This is because
-    # data reporting and availability is variable
-    # across states.
-    # hhs <- hhs_regions[hhs_regions$state_or_territory==us_state[i], "region"]
-    # region_states <- hhs_regions[hhs_regions$region==hhs,
-    # "state_or_territory"]
-    
-    # creating an empty table where we will fill in
-    # prevalences
-    prevalence_table <- getPrevalence(pangolin_lineage = lineages[i], 
-                                      location = "United States")
-    # prevalence_table <- prevalence_table[NULL,]
-    
-    # looping through each state in the HHS region
-    # in question and gathering prevalence estimates
-    # from outbreak.info/GISAID
-    # for (j in region_states){
-    #   
-    #   new_rows <- getPrevalence(pangolin_lineage = lineages[i], 
-    #                             location = j)
-    #   prevalence_table <- rbind(prevalence_table, new_rows)
-    #   
-    # }
-    
-    # Then, we get rid of zeroes, which will
-    # skew our methods below. We also get
-    # rid of 1.0's, which are likely
-    # erroneous.
-    prevalence_table <- prevalence_table[prevalence_table$proportion > 0 &
-                                           prevalence_table$proportion < 1,]
-    
-    # Next, we use a rather crude method to identify
-    # when the wave for a lineage in question has
-    # "crested". This is the date of peak prevalence
-    # for the lineage in the HHS region.
-    crest_date <- max(prevalence_table[
-      prevalence_table$proportion==max(prevalence_table$proportion), 
-      "date"])
-    
-    # We use the same logic to compute when a given
-    # lineage has become rare, which we consider to
-    # be in the lowest 10% quantile of prevalence
-    # throughout its spread in the HHS, which will
-    # be out cutoff for identifying prolonged
-    # infection candidates. Importantly, it is
-    # possible for a lineage to experience ups and
-    # downs in its prevalence. To guarantee that we
-    # don't erroneously call a sample anachronistic
-    # based on a temporary prevalence low point, we
-    # use the *last* date at which a lineage is in
-    # its lowest 10% of prevalence in the HHS region
-    # in question.
-    q <- quantile(prevalence_table$proportion, 0.01)
-    rare_prev <- prevalence_table$proportion[
-      which.min(
-        abs(prevalence_table$proportion - q))]
-    rare_date <- max(prevalence_table[
-      prevalence_table$proportion==rare_prev, "date"]) # + 30
+                                            function(i, lineages, dates, rarity_lookup){
     
     # define anachronicity in days
-    anachronicity <- as.numeric(dates[i] - rare_date)
+    anachronicity <- as.numeric(dates[i] - rarity_lookup[lineages[i]])
     
-    # Finally, an ifelse statement checks if the
-    # collection date for a the lineage sample in
-    # question comes after the above-computed "final date
-    # of rarity"
+    # Here an ifelse statement checks if the collection date for a the lineage
+    # sample in question comes after the above-computed "final date of rarity"
     ifelse(anachronicity > 0, 
            return(anachronicity), 
            return(0))
     
   }, lineages = pango_report$lineage, 
   dates = pango_report$`Isolate Collection date`,
+  rarity_lookup = rarity_lookup,
   numeric(1))
   
   metadata <- metadata %>%
@@ -157,13 +170,21 @@ subset_fasta <- cmpfun(function(metadata, fasta_path){
   # bring in FASTA
   all_seqs <- readDNAStringSet(fasta_path)
   
+  # parse out names so that they only contain accession IDs
+  names(all_seqs) <- str_split_i(names(all_seqs),
+                                    " ",
+                                    i = 1)
+  
   # parse out anachronistic seqs
   anachron_seqs <- all_seqs[names(all_seqs) %in% metadata$Accession]
+  
+  stopifnot(length(anachron_seqs) == nrow(metadata))
   
   return(anachron_seqs)
   
 })
 
+# define main function that will bring it all together
 main <- cmpfun(function(report_path, metadata_path, fasta_path){
   
   # filter the metadata
