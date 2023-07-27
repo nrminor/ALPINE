@@ -83,17 +83,18 @@ workflow {
 
 	}
 
-	// NCBI/GENBANK BRANCH:
-	/* Here we use three orthogonal methods for identifying prolonged
+	// ADVANCED VIRUS &/OR LONG INFECTION FINDER:
+	/* This workflow uses three orthogonal methods for identifying prolonged
 	infection candidates:
-		1 - Creating a distance matrix of nucleotide differences between
-		consensus sequences, run a clustering algorithm on those distances,
-		and identify candidates in the highest-distance cluster.
+		1 - Running a clustering algorithm on the sequences from each month to reduce
+		the dimensionality of the data, creating a distance matrix of nucleotide 
+		differences between clusters, and then flagging the sequences from the 
+		highest-distance clusters.
 		2 - Reclassifying sequences using with the most up-to-date version
 		of Pangolin and comparing each isolate's collection date with 
 		lineage prevalence estimates from outbreak.info
 		3 - The fastest option: trusting pango lineages in the metadata 
-		as being mostly up-to-date and comparing those lineage's collection 
+		as being mostly up-to-date and comparing those lineages' collection 
 		dates with outbreak.info prevalence estimates.
 	We suggest users run all of these methods (see nextflow.config) and 
 	cross reference the results from each.
