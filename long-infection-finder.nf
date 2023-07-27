@@ -119,12 +119,8 @@ workflow {
 		SEPARATE_BY_MONTH.out.flatten()
 	)
 
-	COUNT_FASTA_RECORDS (
-		CLUSTER_BY_IDENTITY.out.centroid_fasta
-	)
-
 	PREP_CENTROID_FASTAS (
-		COUNT_FASTA_RECORDS.out
+		CLUSTER_BY_IDENTITY.out.centroid_fasta
 			.filter { it[1].toInteger() > 1 }
 			.map { fasta, count -> fasta }
 	)
@@ -132,6 +128,8 @@ workflow {
 	FIND_MAJORITY_CLUSTER (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		PREP_CENTROID_FASTAS.out
+			.filter { it[1].toInteger() > 1 }
+			.map { fasta, count -> fasta }
 	)
 
 	COMPUTE_DISTANCE_MATRIX (
@@ -187,11 +185,11 @@ workflow {
 
 	// Steps for analyzing and visualizing the results from the 
 	// approaches above
-	// FIND_DOUBLE_CANDIDATES (
-	// 	SUMMARIZE_CANDIDATES.out.metadata,
-	// 	FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
-	// 	FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
-	// )
+	FIND_DOUBLE_CANDIDATES (
+		SUMMARIZE_CANDIDATES.out.metadata,
+		FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
+		FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
+	)
 
 	// PREP_FOR_ESCAPE_CALC ()
 
@@ -622,7 +620,7 @@ process CLUSTER_BY_IDENTITY {
 
 	output:
 	path "*.uc", emit: cluster_table
-	path "*centroids.fasta", emit: centroid_fasta
+	tuple path("*centroids.fasta"), env(count), emit: centroid_fasta
 	path "*-cluster-seqs*", emit: cluster_fastas
 	
 	script:
@@ -633,38 +631,10 @@ process CLUSTER_BY_IDENTITY {
 	--centroids ${yearmonth}-centroids.fasta \
 	--uc ${yearmonth}-clusters.uc \
 	--clusters ${yearmonth}-cluster-seqs \
-	--threads ${task.cpus}
+	--threads ${task.cpus} && \
+	count=$(grep -c "^>" ${yearmonth}-centroids.fasta)
 	"""
 	
-}
-
-process COUNT_FASTA_RECORDS {
-
-	/*
-	This process counts the number of records in each year-month's
-	centroid FASTA so it can filter low-cluster months prior to
-	iqTree.
-	*/
-
-	tag "${yearmonth}"
-	label "lif_container"
-
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
-
-	input:
-	path fasta
-
-	output:
-	tuple path(fasta), env(count)
-
-	shell:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
-	'''
-	count=$(grep -c "^>" !{fasta})
-	echo "There are" ${count} "records in the FASTA" !{fasta}
-	'''
-
 }
 
 process PREP_CENTROID_FASTAS {
