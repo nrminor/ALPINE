@@ -187,7 +187,11 @@ workflow {
 
 	// Steps for analyzing and visualizing the results from the 
 	// approaches above
-	// FIND_DOUBLE_CANDIDATES ()
+	FIND_DOUBLE_CANDIDATES (
+		SUMMARIZE_CANDIDATES.out.metadata,
+		FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
+		FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
+	)
 
 	// PREP_FOR_ESCAPE_CALC ()
 
@@ -244,6 +248,7 @@ params.high_distance_candidates = params.ncbi_results + "/high_distance_clusters
 params.repeat_lineages = params.high_distance_candidates + "/repeat_lineages"
 params.anachronistic_candidates = params.ncbi_results + "/anachronistic_candidates"
 params.metadata_candidates = params.ncbi_results + "/metadata_candidates"
+params.double_candidates = params.ncbi_results + "/double_candidates"
 
 // --------------------------------------------------------------- //
 
@@ -970,7 +975,8 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	path token
 
 	output:
-	path "*.tsv"
+	path "*.tsv", emit: metadata
+	path "*.fasta", emit: sequences
 
 	script:
 	"""
@@ -1021,19 +1027,42 @@ process SEARCH_NCBI_METADATA {
 
 }
 
-// process FIND_DOUBLE_CANDIDATES {
+process FIND_DOUBLE_CANDIDATES {
 
-// 	/*
-// 	*/
+	/*
+	Check the outputs from the lineage and date-based approach with 
+	the outputs of the distance matrix approach to find the "Venn
+	overlap" between the two, where two lines of evidence suggest
+	that a sequence comes from a prolonged infection within one host.
+	*/
 
-// 	tag "${params.pathogen}, ${params.geography}"
-// 	label "lif_container"
-// 	publishDir params.metadata_candidates, mode: 'copy'
+	tag "${params.pathogen}, ${params.geography}"
+	label "lif_container"
+	publishDir params.double_candidates, mode: 'copy'
 	
-// 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-// 	maxRetries 2
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
 
-// }
+	input:
+	path high_dist_metadata
+	path anachronistic_meta
+	path anachronistic_seqs
+
+	output:
+	path "*.tsv"
+	path "*.fasta"
+
+	when:
+	(params.compare_lineage_dates == true && params.make_distance_matrix == true) || (params.make_distance_matrix == true && params.inspect_ncbi_metadata == true)
+
+	script:
+	"""
+	find-double-candidates.jl ${high_dist_metadata} \
+	${anachronistic_meta} \
+	${anachronistic_seqs}
+	"""
+
+}
 
 // process PREP_FOR_ESCAPE_CALC {}
 

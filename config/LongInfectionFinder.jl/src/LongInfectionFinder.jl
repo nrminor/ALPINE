@@ -4,7 +4,7 @@ module LongInfectionFinder
 using DelimitedFiles, DataFrames, CSV, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib
 import Base.Threads
 
-export filter_tsv_by_geo, filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering
+export filter_tsv_by_geo, filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
@@ -335,6 +335,46 @@ function prep_for_clustering(ncbi_metadata::String, desired_geography::String, n
 
 end
 
+
+
+### FUNCTION THAT FINDS THE OVERLAP BETWEEN HIGH-DISTANCE AND ANACHRONISTIC SEQUENCES ###
+### --------------------------------------------------------------------------------- ###
+function find_double_candidates(high_dist_meta::String, anachron_meta::String, anachron_seqs::String)
+
+    # Load TSV metadata files
+    metadata1 = CSV.read(high_dist_meta, DataFrame, delim='\t', header=1)
+    metadata2 = CSV.read(anachron_meta, DataFrame, delim='\t', header=1)
+
+    # Get the intersecting accessions
+    common_accessions = intersect(metadata1[!, 1], metadata2[!, 1])
+
+    # Filter metadata to only common accessions
+    metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)
+    metadata2_filtered = filter(row -> row[1] in common_accessions, metadata2)
+
+    # Sort both dataframes by Accession
+    sort!(metadata1_filtered, :Accession)
+    sort!(metadata2_filtered, :Accession)
+
+    # Add the last column from metadata2 to metadata1
+    metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
+
+    # Write the combined metadata to a TSV file
+    CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+
+    # Open FASTA files and perform the filtering operation
+    FastaReader(anachron_seqs) do fr
+        FastaWriter("double_candidates.fasta", "w") do fw
+            for (name, seq) in fr
+                if name in common_accessions
+                    writeentry(fw, name, seq)
+                end
+            end
+        end
+        
+    end
+
+end
 ### ---------------------------------------------------------------------------------------- ###
 
 end # LongInfectionFinder module
