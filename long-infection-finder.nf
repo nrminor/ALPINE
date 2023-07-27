@@ -187,11 +187,11 @@ workflow {
 
 	// Steps for analyzing and visualizing the results from the 
 	// approaches above
-	FIND_DOUBLE_CANDIDATES (
-		SUMMARIZE_CANDIDATES.out.metadata,
-		FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
-		FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
-	)
+	// FIND_DOUBLE_CANDIDATES (
+	// 	SUMMARIZE_CANDIDATES.out.metadata,
+	// 	FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
+	// 	FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
+	// )
 
 	// PREP_FOR_ESCAPE_CALC ()
 
