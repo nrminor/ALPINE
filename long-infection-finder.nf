@@ -261,7 +261,7 @@ process UPDATE_PANGO_CONTAINER {
 	env(version), emit: cue
 	
 	when:
-	(workflow.profile == 'standard' || workflow.profile == 'docker' || workflow.profile == 'singularity') && (params.pathogen == "SARS-CoV-2" || params.pathogen == "sars-cov-2")
+	(params.pathogen == "SARS-CoV-2" || params.pathogen == "sars-cov-2") && params.compare_lineage_dates == true
 	
 	script:
 	"""

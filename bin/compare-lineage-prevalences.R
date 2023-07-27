@@ -104,13 +104,15 @@ create_rarity_lookup <- cmpfun(function(pango_report){
       
     }
     
+    stopifnot(as.numeric(rarity_date > crest_date))
+    
+    
     return(rare_date)
     
   }, Date(1))
   
   # coerce the lookup to be properly date-formatted
   rarity_lookup <- as.Date(rarity_lookup)
-  
   # make sure each item can be accessed by lineage name
   names(rarity_lookup) <- lineages
   
