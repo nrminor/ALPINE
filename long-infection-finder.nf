@@ -110,11 +110,6 @@ workflow {
 		FILTER_TSV_TO_GEOGRAPHY.out.metadata
 	)
 
-	// PREP_FOR_CLUSTERING (
-	// 	UNZIP_NCBI_METADATA.out,
-	// 	EXTRACT_NCBI_FASTA.out
-	// )
-
 	CLUSTER_BY_IDENTITY (
 		SEPARATE_BY_MONTH.out.flatten()
 	)
@@ -487,6 +482,7 @@ process REMOVE_FASTA_GAPS {
 	
 	label "lif_container"
 
+	tag "${params.pathogen}, ${params.geography}"
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
@@ -518,6 +514,7 @@ process FILTER_BY_MASKED_BASES {
 
 	label "lif_container"
 
+	tag "${params.pathogen}, ${params.geography}"
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
@@ -548,6 +545,7 @@ process SEPARATE_BY_MONTH {
 
 	label "lif_container"
 
+	tag "${params.pathogen}, ${params.geography}"
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
@@ -565,36 +563,6 @@ process SEPARATE_BY_MONTH {
 	separate-by-yearmonth.jl ${fasta} ${metadata}
 	"""
 
-}
-
-process PREP_FOR_CLUSTERING {
-
-	/*
-	*/
-
-	label "lif_container"
-	publishDir params.ncbi_results, mode: params.publishMode, pattern: "*.tsv"
-
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
-
-	cpus params.max_cpus
-
-	input:
-	path metadata
-	path fasta
-
-	output:
-	path "2*.fasta", emit: month_fasta
-	path "filtered-to-geography.tsv", emit: metadata
-	path "filtered-to-geography.fasta.zst", emit: fasta
-
-	script:
-	"""
-	JULIA_NUM_THREADS=${task.cpus} \
-	prep-for-clustering.jl ${metadata} ${params.geography} ${fasta}
-	"""
-	
 }
 
 process CLUSTER_BY_IDENTITY {
