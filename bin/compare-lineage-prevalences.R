@@ -32,8 +32,8 @@ date_pango_calls <- cmpfun(function(report_path, metadata){
     filter(!grepl("taxon", `taxon`))
   
   pango_report$taxon <- str_split_i(pango_report$taxon,
-                                  " ",
-                                  i = 1)
+                                    " ",
+                                    i = 1)
   
   # joining the desired columns
   pango_with_dates <- pango_report %>% 
@@ -54,6 +54,7 @@ create_rarity_lookup <- cmpfun(function(pango_report){
   lineages <- unique(pango_report$lineage)
   
   # create rarity lookup vector with vapply
+  pdf("lineage_prevalences.pdf", width = 8, height = 6)
   rarity_lookup <- vapply(lineages, function(lineage){
     
     # creating an empty table where we will fill in
@@ -98,18 +99,65 @@ create_rarity_lookup <- cmpfun(function(pango_report){
       rare_date <- max(prevalence_table[
         prevalence_table$proportion==rare_prev, "date"]) + 30
       
+      if (rare_date <= crest_date) {
+        
+        post_crest <- prevalence_table %>%
+          filter(date > crest_date)
+        
+        rare_prev <- post_crest$proportion[
+          which.min(
+            abs(post_crest$proportion - q))]
+        rare_date <- max(post_crest[
+          post_crest$proportion==rare_prev, "date"]) + 30
+        
+      }
+      
+      # plotting code for testing purposes
+      plot(prevalence_table$proportion~prevalence_table$date, 
+           pch = 20, col = "darkgray", xpd = T,
+           xlim=c(min(prevalence_table$date)-60,
+                  max(prevalence_table$date)+60),
+           ylim = c(0, ( max(prevalence_table$proportion)) + (max(prevalence_table$proportion)) * 0.2),
+           xlab = "Collection Date", ylab = "Prevalence Estimate", main = lineage)
+      abline(v = crest_date, col = "green", lwd=2)
+      abline(v = rare_date, col = "red", lwd=2)
+      legend("topleft", c(
+        paste("Crest Date: ", crest_date, " Crest Prevalence: ", round(max(prevalence_table$proportion), digits = 4)),
+        paste("Rarity Date: ", rare_date, " Rarity Prevalence: ", round(rare_prev, digits = 8))
+      ), col = c("green", "red"), lwd = c(2,2), bty = 'n')
+      
+      # if the lineage crested in the past 30 days, assume it cannot be
+      # anachronistic (yet).
+      if ( (Sys.Date() - crest_date) < 30 ){
+        
+        rare_date <- as.Date(NA)
+        
+      }
+      
+      # if the lineage has not yet crested, by definition it cannot be
+      # anachronistic
+      if (nrow(filter(prevalence_table, date > crest_date))==0){
+        
+        rare_date <- as.Date(NA)
+        
+      }
+      
     } else {
       
-      rare_date <- Sys.Date()
+      # assume the lineage has not crested if the length of the prevalence table
+      # is zero
+      rare_date <- as.Date(NA)
       
     }
     
-    stopifnot(as.numeric(rarity_date > crest_date))
-    
+    if (!is.na(rare_date)){
+      stopifnot(rare_date > crest_date)
+    }
     
     return(rare_date)
     
   }, Date(1))
+  dev.off()
   
   # coerce the lookup to be properly date-formatted
   rarity_lookup <- as.Date(rarity_lookup)
@@ -144,20 +192,20 @@ subset_metadata <- cmpfun(function(metadata_path, report_path){
   # whether the probability that a given lineage has persisted is marginal
   metadata$`Anachronicity (days)` <- vapply(1:nrow(pango_report), 
                                             function(i, lineages, dates, rarity_lookup){
-    
-    # define anachronicity in days
-    anachronicity <- as.numeric(dates[i] - rarity_lookup[lineages[i]])
-    
-    # Here an ifelse statement checks if the collection date for a the lineage
-    # sample in question comes after the above-computed "final date of rarity"
-    ifelse(anachronicity > 0, 
-           return(anachronicity), 
-           return(0))
-    
-  }, lineages = pango_report$lineage, 
-  dates = pango_report$`Isolate Collection date`,
-  rarity_lookup = rarity_lookup,
-  numeric(1))
+                                              
+                                              # define anachronicity in days
+                                              anachronicity <- as.numeric(dates[i] - rarity_lookup[lineages[i]])
+                                              
+                                              # Here an ifelse statement checks if the collection date for a the lineage
+                                              # sample in question comes after the above-computed "final date of rarity"
+                                              ifelse(!is.na(anachronicity) && anachronicity > 0, 
+                                                     return(anachronicity), 
+                                                     return(0))
+                                              
+                                            }, lineages = pango_report$lineage, 
+                                            dates = pango_report$`Isolate Collection date`,
+                                            rarity_lookup = rarity_lookup,
+                                            numeric(1))
   
   metadata <- metadata %>%
     filter(`Anachronicity (days)` > 0)
@@ -174,8 +222,8 @@ subset_fasta <- cmpfun(function(metadata, fasta_path){
   
   # parse out names so that they only contain accession IDs
   names(all_seqs) <- str_split_i(names(all_seqs),
-                                    " ",
-                                    i = 1)
+                                 " ",
+                                 i = 1)
   
   # parse out anachronistic seqs
   anachron_seqs <- all_seqs[names(all_seqs) %in% metadata$Accession]

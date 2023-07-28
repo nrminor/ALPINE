@@ -918,6 +918,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	output:
 	path "*.tsv", emit: metadata
 	tuple path("*.fasta"), env(sample_size), emit: sequences
+	path "*.pdf"
 
 	script:
 	"""
