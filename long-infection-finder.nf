@@ -664,6 +664,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	file(fasta.toString()).getSimpleName().contains(file(cluster_table.toString()).getSimpleName().replace("-clusters", ""))
 
 	script:
+	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
 	"""
 	compute-distance-matrix.jl \
 	${fasta} \
