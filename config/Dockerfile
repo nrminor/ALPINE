@@ -58,9 +58,9 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=/opt/conda/bin:$PATH
 
 # Install mamba
-RUN conda install -y -c conda-forge mamba
+RUN conda install -y -n base -c conda-forge mamba libarchive 
 
-# Install packages with mamba
+# Install python and other packages
 RUN mamba install -y -c bioconda -c anaconda -c conda-forge \
     psutil \
     libzip \
@@ -68,11 +68,10 @@ RUN mamba install -y -c bioconda -c anaconda -c conda-forge \
     biopython pandas polars \
     vsearch \
     ncbi-datasets-cli=14.2.2 \
-    iqtree=1.6.7 \
-    nextstrain \
     seqkit \
     pangolin \
     usher
+    # nextstrain
 
 # Install R channel packages
 RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
@@ -101,17 +100,22 @@ RUN julia -e 'using Pkg; \
             Pkg.instantiate(); \
             Pkg.precompile()'
 
-# Install outbreak.info and cdc R packages
-RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library/')"
-RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library/')"
-
 # Make sure nothing is amiss and that julia is still in the path
 ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9
+
+# Install outbreak.info and cdc R packages
+RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library')"
+RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library')"
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \
     chmod +x /opt/julia-1.9.0/bin/* && \
-    chmod +x /opt/conda/bin/*
+    chmod +x /opt/conda/bin/* && \
+    chmod +rw /root/ && \
+    chmod -R +rwx /root/ && \
+    chmod -R +rwx /root/.julia/ && \
+    chmod -R +rwx /root/.julia/compiled/ && \
+    chmod -R +rwx /root/.julia/compiled/v1.9/*
 
 # Set working directory
 WORKDIR /scratch
