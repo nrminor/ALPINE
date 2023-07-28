@@ -121,13 +121,6 @@ workflow {
 			.map { fasta, count -> fasta }
 	)
 
-	FIND_MAJORITY_CLUSTER (
-		CLUSTER_BY_IDENTITY.out.cluster_table,
-		PREP_CENTROID_FASTAS.out
-			.filter { it[1].toInteger() > 1 }
-			.map { fasta, count -> fasta }
-	)
-
 	COMPUTE_DISTANCE_MATRIX (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		PREP_CENTROID_FASTAS.out
