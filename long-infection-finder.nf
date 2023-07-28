@@ -129,7 +129,10 @@ workflow {
 	)
 
 	COMPUTE_DISTANCE_MATRIX (
-		FIND_MAJORITY_CLUSTER.out
+		CLUSTER_BY_IDENTITY.out.cluster_table,
+		PREP_CENTROID_FASTAS.out
+			.filter { it[1].toInteger() > 1 }
+			.map { fasta, count -> fasta }
 	)
 
 	MULTIDIMENSIONAL_SCALING (
@@ -639,43 +642,6 @@ process PREP_CENTROID_FASTAS {
 
 }
 
-process FIND_MAJORITY_CLUSTER {
-
-	/*
-	This process replaces the previous "prep_centroid_fasta" approach that brought in
-	the Wuhan-1 sequence with an approach that uses the biggest cluster, representing
-	the majority of sequences from each month, as a sort of "reference." If there is
-	just one additional cluster, the downstream distance matrix step will create
-	a single distance and assign it to the small cluster as a potential 
-	evolutionarily advanced lineage.
-	*/
-
-	tag "${yearmonth}"
-	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", pattern: '*.uc', mode: 'copy'
-	publishDir "${params.clustering_results}/${yearmonth}", pattern: '*.fasta', mode: 'copy'
-
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
-
-	input:
-	each path(cluster_table)
-	tuple path(fasta), val(count)
-
-	output:
-	tuple path(fasta), path(cluster_table), val(yearmonth), path("*.txt")
-
-	when:
-	file(fasta.toString()).getSimpleName().contains(file(cluster_table.toString()).getSimpleName().replace("-clusters", ""))
-
-	script:
-	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
-	"""
-	find-majority-cluster.py ${cluster_table}
-	"""
-
-}
-
 process COMPUTE_DISTANCE_MATRIX {
 
 	/*
@@ -695,23 +661,22 @@ process COMPUTE_DISTANCE_MATRIX {
 	cpus 1
 
 	input:
-	tuple path(fasta), path(cluster_table), val(yearmonth), path(cluster_stats)
+	each path(cluster_table)
+	tuple path(fasta), val(count)
 
 	output:
 	path "*-dist-matrix.csv"
 
+	when:
+	file(fasta.toString()).getSimpleName().contains(file(cluster_table.toString()).getSimpleName().replace("-clusters", ""))
+
 	script:
 	"""
-
-	cluster_count=`cat cluster_count.txt`
-	majority_centroid=`cat majority_centroid.txt`
-
 	compute-distance-matrix.jl \
 	${fasta} \
 	${cluster_table} \
-	${yearmonth} \$cluster_count \$majority_centroid \
+	${yearmonth} \
 	${params.strictness_mode}
-
 	"""
 
 }
