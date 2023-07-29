@@ -22,7 +22,7 @@ centroids = filter(1 => ==("C"), cluster_table)
 const majority_centroid = convert(String, centroids[argmax(centroids[:,3]), :Column9])
 
 # count the number of clusters
-const count = maximum(centroids[:,3])
+const count = nrow(centroids)
 
 # run the function
 distance_matrix(tmp, cluster_table, count, majority_centroid, yearmonth, stringency)
