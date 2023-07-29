@@ -655,7 +655,7 @@ process COMPUTE_DISTANCE_MATRIX {
 
 	input:
 	each path(cluster_table)
-	tuple path(fasta), val(count)
+	path fasta
 
 	output:
 	path "*-dist-matrix.csv"

@@ -58,20 +58,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=/opt/conda/bin:$PATH
 
 # Install mamba
-RUN conda install -y -n base -c conda-forge mamba libarchive 
-
-# Install python and other packages
-RUN mamba install -y -c bioconda -c anaconda -c conda-forge \
-    psutil \
-    libzip \
-    nextflow \
-    biopython pandas polars \
-    vsearch \
-    ncbi-datasets-cli=14.2.2 \
-    seqkit \
-    pangolin \
-    usher
-    # nextstrain
+RUN conda install -y -n base -c conda-forge mamba libarchive
 
 # Install R channel packages
 RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
@@ -83,6 +70,10 @@ RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
     r-units \
     r-sf \
     bioconductor-biostrings
+
+# Install outbreak.info and cdc R packages
+RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library')"
+RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library')"
 
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
@@ -103,9 +94,21 @@ RUN julia -e 'using Pkg; \
 # Make sure nothing is amiss and that julia is still in the path
 ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9
 
-# Install outbreak.info and cdc R packages
-RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library')"
-RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library')"
+# Install python and other packages
+RUN mamba install -y -c bioconda -c anaconda -c conda-forge \
+    psutil \
+    libzip \
+    biopython pandas polars numpy numba \
+    vsearch \
+    ncbi-datasets-cli=14.2.2 \
+    seqkit \
+    pangolin \
+    usher \
+    nextstrain
+
+# Install nextflow
+RUN wget -qO- https://get.nextflow.io | bash && \
+    mv nextflow /usr/local/bin/
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \

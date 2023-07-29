@@ -50,5 +50,6 @@ def main(input_fasta: str, input_tag: str):
         record.id = record.id.replace("/", "_")
         record.description = record.description.replace("/", "_")
 
+# run main function if not invoked as a module
 if __name__ == "__main__":
     main(MULTI_SEQ_FASTA, LABEL)

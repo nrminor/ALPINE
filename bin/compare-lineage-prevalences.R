@@ -92,12 +92,12 @@ create_rarity_lookup <- cmpfun(function(pango_report){
       # use the *last* date at which a lineage is in
       # its lowest 10% of prevalence in the HHS region
       # in question.
-      q <- quantile(prevalence_table$proportion, 0.01)
+      q <- quantile(prevalence_table$proportion, 0.05)
       rare_prev <- prevalence_table$proportion[
         which.min(
           abs(prevalence_table$proportion - q))]
       rare_date <- max(prevalence_table[
-        prevalence_table$proportion==rare_prev, "date"]) + 30
+        prevalence_table$proportion==rare_prev, "date"])
       
       if (rare_date <= crest_date) {
         
@@ -108,7 +108,7 @@ create_rarity_lookup <- cmpfun(function(pango_report){
           which.min(
             abs(post_crest$proportion - q))]
         rare_date <- max(post_crest[
-          post_crest$proportion==rare_prev, "date"]) + 30
+          post_crest$proportion==rare_prev, "date"])
         
       }
       
