@@ -43,8 +43,7 @@ metadata <- filter(metadata,!is.na(lineage_designation))
 
 # filtering down to long infection candidates
 long_infections <- metadata %>%
-  filter(infection_duration >= infection_cutoff &
-         lineage_designation > as.Date("2021-02-18")) %>%
+  filter(infection_duration >= infection_cutoff) %>%
   arrange(desc(infection_duration)) %>%
   filter(!is.na(Accession))
 
