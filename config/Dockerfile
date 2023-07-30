@@ -69,6 +69,8 @@ RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
     r-devtools \
     r-units \
     r-sf \
+    r-arrow \
+    r-duckdb \
     bioconductor-biostrings
 
 # Install outbreak.info and cdc R packages
@@ -104,7 +106,8 @@ RUN mamba install -y -c bioconda -c anaconda -c conda-forge \
     seqkit \
     pangolin \
     usher \
-    nextstrain
+    nextstrain \
+    python-duckdb
 
 # Install nextflow
 RUN wget -qO- https://get.nextflow.io | bash && \

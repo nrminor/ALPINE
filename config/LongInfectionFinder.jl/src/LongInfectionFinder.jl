@@ -432,48 +432,6 @@ function find_double_candidates(high_dist_meta::String, metadata_only_meta::Stri
 
 end
 
-function find_double_candidates(high_dist_meta::String, metadata_only_meta::String, high_dist_seqs::String)
-
-    """
-    This method finds double candidates where high distance metadata, metadata-based anachronistic
-    metadata, and high distance sequences are provided.
-    """
-
-    # Load TSV metadata files
-    metadata1 = CSV.read(high_dist_meta, DataFrame, delim='\t', header=1)
-    metadata2 = CSV.read(metadata_only_meta, DataFrame, delim='\t', header=1)
-
-    # Get the intersecting accessions
-    common_accessions = intersect(metadata1[!, 1], metadata2[!, 1])
-
-    # Filter metadata to only common accessions
-    metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)
-    metadata2_filtered = filter(row -> row[1] in common_accessions, metadata2)
-
-    # Sort both dataframes by Accession
-    sort!(metadata1_filtered, :Accession)
-    sort!(metadata2_filtered, :Accession)
-
-    # Add the last column from metadata2 to metadata1
-    metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
-
-    # Write the combined metadata to a TSV file
-    CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
-
-    # Open FASTA files and perform the filtering operation
-    FastaReader(high_dist_seqs) do fr
-        FastaWriter("double_candidates.fasta", "w") do fw
-            for (name, seq) in fr
-                if name in common_accessions
-                    writeentry(fw, name, seq)
-                end
-            end
-        end
-        
-    end
-
-end
-
 function find_double_candidates(high_dist_meta::String, metadata_only_meta::String)
 
     """
