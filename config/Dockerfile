@@ -77,6 +77,11 @@ RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
 RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library')"
 RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library')"
 
+# Install Rust and Apache Arrow  CLI tools
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    cargo install csv2arrow && \
+    cargo install csv2parquet
+
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
     tar -xzf julia-1.9.0-linux-x86_64.tar.gz -C /opt && \
@@ -86,8 +91,6 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
 # Copy Julia functions to precompile as a module
 ENV JULIA_DEPOT_PATH=/root/.julia
 COPY LongInfectionFinder.jl/ /root/.julia/environments/v1.9
-
-# Install Julia packages
 RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
             Pkg.instantiate(); \
@@ -96,7 +99,7 @@ RUN julia -e 'using Pkg; \
 # Make sure nothing is amiss and that julia is still in the path
 ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9
 
-# Install python and other packages
+# Install python libraries and other packages
 RUN mamba install -y -c bioconda -c anaconda -c conda-forge \
     psutil \
     libzip \

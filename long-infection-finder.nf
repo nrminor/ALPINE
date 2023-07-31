@@ -37,13 +37,17 @@ workflow {
 			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
 		)
 
-		FILTER_TSV_TO_GEOGRAPHY (
+		STORE_METADATA_WITH_ARROW (
+			UNZIP_NCBI_METADATA.out
+		)
+
+		FILTER_META_TO_GEOGRAPHY (
 			UNZIP_NCBI_METADATA.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
 			EXTRACT_NCBI_FASTA.out,
-			FILTER_TSV_TO_GEOGRAPHY.out.accessions
+			FILTER_META_TO_GEOGRAPHY.out.accessions
 		)
 
 		REMOVE_FASTA_GAPS ( 
@@ -68,13 +72,17 @@ workflow {
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
 
-		FILTER_TSV_TO_GEOGRAPHY (
+		STORE_METADATA_WITH_ARROW (
+			ch_local_metadata
+		)
+
+		FILTER_META_TO_GEOGRAPHY (
 			ch_local_metadata
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
 			ch_local_fasta,
-			FILTER_TSV_TO_GEOGRAPHY.out.accessions
+			FILTER_META_TO_GEOGRAPHY.out.accessions
 		)
 
 		REMOVE_FASTA_GAPS ( 
@@ -108,7 +116,7 @@ workflow {
 	SEPARATE_BY_MONTH (
 		FILTER_BY_MASKED_BASES.out
 			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true ),
-		FILTER_TSV_TO_GEOGRAPHY.out.metadata
+		FILTER_META_TO_GEOGRAPHY.out.metadata
 	)
 
 	CLUSTER_BY_IDENTITY (
@@ -139,7 +147,7 @@ workflow {
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
 		CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
 		COMPUTE_DISTANCE_MATRIX.out.collect(),
-		FILTER_TSV_TO_GEOGRAPHY.out.metadata
+		FILTER_META_TO_GEOGRAPHY.out.metadata
 	)
 
 	RUN_META_CLUSTER (
@@ -165,13 +173,13 @@ workflow {
 		CLASSIFY_SC2_WITH_PANGOLIN.out
 			.collectFile(name: 'new_pango_calls.csv', newLine: true),
 		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
-		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
+		FILTER_META_TO_GEOGRAPHY.out.metadata,
 		ch_gisaid_token
 	)
 
 	// Steps for inspecting NCBI metadata
 	SEARCH_NCBI_METADATA ( 
-		FILTER_TSV_TO_GEOGRAPHY.out.metadata,
+		FILTER_META_TO_GEOGRAPHY.out.metadata,
 		GET_DESIGNATION_DATES.out
 	)
 
@@ -350,7 +358,7 @@ process UNZIP_NCBI_METADATA {
 
 	tag "${params.pathogen}"
 
-	publishDir params.ncbi_results, mode: params.publishMode
+	publishDir params.ncbi_results, pattern: "*.tsv", mode: params.publishMode
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
@@ -401,7 +409,42 @@ process EXTRACT_NCBI_FASTA {
 
 }
 
-process FILTER_TSV_TO_GEOGRAPHY {
+process STORE_METADATA_WITH_ARROW {
+
+	/*
+	This workflow uses the Apache Arrow in-memory representation
+	of metadata. This both improves the speed of the computations
+	it runs on large metadata and also the speed read/write, 
+	which is the predominant bottleneck for most processes 
+	in this workflow.
+
+	To convert the metadata to an arrow representation, we
+	use a suite of tools written in Rust by Dominik Moritz 
+	called arrow-tools, which is available at:
+	https://github.com/domoritz/arrow-tools
+	*/
+
+	tag "${params.pathogen}"
+
+	label "lif_container"
+
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
+
+	input:
+	path metadata
+
+	output:
+	path "genbank.arrow"
+
+	script:
+	"""
+	csv2arrow --delimiter '\t' ${metadata} genbank.arrow
+	"""
+
+}
+
+process FILTER_META_TO_GEOGRAPHY {
 
 	/*
 	The geography filter in the NCBI Datasets command line
@@ -440,7 +483,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	/*
 	This process takes the aceessions list from 
-	FILTER_TSV_TO_GEOGRAPHY and filters down the full FASTA
+	FILTER_META_TO_GEOGRAPHY and filters down the full FASTA
 	to those accessions, ensuring that both the metadata and
 	the sequences reflect the same geography filtering.
 	*/
