@@ -2,9 +2,10 @@
 args = commandArgs(trailingOnly=TRUE)
 
 # load necessary packages
-library(tidyverse)
-library(compiler)
-library(Biostrings)
+require(tidyverse)
+require(arrow)
+require(compiler)
+require(Biostrings)
 
 # set just-in-time compilation setting so that top-level loops are JIT compiled
 compiler::enableJIT(3)

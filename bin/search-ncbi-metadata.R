@@ -1,8 +1,9 @@
 #!/usr/bin/env Rscript
 args = commandArgs(trailingOnly=TRUE)
 
-library(tidyverse)
-library(parallel)
+require(tidyverse)
+require(arrow)
+require(parallel)
 
 # set just-in-time compilation setting so that top-level loops are JIT compiled
 compiler::enableJIT(3)

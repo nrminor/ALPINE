@@ -2,9 +2,10 @@
 args = commandArgs(trailingOnly=TRUE)
 
 # load necessary libraries
-library(tidyverse)
-library(Biostrings)
-library(compiler)
+require(tidyverse)
+require(arrow)
+require(Biostrings)
+require(compiler)
 
 # record input file path for cluster table
 cluster_table_path <- args[1]

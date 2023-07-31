@@ -641,6 +641,7 @@ process CLUSTER_BY_IDENTITY {
 	--centroids ${yearmonth}-centroids.fasta \
 	--uc ${yearmonth}-clusters.uc \
 	--clusters ${yearmonth}-cluster-seqs \
+	--msaout ${yearmonth}-centroids-msa.fasta \
 	--threads ${task.cpus} && \
 	count=\$(grep -c "^>" ${yearmonth}-centroids.fasta)
 	"""

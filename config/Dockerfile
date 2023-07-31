@@ -38,18 +38,35 @@ RUN apt-get update && \
     libxaw7-dev \
     libglu1-mesa-dev \
     libglfw3-dev \
+    libarchive-dev \
+    libzip-dev \
     xvfb \
     muscle \
     python3-pip \
     git \
     libssl-dev \
     libcurl4-openssl-dev \
-    default-jre \
+    openjdk-16-jre-headless \
     default-jdk \
     libnss-sss \
     procps \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Rust and Apache Arrow  CLI tools
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
+    chmod +x $HOME/.cargo/env && \
+    $HOME/.cargo/env && \
+    chmod +x $HOME/.cargo/bin/*
+ENV PATH=$PATH:$HOME/.cargo/bin
+RUN $HOME/.cargo/bin/cargo install csv2arrow && \
+    $HOME/.cargo/bin/cargo install csv2parquet
+
+# Install nextflow and make sure it is configured
+RUN wget -qO- https://get.nextflow.io | bash && \
+    chmod +x nextflow && \
+    mv nextflow /usr/local/bin
+ENV NXF_HOME=/scratch/.nextflow
 
 # Install miniconda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
@@ -58,10 +75,14 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=/opt/conda/bin:$PATH
 
 # Install mamba
-RUN conda install -y -n base -c conda-forge mamba libarchive
+RUN conda install -y -n base -c conda-forge mamba
+
+# Install python libraries
+RUN mamba install -y -n base -c anaconda -c conda-forge biopython pandas polars numpy pyarrow
 
 # Install R channel packages
-RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
+# (also including UShER because it wants access to BioconductoR)
+RUN mamba install -y -n base -c conda-forge -c r -c bioconda r-base \
     r-tidyverse \
     r-ape \
     r-plotly \
@@ -71,16 +92,23 @@ RUN mamba install -y -c conda-forge -c r -c bioconda r-base \
     r-sf \
     r-arrow \
     r-duckdb \
-    bioconductor-biostrings
+    bioconductor-biostrings \
+    usher
 
 # Install outbreak.info and cdc R packages
 RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library')"
 RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library')"
 
-# Install Rust and Apache Arrow  CLI tools
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-    cargo install csv2arrow && \
-    cargo install csv2parquet
+# install biology-specific CLI packages
+RUN mamba install -y -n base -c defaults -c bioconda -c conda-forge \
+    vsearch \
+    ncbi-datasets-cli=14.2.2 \
+    seqkit \
+    pangolin \ 
+    nextflow
+
+# Install Nextstrain CLI
+RUN curl -fsSL --proto '=https' https://nextstrain.org/cli/installer/linux | bash
 
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
@@ -96,35 +124,26 @@ RUN julia -e 'using Pkg; \
             Pkg.instantiate(); \
             Pkg.precompile()'
 
-# Make sure nothing is amiss and that julia is still in the path
-ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9
-
-# Install python libraries and other packages
-RUN mamba install -y -c bioconda -c anaconda -c conda-forge \
-    psutil \
-    libzip \
-    biopython pandas polars numpy numba \
-    vsearch \
-    ncbi-datasets-cli=14.2.2 \
-    seqkit \
-    pangolin \
-    usher \
-    nextstrain \
-    python-duckdb
-
-# Install nextflow
-RUN wget -qO- https://get.nextflow.io | bash && \
-    mv nextflow /usr/local/bin/
+# Make sure nothing is amiss and that julia and rust are still in the path
+ENV NXF_HOME=/scratch/.nextflow
+ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:/root/.cargo/bin
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \
+    chmod +rwx /usr/local/bin/nextflow && \
     chmod +x /opt/julia-1.9.0/bin/* && \
     chmod +x /opt/conda/bin/* && \
+    chmod +x /root/.cargo/bin/* && \
     chmod +rw /root/ && \
     chmod -R +rwx /root/ && \
     chmod -R +rwx /root/.julia/ && \
+    chmod -R +rw /root/.julia/logs/ && \
+    chmod -R +rwx /root/.julia/logs/* && \
     chmod -R +rwx /root/.julia/compiled/ && \
     chmod -R +rwx /root/.julia/compiled/v1.9/*
 
 # Set working directory
 WORKDIR /scratch
+
+# make sure shells are bash
+CMD ["/bin/bash"]

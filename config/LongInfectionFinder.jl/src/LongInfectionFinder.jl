@@ -8,10 +8,10 @@ export filter_tsv_by_geo, filter_by_geo, replace_gaps, filter_by_n, lookup_date,
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
-function filter_tsv_by_geo(input_tsv::String,geography::String)
+function filter_tsv_by_geo(input_table::String, geography::String)
 
     # Read in the TSV file with metadata
-    metadata_df = CSV.read(input_tsv, DataFrame, delim="\t")
+    metadata_df = DataFrame(Arrow.Table(input_table))
 
     # Double check the column name for geographic locations
     if "Geographic location" in names(metadata_df)
@@ -23,7 +23,7 @@ function filter_tsv_by_geo(input_tsv::String,geography::String)
     filtered = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
 
     # Writing filtered metadata
-    CSV.write("filtered-to-geography.tsv", filtered, delim="\t")
+    Arrow.write("filtered-to-geography.arrow", filtered)
 
     # separating out accessions
     accessions = filtered[!,"Accession"]
@@ -33,10 +33,10 @@ function filter_tsv_by_geo(input_tsv::String,geography::String)
     
 end
 
-function filter_by_geo(input_tsv::String,fasta_path::String,geography::String)
+function filter_by_geo(input_table::String, fasta_path::String, geography::String)
 
     # Read in the TSV file with metadata
-    metadata_df = CSV.read(input_tsv, DataFrame, delim="\t")
+    metadata_df = DataFrame(Arrow.Table(input_table))
 
     # Double check the column name for geographic locations
     if "Geographic location" in names(metadata_df)
@@ -48,7 +48,7 @@ function filter_by_geo(input_tsv::String,fasta_path::String,geography::String)
     filtered_meta = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
 
     # Writing filtered metadata
-    CSV.write("filtered-to-geography.tsv", filtered_meta, delim="\t")
+    Arrow.write("filtered-to-geography.tsv", filtered_meta)
 
     # separating out accessions
     accessions = Set(filtered_meta[!,"Accession"])
