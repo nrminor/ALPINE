@@ -37,7 +37,7 @@ workflow {
 			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
 		)
 
-		STORE_METADATA_WITH_ARROW (
+		VALIDATE_METADATA (
 			UNZIP_NCBI_METADATA.out
 		)
 
@@ -72,7 +72,7 @@ workflow {
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
 
-		STORE_METADATA_WITH_ARROW (
+		VALIDATE_METADATA (
 			ch_local_metadata
 		)
 
