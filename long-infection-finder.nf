@@ -434,12 +434,15 @@ process STORE_METADATA_WITH_ARROW {
 	path metadata
 
 	output:
-	path "genbank.arrow"
+	path "*.arrow"
 
-	script:
-	"""
-	csv2arrow --header true --delimiter $'\t' -m 0 ${metadata} full_database.arrow
-	"""
+	when:
+	params.download_only == false
+
+	shell:
+	'''
+	csv2arrow --header true --delimiter $'\t' -m 0 !{metadata} full_database.arrow
+	'''
 
 }
 
@@ -467,9 +470,6 @@ process FILTER_META_TO_GEOGRAPHY {
 	output:
 	path "*.arrow", emit: metadata
 	path "*.txt", emit: accessions
-
-	when:
-	params.download_only == false
 
 	script:
 	"""
