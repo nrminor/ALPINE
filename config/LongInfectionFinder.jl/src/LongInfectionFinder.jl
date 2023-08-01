@@ -4,10 +4,24 @@ module LongInfectionFinder
 using DelimitedFiles, DataFrames, CSV, Arrow, Parquet, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, Dates, CodecZstd, CodecZlib, FLoops
 import Base.Threads
 
-export validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
+export represent_in_arrow, validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
+function represent_in_arrow(tsv_path::String)
+
+    """
+    Use a function to convert the large TSV into the more
+    efficient Arrow in-memory representation, which will speed up
+    computation and I/O downstream
+    """
+
+    Arrow.write("full_database.arrow", CSV.File(tsv_path))
+
+    return("full_database.arrow")
+
+end
+
 function validate_metadata(metadata_df::DataFrame)
 
     # rename columns if the metadata comes from GISAID
@@ -37,9 +51,13 @@ end
 
 function filter_metadata_by_geo(input_table::String, geography::String)
 
-    # Read in the metadata file as a dataframe
-    metadata_df = DataFrame(Arrow.Table(input_table))
+    # retrieve arrow database
+    arrow_table = represent_in_arrow(input_table)
 
+    # Read in the metadata file as a dataframe
+    metadata_df = DataFrame(Arrow.Table(arrow_table))
+
+    # validate metadata
     valid_meta = validate_metadata(metadata_df)
 
     # filter metadata based on desired geography

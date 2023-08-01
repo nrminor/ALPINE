@@ -37,12 +37,12 @@ workflow {
 			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
 		)
 
-		STORE_METADATA_WITH_ARROW (
-			UNZIP_NCBI_METADATA.out
-		)
+		// STORE_METADATA_WITH_ARROW (
+		// 	UNZIP_NCBI_METADATA.out
+		// )
 
 		FILTER_META_TO_GEOGRAPHY (
-			STORE_METADATA_WITH_ARROW.out
+			UNZIP_NCBI_METADATA.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -72,12 +72,12 @@ workflow {
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
 
-		STORE_METADATA_WITH_ARROW (
-			ch_local_metadata
-		)
+		// STORE_METADATA_WITH_ARROW (
+		// 	ch_local_metadata
+		// )
 
 		FILTER_META_TO_GEOGRAPHY (
-			STORE_METADATA_WITH_ARROW.out
+			UNZIP_NCBI_METADATA.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -408,43 +408,40 @@ process EXTRACT_NCBI_FASTA {
 
 }
 
-process STORE_METADATA_WITH_ARROW {
+// process STORE_METADATA_WITH_ARROW {
 
-	/*
-	This workflow uses the Apache Arrow in-memory representation
-	of metadata. This both improves the speed of the computations
-	it runs on large metadata and also the speed read/write, 
-	which is the predominant bottleneck for most processes 
-	in this workflow.
+// 	/*
+// 	This workflow uses the Apache Arrow in-memory representation
+// 	of metadata. This both improves the speed of the computations
+// 	it runs on large metadata and also the speed read/write, 
+// 	which is the predominant bottleneck for most processes 
+// 	in this workflow.
 
-	To convert the metadata to an arrow representation, we
-	use a suite of tools written in Rust by Dominik Moritz 
-	called arrow-tools, which is available at:
-	https://github.com/domoritz/arrow-tools
-	*/
+// 	To convert the metadata to an arrow representation, we
+// 	use a suite of tools written in Rust by Dominik Moritz 
+// 	called arrow-tools, which is available at:
+// 	https://github.com/domoritz/arrow-tools
+// 	*/
 
-	tag "${params.pathogen}"
+// 	tag "${params.pathogen}"
 
-	label "lif_container"
+// 	label "lif_container"
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+// 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+// 	maxRetries 2
 
-	input:
-	path metadata
+// 	input:
+// 	path metadata
 
-	output:
-	path "*.arrow"
+// 	output:
+// 	path "*.arrow"
 
-	when:
-	params.download_only == false
+// 	shell:
+// 	'''
+// 	csv2arrow --header true --delimiter $'\t' -m 0 !{metadata} full_database.arrow
+// 	'''
 
-	shell:
-	'''
-	csv2arrow --header true --delimiter $'\t' -m 0 !{metadata} full_database.arrow
-	'''
-
-}
+// }
 
 process FILTER_META_TO_GEOGRAPHY {
 
@@ -462,7 +459,7 @@ process FILTER_META_TO_GEOGRAPHY {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus 1
+	cpus params.max_cpus
 
 	input:
 	path metadata
@@ -471,8 +468,12 @@ process FILTER_META_TO_GEOGRAPHY {
 	path "*.arrow", emit: metadata
 	path "*.txt", emit: accessions
 
+	when:
+	params.download_only == false
+
 	script:
 	"""
+	JULIA_NUM_THREADS=${task.cpus} && \
 	filter-to-geography.jl ${metadata} ${params.geography}
 	"""
 
