@@ -4,28 +4,14 @@ module LongInfectionFinder
 using DelimitedFiles, DataFrames, CSV, Arrow, Parquet, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, Dates, CodecZstd, CodecZlib, FLoops
 import Base.Threads
 
-export represent_in_arrow, validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
+export validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
-function represent_in_arrow(tsv_path::String)
-
-    """
-    Use a function to convert the large TSV into the more
-    efficient Arrow in-memory representation, which will speed up
-    computation and I/O downstream
-    """
-
-    Arrow.write("full_database.arrow", CSV.File(tsv_path))
-
-    return("full_database.arrow")
-
-end
-
 function validate_metadata(metadata::String)
     
     # Read in the metadata file as a dataframe
-    metadata_df = DataFrame(Arrow.Table(metadata))
+    metadata_df = CSV.read(metadata, DataFrame, delim = '\t')
 
     # rename columns if the metadata comes from GISAID
     if "GC-Content" in names(metadata_df)
@@ -34,7 +20,7 @@ function validate_metadata(metadata::String)
         @pipe metadata_df |>
         rename!(_, "Accession ID" => "Accession") |>
         rename!(_, "Collection date" => "Isolate Collection date") |>
-        rename!(_, "Location" => "Geographic ?ocation")
+        rename!(_, "Location" => "Geographic Location")
 
     end
 
@@ -44,7 +30,7 @@ function validate_metadata(metadata::String)
     end
 
     # ensure the date column is date-formatted
-    if typeof(metadata_df."Isolate Collection date") == Vector{String} || typeof(metadata_df."Isolate Collection date") == Arrow.List{String, Int32, Vector{UInt8}}
+    if !isa(metadata_df."Isolate Collection date"[1], Date)
         metadata_df."Isolate Collection date" = Dates.Date.(metadata_df."Isolate Collection date", "yyyy-mm-dd")
     end
 
