@@ -18,7 +18,8 @@ function validate_metadata(metadata::String)
 
         # rename "Accession ID", "Collection date", and "Location"
         @pipe metadata_df |>
-        rename!(_, "Accession ID" => "Accession") |>
+        rename!(_, "Virus name" => "Accession") |>
+        rename!(_, "Accession ID" => "EPI_ISL") |>
         rename!(_, "Collection date" => "Isolate Collection date") |>
         rename!(_, "Location" => "Geographic Location")
 
@@ -99,7 +100,7 @@ function filter_by_geo(input_table::String, fasta_path::String, geography::Strin
                 #     end
                 # end
                 for (name, seq) in fr
-                    accession = split(name, " ")[1]
+                    accession = split(split(name, " ")[1], "|")[1]
                     if accession in accessions
                         writeentry(fa, accession, seq)
                     end
