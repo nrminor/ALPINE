@@ -22,7 +22,10 @@ function represent_in_arrow(tsv_path::String)
 
 end
 
-function validate_metadata(metadata_df::DataFrame)
+function validate_metadata(metadata::String)
+    
+    # Read in the metadata file as a dataframe
+    metadata_df = DataFrame(Arrow.Table(metadata))
 
     # rename columns if the metadata comes from GISAID
     if "GC-Content" in names(metadata_df)
@@ -51,17 +54,11 @@ end
 
 function filter_metadata_by_geo(input_table::String, geography::String)
 
-    # retrieve arrow database
-    arrow_table = represent_in_arrow(input_table)
-
     # Read in the metadata file as a dataframe
-    metadata_df = DataFrame(Arrow.Table(arrow_table))
-
-    # validate metadata
-    valid_meta = validate_metadata(metadata_df)
+    metadata_df = DataFrame(Arrow.Table(input_table))
 
     # filter metadata based on desired geography
-    filtered = valid_meta[[contains(string(value), geography) for value in valid_meta[!,"Geographic Location"]], :]
+    filtered = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
 
     # Writing filtered metadata
     Arrow.write("filtered-to-geography.arrow", filtered)
