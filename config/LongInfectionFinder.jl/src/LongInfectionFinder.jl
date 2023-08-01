@@ -183,7 +183,7 @@ end
 function date_accessions(input_path::String)
 
     # read in metadata
-    metadata_df = DateFrame(Arrow.Table(input_path))
+    metadata_df = DataFrame(Arrow.Table(input_path))
 
     # create lookup of dates and accessions
     accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
