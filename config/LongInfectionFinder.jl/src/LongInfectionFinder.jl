@@ -44,7 +44,7 @@ function validate_metadata(metadata::String)
     end
 
     # ensure the date column is date-formatted
-    if typeof(metadata_df."Isolate Collection date") != Vector{Date}
+    if typeof(metadata_df."Isolate Collection date") == Vector{String} || typeof(metadata_df."Isolate Collection date") Arrow.List{String, Int32, Vector{UInt8}}
         metadata_df."Isolate Collection date" = Dates.Date.(metadata_df."Isolate Collection date", "yyyy-mm-dd")
     end
 
