@@ -1,26 +1,49 @@
 module LongInfectionFinder
 
 # load dependencies
-using DelimitedFiles, DataFrames, CSV, Arrow, Parquet, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib
+using DelimitedFiles, DataFrames, CSV, Arrow, Parquet, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, Dates, CodecZstd, CodecZlib, FLoops
 import Base.Threads
 
-export filter_tsv_by_geo, filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
+export validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
-function filter_tsv_by_geo(input_table::String, geography::String)
+function validate_metadata(metadata_df::DataFrame)
 
-    # Read in the TSV file with metadata
-    metadata_df = DataFrame(Arrow.Table(input_table))
+    # rename columns if the metadata comes from GISAID
+    if "GC-Content" in names(metadata_df)
+
+        # rename "Accession ID", "Collection date", and "Location"
+        @pipe metadata_df |>
+        rename!(_, "Accession ID" => "Accession") |>
+        rename!(_, "Collection date" => "Isolate Collection date") |>
+        rename!(_, "Location" => "Geographic ?ocation")
+
+    end
 
     # Double check the column name for geographic locations
     if "Geographic location" in names(metadata_df)
-        idx = findfirst(isequal("Geographic location"), names(metadata_df))
-        rename!(metadata_df, names(metadata_df)[idx] => "Geographic Location")
+        rename!(metadata_df, "Geographic location" => "Geographic Location")
     end
 
+    # ensure the date column is date-formatted
+    if typeof(metadata_df."Isolate Collection date") != Vector{Date}
+        metadata_df."Isolate Collection date" = Dates.Date.(metadata_df."Isolate Collection date", "yyyy-mm-dd")
+    end
+
+    return(metadata_df)
+
+end
+
+function filter_metadata_by_geo(input_table::String, geography::String)
+
+    # Read in the metadata file as a dataframe
+    metadata_df = DataFrame(Arrow.Table(input_table))
+
+    valid_meta = validate_metadata(metadata_df)
+
     # filter metadata based on desired geography
-    filtered = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
+    filtered = valid_meta[[contains(string(value), geography) for value in valid_meta[!,"Geographic Location"]], :]
 
     # Writing filtered metadata
     Arrow.write("filtered-to-geography.arrow", filtered)
@@ -28,7 +51,7 @@ function filter_tsv_by_geo(input_table::String, geography::String)
     # separating out accessions
     accessions = filtered[!,"Accession"]
 
-    # Writing accessions to a text file for use by seqtk subseq or subseq.rs
+    # Writing accessions to a text file for use by seqtk subseq or seqkit grep
     writedlm("accessions.txt", accessions, "\n")
     
 end

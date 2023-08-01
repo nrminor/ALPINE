@@ -8,4 +8,4 @@ const metadata_path = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
 const geo = ARGS[2]
 
 # run the function
-filter_tsv_by_geo(metadata_path,geo)
+filter_metadata_by_geo(metadata_path,geo)

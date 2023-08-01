@@ -7,18 +7,18 @@ nextflow.enable.dsl = 2
 // WORKFLOW SPECIFICATION
 // --------------------------------------------------------------- //
 workflow {
-	
-	if ( params.compare_lineage_dates == true ){
 
-		ch_gisaid_token = Channel
-			.fromPath ( params.gisaid_token )
+	ch_gisaid_token = Channel
+		.fromPath ( params.gisaid_token )
+
+	GET_DESIGNATION_DATES ( )
+
+	if ( params.compare_lineage_dates == true ){
 
 		UPDATE_PANGO_CONTAINER ( )
 
 		println "This workflow will use the following Pangolin version:"
 		UPDATE_PANGO_CONTAINER.out.cue.view()
-
-		GET_DESIGNATION_DATES ( )
 
 	}
 
@@ -42,7 +42,7 @@ workflow {
 		)
 
 		FILTER_META_TO_GEOGRAPHY (
-			UNZIP_NCBI_METADATA.out
+			STORE_METADATA_WITH_ARROW.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -77,7 +77,7 @@ workflow {
 		)
 
 		FILTER_META_TO_GEOGRAPHY (
-			ch_local_metadata
+			STORE_METADATA_WITH_ARROW.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -164,8 +164,7 @@ workflow {
 	)
 	
 	// Steps for re-running pangolin and comparing dates
-	CLASSIFY_SC2_WITH_PANGOLIN ( 
-		UPDATE_PANGO_CONTAINER.out.cue,
+	CLASSIFY_SC2_WITH_PANGOLIN (
 		FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 	)
 
@@ -439,7 +438,7 @@ process STORE_METADATA_WITH_ARROW {
 
 	script:
 	"""
-	csv2arrow --delimiter '\t' ${metadata} genbank.arrow
+	csv2arrow --header true --delimiter $'\t' -m 0 ${metadata} full_database.arrow
 	"""
 
 }
@@ -466,7 +465,7 @@ process FILTER_META_TO_GEOGRAPHY {
 	path metadata
 
 	output:
-	path "*.tsv", emit: metadata
+	path "*.arrow", emit: metadata
 	path "*.txt", emit: accessions
 
 	when:
@@ -881,11 +880,13 @@ process CLASSIFY_SC2_WITH_PANGOLIN {
 	cpus params.max_cpus
 	
 	input:
-	val cue
-	each path(fasta)
+	path fasta
 	
 	output:
 	path "*.csv"
+
+	when:
+	params.compare_lineage_dates == true
 
 	script:
 	"""
