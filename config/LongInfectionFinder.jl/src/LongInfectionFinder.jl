@@ -4,7 +4,7 @@ module LongInfectionFinder
 using DelimitedFiles, DataFrames, CSV, Arrow, Parquet, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, Dates, CodecZstd, CodecZlib, FLoops
 import Base.Threads
 
-export represent_in_arrow, validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
+export represent_in_arrow, validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
@@ -193,6 +193,19 @@ end
 
 ### FUNCTION(S) TO SEPARATE FASTA INTO ONE FASTA FOR EACH MONTH IN GENBANK METADATA ### 
 ### ------------------------------------------------------------------------------- ###
+# function that returns full accession-to-date lookup
+function date_accessions(input_path::String)
+
+    # read in metadata
+    metadata_df = DateFrame(Arrow.Table(input_path))
+
+    # create lookup of dates and accessions
+    accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
+
+    return(accession_to_date)
+
+end
+
 # function that accesses the collection date for each record name
 function lookup_date(record_name::String, lookup::Dict)
 
