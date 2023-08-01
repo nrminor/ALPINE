@@ -21,7 +21,8 @@ function validate_metadata(metadata::String)
         rename!(_, "Virus name" => "Accession") |>
         rename!(_, "Accession ID" => "EPI_ISL") |>
         rename!(_, "Collection date" => "Isolate Collection date") |>
-        rename!(_, "Location" => "Geographic Location")
+        rename!(_, "Location" => "Geographic Location") |>
+        rename!(_, "Pango lineage", "Virus Pangolin Classification")
 
     end
 
