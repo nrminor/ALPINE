@@ -1,7 +1,7 @@
 module LongInfectionFinder
 
 # load dependencies
-using DelimitedFiles, DataFrames, CSV, Arrow, Parquet, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, Dates, CodecZstd, CodecZlib, FLoops
+using DelimitedFiles, DataFrames, CSV, Arrow, Parquet, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, Dates, CodecZstd, CodecZlib, FLoops, Missings
 import Base.Threads
 
 export validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
@@ -10,35 +10,53 @@ export validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, f
 ### ----------------------------------------------------------------------- ###
 function validate_metadata(metadata::String)
 
-    # read metadata into dataframe
-    metadata_df = CSV.read(metadata, DataFrame, delim='\t')
+    # read the column names in preparation for building a new dataset
+    header = CSV.read(metadata, DataFrame, delim = '\t', limit=0, stripwhitespace=true)
 
     # rename columns if the metadata comes from GISAID
-    if "GC-Content" in names(metadata_df)
+    if "GC-Content" in names(header)
 
         # rename "Accession ID", "Collection date", and "Location"
-        @pipe metadata_df |>
+        @pipe header |>
         rename!(_, "Virus name" => "Accession") |>
         rename!(_, "Accession ID" => "EPI_ISL") |>
         rename!(_, "Collection date" => "Isolate Collection date") |>
         rename!(_, "Location" => "Geographic Location") |>
-        rename!(_, "Pango lineage", "Virus Pangolin Classification")
+        rename!(_, "Pango lineage" => "Virus Pangolin Classification")
 
     end
 
     # Double check the column name for geographic locations
-    if "Geographic location" in names(metadata_df)
-        rename!(metadata_df, "Geographic location" => "Geographic Location")
+    if "Geographic location" in names(header)
+        rename!(header, "Geographic location" => "Geographic Location")
     end
 
-    # ensure the date column is date-formatted
-    if !isa(metadata_df."Isolate Collection date"[1], Date)
-        metadata_df."Isolate Collection date" = Dates.Date.(metadata_df."Isolate Collection date", "yyyy-mm-dd")
-        dropmissing!(metadata_df, Symbol("Isolate Collection date"))
+    # make a vector of the column names
+    header_vec = names(header)
+
+    # identify the dates column that needs to be reparsed
+    dates_colname = header_vec[findfirst(item -> occursin("Collection", item), header_vec)]
+
+    # create TSV that will be appended to downstream
+    CSV.write("validated-metadata.tsv", header, delim='\t')
+
+    # process the large CSV in chunks
+    for chunk in CSV.Chunks(metadata, delim = '\t', header=header_vec, dateformat="yyyy-mm-dd", stripwhitespace=true, buffer_in_memory=true)
+
+        # parse into an indexable dataframe
+        chunk_df = DataFrame(chunk)
+
+        # use string matching to remove columns that lack complete dates
+        chunk_df = chunk_df[occursin.("-", chunk_df[:,Symbol(dates_colname)]), :]
+
+        # parse dates as proper date representations
+        chunk_df[!, Symbol(dates_colname)] = passmissing(Date).(chunk_df[!, Symbol(dates_colname)])
+
+        # drop any missing values and append to the growing dataset
+        dropmissing!(chunk_df, Symbol(dates_colname))
+        CSV.write("validated-metadata.tsv", chunk_df, delim='\t', header=false, append=true)
+
     end
-
-    return(metadata_df)
-
 end
 
 function filter_metadata_by_geo(input_table::String, geography::String)
