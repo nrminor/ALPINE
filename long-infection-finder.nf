@@ -438,11 +438,11 @@ process VALIDATE_METADATA {
 	path metadata
 
 	output:
-	path "*.arrow"
+	path "*.tsv"
 
 	script:
 	"""
-	JULIA_NUM_THREADS=${task.cpus} && \
+	JULIA_NUM_THREADS=8 && \
 	validate-metadata.jl ${metadata}
 	"""
 }
