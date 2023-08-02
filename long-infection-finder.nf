@@ -432,7 +432,7 @@ process VALIDATE_METADATA {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus params.max_cpus
+	cpus 8
 
 	input:
 	path metadata
