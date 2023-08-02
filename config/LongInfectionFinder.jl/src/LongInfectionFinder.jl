@@ -9,9 +9,9 @@ export validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, f
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
 function validate_metadata(metadata::String)
-    
-    # Read in the metadata file as a dataframe
-    metadata_df = CSV.read(metadata, DataFrame, delim = '\t')
+
+    # read metadata into dataframe
+    metadata_df = CSV.read(metadata, DataFrame, delim='\t')
 
     # rename columns if the metadata comes from GISAID
     if "GC-Content" in names(metadata_df)
@@ -34,6 +34,7 @@ function validate_metadata(metadata::String)
     # ensure the date column is date-formatted
     if !isa(metadata_df."Isolate Collection date"[1], Date)
         metadata_df."Isolate Collection date" = Dates.Date.(metadata_df."Isolate Collection date", "yyyy-mm-dd")
+        dropmissing!(metadata_df, Symbol("Isolate Collection date"))
     end
 
     return(metadata_df)

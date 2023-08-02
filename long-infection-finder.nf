@@ -41,8 +41,12 @@ workflow {
 			UNZIP_NCBI_METADATA.out
 		)
 
-		FILTER_META_TO_GEOGRAPHY (
+		STORE_METADATA_WITH_ARROW (
 			VALIDATE_METADATA.out
+		)
+
+		FILTER_META_TO_GEOGRAPHY (
+			STORE_METADATA_WITH_ARROW.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -76,8 +80,12 @@ workflow {
 			ch_local_metadata
 		)
 
-		FILTER_META_TO_GEOGRAPHY (
+		STORE_METADATA_WITH_ARROW (
 			VALIDATE_METADATA.out
+		)
+
+		FILTER_META_TO_GEOGRAPHY (
+			STORE_METADATA_WITH_ARROW.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -414,13 +422,7 @@ process VALIDATE_METADATA {
 	This step checks the typing and column header names 
 	for the input metadata, ensuring in particular that 
 	GISAID metadata are compatible with the scripts used
-	in this workflow. 
-
-	This step also converts the large TSV to an Apache 
-	Arrow in-memory representation. This both improves the 
-	speed of the computations it runs on large metadata and 
-	also the speed read/write, which is the predominant 
-	bottleneck for most processes in this workflow.
+	in this workflow.
 	*/
 
 	tag "${params.pathogen}"
@@ -445,40 +447,46 @@ process VALIDATE_METADATA {
 	"""
 }
 
-// process STORE_METADATA_WITH_ARROW {
+process STORE_METADATA_WITH_ARROW {
 
-// 	/*
-// 	This workflow uses the Apache Arrow in-memory representation
-// 	of metadata. This both improves the speed of the computations
-// 	it runs on large metadata and also the speed read/write, 
-// 	which is the predominant bottleneck for most processes 
-// 	in this workflow.
+	/*
+	This workflow uses the Apache Arrow in-memory representation
+	of metadata. This both improves the speed of the computations
+	it runs on large metadata and also the speed read/write, 
+	which is the predominant bottleneck for most processes 
+	in this workflow.
 
-// 	To convert the metadata to an arrow representation, we
-// 	use a suite of tools written in Rust by Dominik Moritz 
-// 	called arrow-tools, which is available at:
-// 	https://github.com/domoritz/arrow-tools
-	// */
+	To convert the metadata to an arrow representation, we
+	use a suite of tools written in Rust by Dominik Moritz 
+	called arrow-tools, which is available at:
+	https://github.com/domoritz/arrow-tools
+	*/
 
-	// tag "${params.pathogen}"
+	tag "${params.pathogen}"
 
-	// label "lif_container"
+	label "lif_container"
 
-	// errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	// maxRetries 2
+	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+	maxRetries 2
 
-	// input:
-	// path metadata
+	input:
+	path metadata
 
-	// output:
-	// path "*.arrow"
+	output:
+	path "*.arrow"
 
-	// shell:
-	// '''
-	// csv2arrow --header true --delimiter $'\t' -m 0 !{metadata} full_database.arrow
-	// '''
+	shell:
+	'''
+	if grep -q "GC-Content" <(cut -f 1 !{metadata}); then
+		csv2arrow --schema-file !{params.gisaid_schema} --header true --delimiter $'\t' \
+		!{metadata} full_database.arrow
+	else
+		csv2arrow --schema-file !{params.genbank_schema} --header true --delimiter $'\t' \
+		!{metadata} full_database.arrow
+	fi
+	'''
 
-// }
+}
 
 process FILTER_META_TO_GEOGRAPHY {
 
