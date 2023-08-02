@@ -38,7 +38,7 @@ function validate_metadata(metadata::String)
     dates_colname = header_vec[findfirst(item -> occursin("Collection", item), header_vec)]
 
     # create TSV that will be appended to downstream
-    CSV.write("validated-metadata.tsv", header, delim='\t')
+    Arrow.write("validated-metadata.tsv", header, compress=:zstd)
 
     # process the large CSV in chunks
     for chunk in CSV.Chunks(metadata, delim = '\t', header=header_vec, dateformat="yyyy-mm-dd", stripwhitespace=true, buffer_in_memory=true)
@@ -54,7 +54,7 @@ function validate_metadata(metadata::String)
 
         # drop any missing values and append to the growing dataset
         dropmissing!(chunk_df, Symbol(dates_colname))
-        CSV.write("validated-metadata.tsv", chunk_df, delim='\t', header=false, append=true)
+        Arrow.append("validated-metadata.tsv", chunk_df)
 
     end
 end

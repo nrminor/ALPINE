@@ -41,12 +41,12 @@ workflow {
 			UNZIP_NCBI_METADATA.out
 		)
 
-		STORE_METADATA_WITH_ARROW (
-			VALIDATE_METADATA.out
-		)
+		// STORE_METADATA_WITH_ARROW (
+		// 	VALIDATE_METADATA.out
+		// )
 
 		FILTER_META_TO_GEOGRAPHY (
-			STORE_METADATA_WITH_ARROW.out
+			VALIDATE_METADATA.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -80,12 +80,12 @@ workflow {
 			ch_local_metadata
 		)
 
-		STORE_METADATA_WITH_ARROW (
-			VALIDATE_METADATA.out
-		)
+		// STORE_METADATA_WITH_ARROW (
+		// 	VALIDATE_METADATA.out
+		// )
 
 		FILTER_META_TO_GEOGRAPHY (
-			STORE_METADATA_WITH_ARROW.out
+			VALIDATE_METADATA.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -438,7 +438,7 @@ process VALIDATE_METADATA {
 	path metadata
 
 	output:
-	path "*.tsv"
+	path "*.arrow"
 
 	script:
 	"""
@@ -447,46 +447,46 @@ process VALIDATE_METADATA {
 	"""
 }
 
-process STORE_METADATA_WITH_ARROW {
+// process STORE_METADATA_WITH_ARROW {
 
-	/*
-	This workflow uses the Apache Arrow in-memory representation
-	of metadata. This both improves the speed of the computations
-	it runs on large metadata and also the speed read/write, 
-	which is the predominant bottleneck for most processes 
-	in this workflow.
+// 	/*
+// 	This workflow uses the Apache Arrow in-memory representation
+// 	of metadata. This both improves the speed of the computations
+// 	it runs on large metadata and also the speed read/write, 
+// 	which is the predominant bottleneck for most processes 
+// 	in this workflow.
 
-	To convert the metadata to an arrow representation, we
-	use a suite of tools written in Rust by Dominik Moritz 
-	called arrow-tools, which is available at:
-	https://github.com/domoritz/arrow-tools
-	*/
+// 	To convert the metadata to an arrow representation, we
+// 	use a suite of tools written in Rust by Dominik Moritz 
+// 	called arrow-tools, which is available at:
+// 	https://github.com/domoritz/arrow-tools
+// 	*/
 
-	tag "${params.pathogen}"
+// 	tag "${params.pathogen}"
 
-	label "lif_container"
+// 	label "lif_container"
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+// 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
+// 	maxRetries 2
 
-	input:
-	path metadata
+// 	input:
+// 	path metadata
 
-	output:
-	path "*.arrow"
+// 	output:
+// 	path "*.arrow"
 
-	shell:
-	'''
-	if grep -q "GC-Content" <(cut -f 1 !{metadata}); then
-		csv2arrow --schema-file !{params.gisaid_schema} --header true --delimiter $'\t' \
-		!{metadata} full_database.arrow
-	else
-		csv2arrow --schema-file !{params.genbank_schema} --header true --delimiter $'\t' \
-		!{metadata} full_database.arrow
-	fi
-	'''
+// 	shell:
+// 	'''
+// 	if grep -q "GC-Content" <(cut -f 1 !{metadata}); then
+// 		csv2arrow --schema-file !{params.gisaid_schema} --header true --delimiter $'\t' \
+// 		!{metadata} full_database.arrow
+// 	else
+// 		csv2arrow --schema-file !{params.genbank_schema} --header true --delimiter $'\t' \
+// 		!{metadata} full_database.arrow
+// 	fi
+// 	'''
 
-}
+// }
 
 process FILTER_META_TO_GEOGRAPHY {
 
