@@ -1,7 +1,7 @@
 module LongInfectionFinder
 
 # load dependencies
-using DelimitedFiles, DataFrames, CSV, Arrow, Parquet, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, Dates, CodecZstd, CodecZlib, FLoops, Missings
+using DelimitedFiles, DataFrames, CSV, Arrow, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, Dates, CodecZstd, CodecZlib, FLoops, Missings
 import Base.Threads
 
 export validate_metadata, filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
@@ -38,7 +38,9 @@ function validate_metadata(metadata::String)
     dates_colname = header_vec[findfirst(item -> occursin("Collection", item), header_vec)]
 
     # create TSV that will be appended to downstream
-    Arrow.write("validated-metadata.tsv", header)
+    CSV.write("validated-metadata.tsv", header, delim='\t', compress=true)
+
+    # show(stdout, "text/tab-separated-values", header)
 
     # process the large CSV in chunks
     for chunk in CSV.Chunks(metadata, delim = '\t', header=header_vec, dateformat="yyyy-mm-dd", stripwhitespace=true, buffer_in_memory=true)
@@ -46,17 +48,35 @@ function validate_metadata(metadata::String)
         # parse into an indexable dataframe
         chunk_df = DataFrame(chunk)
 
-        # use string matching to remove columns that lack complete dates
-        chunk_df = chunk_df[occursin.("-", chunk_df[:,Symbol(dates_colname)]), :]
+        # chunk_df = CSV.read(metadata, DataFrame, delim = '\t', limit = 5000, header=1, dateformat="yyyy-mm-dd", stripwhitespace=true)
 
-        # parse dates as proper date representations
-        chunk_df[!, Symbol(dates_colname)] = passmissing(Date).(chunk_df[!, Symbol(dates_colname)])
+        # set header
+        rename!(chunk_df, header_vec)
+
+        # use string matching to remove columns that lack complete dates
+        if isa(chunk_df[1, Symbol(dates_colname)], String15) || isa(chunk_df[1, Symbol(dates_colname)], String)
+
+            # get rid of outliers with years only
+            chunk_df = chunk_df[occursin.("-", chunk_df[:,Symbol(dates_colname)]), :]
+
+            # parse dates as proper date representations
+            chunk_df[!, Symbol(dates_colname)] = passmissing(Date).(chunk_df[!, Symbol(dates_colname)])
+
+        end
 
         # drop any missing values and append to the growing dataset
         dropmissing!(chunk_df, Symbol(dates_colname))
-        Arrow.append("validated-metadata.tsv", chunk_df)
-
+        # return(show(stdout, "text/tab-separated-values", chunk_df))
+        CSV.write("validated-metadata.tsv", chunk_df, delim='\t', header=false, append=true, compress=true)
+        
     end
+    
+    # Convert to Arrow representation
+    Arrow.write("validated-metadata.arrow", 
+    CSV.File("validated-metadata.tsv", delim='\t', ntasks=Threads.nthreads(), buffer_in_memory=true), 
+    compress=:zstd)
+    rm("validated-metadata.tsv")
+
 end
 
 function filter_metadata_by_geo(input_table::String, geography::String)
