@@ -1012,7 +1012,7 @@ process SEARCH_NCBI_METADATA {
 		
 	script:
 	"""
-	search-ncbi-metadata.R ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus}
+	search-ncbi-metadata.py ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus}
 	"""
 
 }
