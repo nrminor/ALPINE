@@ -904,7 +904,7 @@ process META_CLUSTER_REPORT {
 
 	script:
 	"""
-	report-repeat-lineages.R ${cluster_table} ${metadata}
+	report-repeat-lineages.py ${cluster_table} ${metadata}
 	"""
 
 }
