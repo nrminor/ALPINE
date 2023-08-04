@@ -501,7 +501,6 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "lif_container"
-	publishDir params.ncbi_results, mode: params.publishMode, pattern: "*.tsv"
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
@@ -572,8 +571,6 @@ process REMOVE_FASTA_GAPS {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus 1
-
 	input:
 	path fasta
 
@@ -604,8 +601,6 @@ process FILTER_BY_MASKED_BASES {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus params.max_cpus
-
 	input:
 	path fasta
 
@@ -634,8 +629,6 @@ process SEPARATE_BY_MONTH {
 	tag "${params.pathogen}, ${params.geography}"
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
-
-	cpus params.max_cpus
 
 	input:
 	path fasta

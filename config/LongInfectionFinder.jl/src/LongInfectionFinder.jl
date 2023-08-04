@@ -417,11 +417,7 @@ end
 
 ### FUNCTION THAT FINDS THE OVERLAP BETWEEN HIGH-DISTANCE AND ANACHRONISTIC SEQUENCES ###
 ### --------------------------------------------------------------------------------- ###
-function find_double_candidates(meta_path1::String, meta_path2::String, seqs::String)
-
-    # Load TSV metadata files
-    metadata1 = CSV.read(meta_path1, DataFrame, delim='\t', header=1)
-    metadata2 = CSV.read(meta_path2, DataFrame, delim='\t', header=1)
+function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs::String)
 
     # Get the intersecting accessions
     common_accessions = intersect(metadata1[!, 1], metadata2[!, 1])
@@ -454,12 +450,7 @@ function find_double_candidates(meta_path1::String, meta_path2::String, seqs::St
 
 end
 
-function find_double_candidates(meta_path1::String, meta_path2::String, meta_path3::String, seqs::String)
-
-    # Load TSV metadata files
-    metadata1 = CSV.read(meta_path1, DataFrame, delim='\t', header=1)
-    metadata2 = CSV.read(meta_path2, DataFrame, delim='\t', header=1)
-    metadata3 = CSV.read(meta_path3, DataFrame, delim='\t', header=1)
+function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, metadata3::DataFrame, seqs::String)
 
     # join the metadata based on anachronistic accessions
     if nrow(metadata2) >= nrow(metadata3)
@@ -499,12 +490,7 @@ function find_double_candidates(meta_path1::String, meta_path2::String, meta_pat
 
 end
 
-function find_double_candidates(meta_path1::String, meta_path2::String, meta_path3::String)
-
-    # Load TSV metadata files
-    metadata1 = CSV.read(meta_path1, DataFrame, delim='\t', header=1)
-    metadata2 = CSV.read(meta_path2, DataFrame, delim='\t', header=1)
-    metadata3 = CSV.read(meta_path3, DataFrame, delim='\t', header=1)
+function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, metadata3::DataFrame)
 
     # join the metadata based on anachronistic accessions
     if nrow(metadata2) >= nrow(metadata3)
@@ -532,11 +518,7 @@ function find_double_candidates(meta_path1::String, meta_path2::String, meta_pat
 
 end
 
-function find_double_candidates(meta_path1::String, meta_path2::String)
-
-    # Load TSV metadata files
-    metadata1 = CSV.read(meta_path1, DataFrame, delim='\t', header=1)
-    metadata2 = CSV.read(meta_path2, DataFrame, delim='\t', header=1)
+function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
 
     # Get the intersecting accessions
     common_accessions = intersect(metadata1[!, 1], metadata2[!, 1])

@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 # load pipeline module
-using LongInfectionFinder
+using LongInfectionFinder, CSV, Dataframes
 
 # load I/O
 const metadata_files = filter(x->occursin(".tsv",x), readdir(abspath("."), join=true))
@@ -16,19 +16,29 @@ function main(metadata_files::Vector{String}, fasta_files::Vector{String})
 
     if num_meta == 2 && num_fasta == 1
 
-        find_double_candidates(metadata_files[1], metadata_files[2], fasta_files[1])
+        metadata1 = CSV.read(metadata_files[1], DataFrame, delim='\t', header=1)
+        metadata2 = CSV.read(metadata_files[2], DataFrame, delim='\t', header=1)
+        find_double_candidates(metadata1, metadata2, fasta_files[1])
 
     elseif num_meta == 3 && num_fasta == 1
 
-        find_double_candidates(metadata_files[1], metadata_files[2], metadata_files[3], fasta_files[1])
+        metadata1 = CSV.read(metadata_files[1], DataFrame, delim='\t', header=1)
+        metadata2 = CSV.read(metadata_files[2], DataFrame, delim='\t', header=1)
+        metadata3 = CSV.read(metadata_files[3], DataFrame, delim='\t', header=1)
+        find_double_candidates(metadata1, metadata2, metadata3, fasta_files[1])
         
     elseif num_meta == 3 && num_fasta == 0
 
-        find_double_candidates(metadata_files[1], metadata_files[2], metadata_files[3])
+        metadata1 = CSV.read(metadata_files[1], DataFrame, delim='\t', header=1)
+        metadata2 = CSV.read(metadata_files[2], DataFrame, delim='\t', header=1)
+        metadata3 = CSV.read(metadata_files[3], DataFrame, delim='\t', header=1)
+        find_double_candidates(metadata1, metadata2, metadata3)
 
     elseif num_meta == 2 && num_fasta == 0
 
-        find_double_candidates(metadata_files[1], metadata_files[2])
+        metadata1 = CSV.read(metadata_files[1], DataFrame, delim='\t', header=1)
+        metadata2 = CSV.read(metadata_files[2], DataFrame, delim='\t', header=1)
+        find_double_candidates(metadata1, metadata2)
 
     else
         throw(ErrorException("No comparable candidate files provided."))
