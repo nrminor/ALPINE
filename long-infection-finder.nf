@@ -134,7 +134,6 @@ workflow {
 	PREP_CENTROID_FASTAS (
 		CLUSTER_BY_IDENTITY.out.centroid_fasta
 			.filter { it[1].toInteger() > 1 }
-			.map { fasta, count -> fasta }
 	)
 
 	COMPUTE_DISTANCE_MATRIX (
@@ -663,7 +662,8 @@ process CLUSTER_BY_IDENTITY {
 
 	tag "${yearmonth}"
 	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*.uc"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*-cluster-seqs*"
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
@@ -675,7 +675,7 @@ process CLUSTER_BY_IDENTITY {
 
 	output:
 	path "*.uc", emit: cluster_table
-	tuple path("*centroids.fasta"), env(count), emit: centroid_fasta
+	tuple path("*msa.fasta"), val(yearmonth), env(count), emit: centroid_fasta
 	path "*-cluster-seqs*", emit: cluster_fastas
 	
 	script:
@@ -696,9 +696,7 @@ process CLUSTER_BY_IDENTITY {
 process PREP_CENTROID_FASTAS {
 
 	/*
-	In this process, we align centroid sequences to Wuhan-1, which
-	will be used as an outgroup, and replace "/" symbols with underscores
-	to keep iqTree happy.
+	THis 
 	*/
 
 	tag "${yearmonth}"
@@ -710,16 +708,14 @@ process PREP_CENTROID_FASTAS {
 	cpus params.max_cpus
 
 	input:
-	path fasta
+	tuple path(fasta), val(yearmonth), val(count)
 
 	output:
-	tuple path("*-aligned-centroids.fasta"), env(count)
+	tuple path("*-centroids.fasta"), val(count)
 
 	script:
-	yearmonth = file(fasta.toString()).getSimpleName().replace("-centroids", "")
 	"""
-	count=\$(grep -c "^>" ${fasta})
-	prep-centroid-fasta.py ${fasta} ${yearmonth}
+	prep-centroid-fasta.py ${fasta} ${yearmonth} ${count}
 	"""
 
 }
