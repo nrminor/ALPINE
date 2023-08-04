@@ -696,7 +696,9 @@ process CLUSTER_BY_IDENTITY {
 process PREP_CENTROID_FASTAS {
 
 	/*
-	THis 
+	This process adjusts the multi-sequence alignment of
+	each month's centroids to remove some odd VSEARCH 
+	conventions that will disrupt downstream processes.
 	*/
 
 	tag "${yearmonth}"
