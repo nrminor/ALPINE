@@ -9,22 +9,31 @@ const fasta_files = filter(x->occursin(".fasta",x), readdir(abspath("."), join=t
 
 # use multiple dispatch to collect double candidates based on the 
 # number of available files
-if length(metadata_files) == 2 && length(fasta_files) == 1
+function main(metadata_files::Vector{String}, fasta_files::Vector{String})
 
-    find_double_candidates(metadata_files[1], metadata_files[2], fasta_files[1])
+    num_meta = length(metadata_files)
+    num_fasta = length(fasta_files)
 
-elseif length(metadata_files) == 3 && length(fasta_files) == 1
+    if num_meta == 2 && num_fasta == 1
 
-    find_double_candidates(metadata_files[1], metadata_files[2], metadata_files[3], fasta_files[1])
-    
-elseif length(metadata_files) == 3 && length(fasta_files) == 0
+        find_double_candidates(metadata_files[1], metadata_files[2], fasta_files[1])
 
-    find_double_candidates(metadata_files[1], metadata_files[2], metadata_files[3])
+    elseif num_meta == 3 && num_fasta == 1
 
-elseif length(metadata_files) == 2 && length(fasta_files) == 0
+        find_double_candidates(metadata_files[1], metadata_files[2], metadata_files[3], fasta_files[1])
+        
+    elseif num_meta == 3 && num_fasta == 0
 
-    find_double_candidates(metadata_files[1], metadata_files[2])
+        find_double_candidates(metadata_files[1], metadata_files[2], metadata_files[3])
 
-else
-    throw(ErrorException("No comparable candidate files provided."))
+    elseif num_meta == 2 && num_fasta == 0
+
+        find_double_candidates(metadata_files[1], metadata_files[2])
+
+    else
+        throw(ErrorException("No comparable candidate files provided."))
+    end
 end
+
+# run main
+main(metadata_files, fasta_files)

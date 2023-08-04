@@ -9,20 +9,27 @@ const table_path = islink(ARGS[2]) ? readlink(ARGS[2]) : ARGS[2] # this will be 
 const yearmonth = ARGS[3]
 const stringency = ARGS[4]
 
-# replace lowercase n symbols with uppercase Ns
-const tmp = "tmp.fasta"
-touch(tmp)
-set_to_uppercase(fasta_file,tmp)
+function main(fasta_file::String, table_path::String, yearmonth::String, stringency::String)
 
-# read in the cluster table
-cluster_table = CSV.read(table_path, DataFrame, delim="\t", header=false)
+    # replace lowercase n symbols with uppercase Ns
+    const tmp = "tmp.fasta"
+    touch(tmp)
+    set_to_uppercase(fasta_file,tmp)
 
-# define majority centroid
-centroids = filter(1 => ==("C"), cluster_table)
-const majority_centroid = convert(String, centroids[argmax(centroids[:,3]), :Column9])
+    # read in the cluster table
+    cluster_table = CSV.read(table_path, DataFrame, delim="\t", header=false)
 
-# count the number of clusters
-const count = nrow(centroids)
+    # define majority centroid
+    centroids = filter(1 => ==("C"), cluster_table)
+    const majority_centroid = convert(String, centroids[argmax(centroids[:,3]), :Column9])
 
-# run the function
-distance_matrix(tmp, cluster_table, count, majority_centroid, yearmonth, stringency)
+    # count the number of clusters
+    const count = nrow(centroids)
+
+    # run the function
+    distance_matrix(tmp, cluster_table, count, majority_centroid, yearmonth, stringency)
+
+end
+
+# run main
+main(fasta_file, table_path, yearmonth, stringency)

@@ -4,7 +4,6 @@ args = commandArgs(trailingOnly=TRUE)
 # load necessary packages
 require(tidyverse)
 require(arrow)
-require(compiler)
 require(Biostrings)
 
 # set just-in-time compilation setting so that top-level loops are JIT compiled
@@ -26,7 +25,7 @@ if (args[2] == "strict") {
 }
 
 # create function to process metadata
-process_meta <- cmpfun(function(yearmonths, metadata){
+process_meta <- compiler::cmpfun(function(yearmonths, metadata){
   
   # make an empty data frame to store high distance metadata 
   high_dist_meta <- matrix(ncol = ncol(metadata), nrow = 0)
@@ -148,14 +147,14 @@ process_meta <- cmpfun(function(yearmonths, metadata){
 })
 
 # create a function to normalize metadata
-normalize_meta <- cmpfun(function(high_dist_seqs, high_dist_meta){
+normalize_meta <- compiler::cmpfun(function(high_dist_seqs, high_dist_meta){
   
   high_dist_seqs <- high_dist_seqs[names(high_dist_seqs) %in% high_dist_meta$Accession]
   return(high_dist_seqs)
 })
 
 # candidate-identifying function to tie it all together
-find_candidates <- cmpfun(function(metadata, stringency){
+find_candidates <- compiler::cmpfun(function(metadata, stringency){
   
   # creating list of year-month combinations to loop through
   yearmonths <- str_remove_all(list.files(path = ".", pattern = "*-dist-matrix.csv"), "-dist-matrix.csv")

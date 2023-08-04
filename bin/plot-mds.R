@@ -6,15 +6,14 @@ library(tidyverse)
 library(ape)
 library(ggplot2)
 library(readr)
-library(compiler)
 
-# Read command-line arguments
+# Read command-line arguments, which will serve as the script's only globals
 yearmonth <- args[1]
 tsv_path <- args[2]
 fasta_path <- args[3]
 
 # define a function that runs and plots the MDS
-run_mds <- function(dist_mat, tsv_path, yearmonth, num_dims){
+run_mds <- compiler::cmpfun(function(dist_mat, tsv_path, yearmonth, num_dims){
   
   # Perform MDS
   mds_result <- stats::cmdscale(dist_mat, k = num_dims) %>% 
@@ -79,10 +78,9 @@ run_mds <- function(dist_mat, tsv_path, yearmonth, num_dims){
     
   }
   
-}
-run_mds_cp <- cmpfun(run_mds)
+})
 
-main <- function(fasta_path, tsv_path, yearmonth){
+main <- compiler::cmpfun(function(fasta_path, tsv_path, yearmonth){
   
   # Read FASTA file
   fasta_data <- ape::read.dna(fasta_path, format = "fasta")
@@ -94,9 +92,9 @@ main <- function(fasta_path, tsv_path, yearmonth){
     
     # Perform MDS
     if (length(labels(fasta_data)) > 3){
-      run_mds_cp(dist_matrix, tsv_path, yearmonth, 3)
+      run_mds(dist_matrix, tsv_path, yearmonth, 3)
     } else {
-      run_mds_cp(dist_matrix, tsv_path, yearmonth, 2)
+      run_mds(dist_matrix, tsv_path, yearmonth, 2)
     }
     
     
@@ -122,9 +120,7 @@ main <- function(fasta_path, tsv_path, yearmonth){
     
   }
   
-}
-main_cp <- cmpfun(main)
+})
 
 # run the code
-main_cp(fasta_path,tsv_path,yearmonth)
-
+main(fasta_path, tsv_path, yearmonth)
