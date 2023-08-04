@@ -1,12 +1,25 @@
 #!/usr/bin/env python3
 
+"""
+REPORT REPEAT LINEAGE SEQUENCES AND METADATA
+--------------------------------------------
+
+Accessions flagged in this script clustered together in the 
+so-called "meta-clustering", where high-distance sequences
+were run through vsearch --cluster_fast with an even tighter
+identity threshold, 99.99%. Sequences that cluster together
+are likely to represent the same, high-distance viral lineage
+that is persistently infecting one host, though other scenarios
+are possible.
+"""
+
 import argparse
 import pandas as pd
 import Bio.SeqIO
 
 def main(cluster_table_path: str, metadata_path: str):
     """
-    This script reads in a cluster table and metadata file,
+    This function reads in a cluster table and metadata file,
     and then compiles FASTA sequences for each repeat cluster and
     collates metadata about these new clusters.
 
@@ -57,8 +70,8 @@ def main(cluster_table_path: str, metadata_path: str):
 # end def main
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser()
-  parser.add_argument("cluster_table_path", help="The path to the cluster table file.")
-  parser.add_argument("metadata_path", help="The path to the metadata file.")
-  args = parser.parse_args()
-  main(args.cluster_table_path, args.metadata_path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cluster_table_path", help="The path to the cluster table file.")
+    parser.add_argument("metadata_path", help="The path to the metadata file.")
+    args = parser.parse_args()
+    main(args.cluster_table_path, args.metadata_path)

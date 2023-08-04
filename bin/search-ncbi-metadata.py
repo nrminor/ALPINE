@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 
+"""
+USE PRE-ASSIGNED PANGO LINEAGES FROM NCBI METADATA TO IDENTIFY ANACHRONISTICS
+-----------------------------------------------------------------------------
+
+At each new release of the Pangolin tool, NCBI updates the pango lineage calls
+associated with all SARS-CoV-2 sequences. This script uses these sequences, 
+along with a file reporting when each lineage was designated in Pangolin, to
+identify lineages that are collected long after a lineage was prevalent. This
+is the fastest branch of the advanced-virus-finder workflow, as it does not
+involve running Pangolin or clustering. 
+"""
+
 # make necessary modules available
 import argparse
 from typing import Optional

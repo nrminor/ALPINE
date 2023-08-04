@@ -929,7 +929,7 @@ process CLASSIFY_SC2_WITH_PANGOLIN {
 	path "*.csv"
 
 	when:
-	params.compare_lineage_dates == true
+	params.compare_lineage_dates == true && params.pathogen == "SARS-CoV-2"
 
 	script:
 	"""
@@ -1008,7 +1008,7 @@ process SEARCH_NCBI_METADATA {
 	path "*.tsv"
 
 	when:
-	params.inspect_ncbi_metadata == true
+	params.inspect_ncbi_metadata == true && params.pathogen == "SARS-CoV-2"
 		
 	script:
 	"""
