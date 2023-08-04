@@ -18,7 +18,7 @@ from typing import Optional
 import multiprocessing as mp
 import pandas as pd
 import numpy as np
-# import pyarrow as arrow
+import pyarrow as arrow
 
 # Defining functions for multiprocessing
 def add_designation_date(lineage: str, dates: pd.DataFrame) -> Optional[np.datetime64]:
@@ -74,42 +74,41 @@ def main(metadata_path: str, dates_path: str, infection_cutoff: int, cores: int)
     None
     """
 
-    # read in data
-    metadata = pd.read_csv(metadata_path,
-                           delimiter='\t',
-                           na_values=["", "NA"],
-                           dtype={"Virus Pangolin Classification": str})
+    # Memory-map arrow IPC-formatted metadata
+    with arrow.memory_map(metadata_path, 'r') as source:
+        metadata_arrays = arrow.ipc.open_file(source).read_all()
+        metadata = metadata_arrays.to_pandas()
 
-    # read in dates
-    dates = pd.read_csv(dates_path,
-                        na_values=["", "NA"])
-    
-    # Ensure dates are properly formatted
-    metadata["Isolate Collection date"] = pd.to_datetime(metadata["Isolate Collection date"], errors='coerce')
-    dates.designation_date = pd.to_datetime(dates.designation_date, errors="ignore", format="%Y-%m-%d").fillna("2021-02-18")
+        # read in dates
+        dates = pd.read_csv(dates_path,
+                            na_values=["", "NA"])
+        
+        # Ensure dates are properly formatted
+        metadata["Isolate Collection date"] = pd.to_datetime(metadata["Isolate Collection date"], errors='coerce')
+        dates.designation_date = pd.to_datetime(dates.designation_date, errors="ignore", format="%Y-%m-%d").fillna("2021-02-18")
 
-    # Parallelize looping through filtered metadata to merge designation dates
-    metadata["lineage_designation"] = np.NAN
-    metadata["infection_duration"] = 0
+        # Parallelize looping through filtered metadata to merge designation dates
+        metadata["lineage_designation"] = np.NAN
+        metadata["infection_duration"] = 0
 
-    # prepare the arguments as a list of tuples
-    args1 = [(lineage, dates) for lineage in metadata['Virus Pangolin Classification']]
+        # prepare the arguments as a list of tuples
+        args1 = [(lineage, dates) for lineage in metadata['Virus Pangolin Classification']]
 
-    # iterate through rows in parallel
-    with mp.Pool(cores) as p:
-        metadata['lineage_designation'] = p.starmap(add_designation_date, args1)
-        ncbi_dates = metadata['Isolate Collection date']
-        desig_dates = metadata['lineage_designation']
-        args2 = [(i, ncbi_dates, desig_dates) for i in range(len(ncbi_dates))]
-        metadata['infection_duration'] = p.starmap(add_infection_duration, args2)
-    
-    # Filter down to long infection candidates
-    long_infections = metadata.loc[(metadata["infection_duration"] >= infection_cutoff) & ~metadata["Accession"].isna()].sort_values("infection_duration", ascending=False)
+        # iterate through rows in parallel
+        with mp.Pool(cores) as p:
+            metadata['lineage_designation'] = p.starmap(add_designation_date, args1)
+            ncbi_dates = metadata['Isolate Collection date']
+            desig_dates = metadata['lineage_designation']
+            args2 = [(i, ncbi_dates, desig_dates) for i in range(len(ncbi_dates))]
+            metadata['infection_duration'] = p.starmap(add_infection_duration, args2)
+        
+        # Filter down to long infection candidates
+        long_infections = metadata.loc[(metadata["infection_duration"] >= infection_cutoff) & ~metadata["Accession"].isna()].sort_values("infection_duration", ascending=False)
 
-    # Write anachronistic candidates to TSV
-    long_infections.to_csv("anachronistic_metadata_only_candidates.tsv",
-                           index=False,
-                           sep="\t")
+        # Write anachronistic candidates to TSV
+        long_infections.to_csv("anachronistic_metadata_only_candidates.tsv",
+                            index=False,
+                            sep="\t")
 # end main function def
 
 # run the script if not imported as a module

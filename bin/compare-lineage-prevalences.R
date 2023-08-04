@@ -177,7 +177,7 @@ subset_metadata <- cmpfun(function(metadata_path, report_path){
   # hhs_regions <- data.frame(hhs_regions)
   
   # Read in metadata
-  metadata <- read_tsv(metadata_path, show_col_types = FALSE, trim_ws = TRUE)
+  metadata <- read_ipc_file(metadata_path)
   
   # collate pangolin metadata: new lineage calls, accession IDs, and collection dates
   pango_report <- date_pango_calls(report_path, metadata)

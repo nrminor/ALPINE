@@ -16,6 +16,7 @@ are possible.
 import argparse
 import pandas as pd
 import Bio.SeqIO
+import pyarrow as arrow
 
 def main(cluster_table_path: str, metadata_path: str):
     """
@@ -30,7 +31,7 @@ def main(cluster_table_path: str, metadata_path: str):
     Returns:
     None
     """
-
+    
     cluster_df = pd.read_csv(cluster_table_path,
                             sep='\t',
                             header=None,

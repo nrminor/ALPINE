@@ -10,8 +10,7 @@ require(Biostrings)
 compiler::enableJIT(3)
 
 # Bringing in NCBI metadata
-metadata <- read_tsv(args[1], 
-                     show_col_types = FALSE, trim_ws = TRUE)
+metadata <- read_ipc_file(args[1])
 
 # Defining strictness level
 if (args[2] == "strict") {
@@ -38,7 +37,8 @@ process_meta <- compiler::cmpfun(function(yearmonths, metadata){
   for (i in yearmonths){
     
     # read in distance matrix
-    distmat = read.csv(paste(i, "-dist-matrix.csv", sep = ""))
+    distmat = read_csv(paste(i, "-dist-matrix.csv", sep = ""),
+                       trim_ws = TRUE, show_col_types = FALSE)
     
     # define high-distance accession
     distmat$Distance_Score <- vapply(2:ncol(distmat), FUN = 
@@ -54,7 +54,8 @@ process_meta <- compiler::cmpfun(function(yearmonths, metadata){
     distmat <- distmat[order(distmat$Sequence_Name),] ; rownames(distmat) <- NULL
     
     # collating cluster metadata with distances
-    cluster_table <- read.delim(paste(i, "-clusters.uc", sep = ""), header = F)
+    cluster_table <- read_tsv(paste(i, "-clusters.uc", sep = ""), 
+                              col_names = FALSE, trim_ws = TRUE, show_col_types = FALSE)
     if (nrow(distmat)==1){
       cluster_table <- cluster_table[cluster_table$V9==distmat$Sequence_Name[1],]
     }
