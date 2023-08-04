@@ -47,7 +47,6 @@ RUN apt-get update && \
     libssl-dev \
     libcurl4-openssl-dev \
     openjdk-16-jre-headless \
-    default-jdk \
     libnss-sss \
     procps \
     && apt-get clean \
@@ -115,16 +114,15 @@ RUN julia -e 'using Pkg; \
             Pkg.instantiate(); \
             Pkg.precompile()'
 
-# Make sure nothing is amiss and that julia and rust are still in the path
+# Make sure nothing is amiss and that julia is still in the path
 ENV NXF_HOME=/scratch/.nextflow
-ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:/root/.cargo/bin
+ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \
     chmod +rwx /usr/local/bin/nextflow && \
     chmod +x /opt/julia-1.9.0/bin/* && \
     chmod +x /opt/conda/bin/* && \
-    chmod +x /root/.cargo/bin/* && \
     chmod +rw /root/ && \
     chmod -R +rwx /root/ && \
     chmod -R +rwx /root/.julia/ && \
