@@ -53,15 +53,6 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Rust and Apache Arrow  CLI tools
-RUN curl https://sh.rustup.rs -sSf | sh -s -- -y && \
-    chmod +x $HOME/.cargo/env && \
-    $HOME/.cargo/env && \
-    chmod +x $HOME/.cargo/bin/*
-ENV PATH=$PATH:$HOME/.cargo/bin
-RUN $HOME/.cargo/bin/cargo install csv2arrow && \
-    $HOME/.cargo/bin/cargo install csv2parquet
-
 # Install nextflow and make sure it is configured
 RUN wget -qO- https://get.nextflow.io | bash && \
     chmod +x nextflow && \
