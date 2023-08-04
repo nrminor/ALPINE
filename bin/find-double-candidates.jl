@@ -4,9 +4,27 @@
 using LongInfectionFinder
 
 # load I/O
-const high_distance_metadata = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
-const anachronistic_metadata = islink(ARGS[2]) ? readlink(ARGS[2]) : ARGS[2]
-const anachronistic_sequences = islink(ARGS[3]) ? readlink(ARGS[3]) : ARGS[3]
+const metadata_files = filter(x->occursin(".tsv",x), readdir(abspath("."), join=true))
+const fasta_files = filter(x->occursin(".fasta",x), readdir(abspath("."), join=true))
 
-# find candidates based on the provided files
-find_double_candidates(high_distance_metadata, anachronistic_metadata, anachronistic_sequences)
+# use multiple dispatch to collect double candidates based on the 
+# number of available files
+if length(metadata_files) == 2 && length(fasta_files) == 1
+
+    find_double_candidates(metadata_files[1], metadata_files[2], fasta_files[1])
+
+elseif length(metadata_files) == 3 && length(fasta_files) == 1
+
+    find_double_candidates(metadata_files[1], metadata_files[2], metadata_files[3], fasta_files[1])
+    
+elseif length(metadata_files) == 3 && length(fasta_files) == 0
+
+    find_double_candidates(metadata_files[1], metadata_files[2], metadata_files[3])
+
+elseif length(metadata_files) == 2 && length(fasta_files) == 0
+
+    find_double_candidates(metadata_files[1], metadata_files[2])
+
+else
+    throw(ErrorException("No comparable candidate files provided."))
+end

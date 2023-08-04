@@ -193,11 +193,14 @@ workflow {
 	// Steps for analyzing and visualizing the results from the 
 	// approaches above
 	FIND_DOUBLE_CANDIDATES (
-		SUMMARIZE_CANDIDATES.out.metadata,
-		FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
-		FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
-			.filter { it[1].toInteger() > 2 }
-			.map { fasta, count -> fasta }
+		SUMMARIZE_CANDIDATES.out.metadata
+			.mix(
+				SEARCH_NCBI_METADATA.out,
+				FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
+				FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
+					.filter { it[1].toInteger() > 2 }
+					.map { fasta, count -> fasta },
+			).collect()
 	)
 
 	// PREP_FOR_ESCAPE_CALC ()
@@ -912,6 +915,11 @@ process META_CLUSTER_REPORT {
 process CLASSIFY_SC2_WITH_PANGOLIN {
 
 	/*
+	Here, the workflow runs the filtered Genbank FASTA through
+	the Pangolin tool with its fastest settings. These updated 
+	pango lineage classifications are then used in conjunction
+	with the Outbreak.info API to identify anachronistic 
+	sequences.
 	*/
 
 	tag "${params.pathogen}, ${params.geography}"
@@ -947,6 +955,17 @@ process CLASSIFY_SC2_WITH_PANGOLIN {
 process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	/*
+	Here the workflow uses a GISAID authentication token,
+	which must be provided by the user, to access lineage prevalence
+	estimates via the Outbreak.info API. Lineage collection dates
+	that are far past what is called the "rarity date" in the script
+	are flagged as candidate anachronistics.
+
+	Note that the Outbreak.info is currently quite finicky, and
+	may boot out the script for making too many API calls. This
+	process will dynamically retry with longer and longer wait times
+	to address this, but in some cases the API may cause this step to
+	fail. In such cases, we recommend 
 	*/
 	
 	tag "${params.pathogen}, ${params.geography}"
@@ -1034,9 +1053,7 @@ process FIND_DOUBLE_CANDIDATES {
 	maxRetries 2
 
 	input:
-	path high_dist_metadata
-	path anachronistic_meta
-	path anachronistic_seqs
+	path collected_files
 
 	output:
 	path "*.tsv"
@@ -1047,9 +1064,7 @@ process FIND_DOUBLE_CANDIDATES {
 
 	script:
 	"""
-	find-double-candidates.jl ${high_dist_metadata} \
-	${anachronistic_meta} \
-	${anachronistic_seqs}
+	find-double-candidates.jl
 	"""
 
 }
