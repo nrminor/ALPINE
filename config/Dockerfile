@@ -112,7 +112,9 @@ COPY LongInfectionFinder.jl/ /root/.julia/environments/v1.9
 RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
             Pkg.instantiate(); \
-            Pkg.precompile()'
+            Pkg.precompile(); \
+            using TimeZones; \
+            using LongInfectionFinder'
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV NXF_HOME=/scratch/.nextflow
@@ -129,7 +131,10 @@ RUN chmod +x /usr/local/bin/* && \
     chmod -R +rw /root/.julia/logs/ && \
     chmod -R +rwx /root/.julia/logs/* && \
     chmod -R +rwx /root/.julia/compiled/ && \
-    chmod -R +rwx /root/.julia/compiled/v1.9/*
+    chmod -R +rwx /root/.julia/compiled/v1.9/* && \
+    chmod -R +rwx /root/.julia/logs/* && \
+    chmod -R +rwx /root/.julia/packages/ && \
+    chmod -R +rwx /root/.julia/packages/Scratch
 
 # Set working directory
 WORKDIR /scratch

@@ -438,7 +438,7 @@ process VALIDATE_METADATA {
 	path metadata
 
 	output:
-	path "*.arrow"
+	path "validated-metadata.arrow"
 
 	script:
 	"""

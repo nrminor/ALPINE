@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 """
-FINESS COLUMN NAMES AND CONVERT TO APACHE ARROW IPC
---------------------------------------------------
+FINESSE COLUMN NAMES AND CONVERT TO APACHE ARROW IPC
+---------------------------------------------------
 
 In the advanced finder pipeline, this script is run as soon
 as a) the metadata is supplied by the user, or b) the 
@@ -21,13 +21,14 @@ import polars as pl
 
 def main(metadata_path: str):
     """
-    This script reads a very large TSV file using Apache Arrow
-    in memory-representation. If the TSV is GISAID metadata, it
-    renames some of the columns to conform with scripts that 
-    expect Genbank metadata downstream. It also ensures that 
-    the column of dates is typed and stored as date objects.
-    Finally, it writes the validated metadata to Apache Arrow
-    IPC format on disk for downstream usage.
+    This script uses Polars to read a very large TSV file 
+    using Apache Arrow in memory-representation. It saves 
+    additional memory and CPU effort by reading it as a 
+    LazyFrame instead of a DataFrame. It renames some of the 
+    columns to conform with scripts that expect Genbank metadata 
+    downstream. It also ensures that the column of dates is typed 
+    and stored as date objects. Finally, it writes the validated 
+    metadata to Apache Arrow IPC format on disk for downstream usage.
 
     Args:
     metadata_path: The path to metadata in TSV format.
@@ -36,8 +37,10 @@ def main(metadata_path: str):
     None
     """
 
-    metadata = pl.read_csv(metadata_path, separator="\t", low_memory=True, use_pyarrow=True)
-
+    # Scan the CSV into a LazyFrame
+    metadata = pl.scan_csv(metadata_path, separator="\t", low_memory=True)
+    
+    # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
 
         # rename "Accession ID", "Collection date", "Location", and "Pango lineage"
@@ -52,16 +55,14 @@ def main(metadata_path: str):
     # Double check the column name for geographic locations
     if "Geographic location" in metadata.columns:
         metadata = metadata.rename({"Geographic location": "Geographic Location"})
-
-    # make sure date column is typed as dates
+        
+    # Correct date typing
     metadata = metadata.with_columns(
-        metadata.select(pl.col("Isolate Collection date").str.strptime(pl.Date, format="%Y-%m-%d", strict=False))
-    )
-    metadata = metadata.drop_nulls("Isolate Collection date")
-
-    # convert to arrow IPC file on disk
-    metadata.write_ipc("validated-metadata.arrow", compression="zstd")
-
+        pl.col("Isolate Collection date").str.strptime(pl.Date, format="%Y-%m-%d", strict=False).alias("Isolate Collection date")
+    ).filter(pl.col("Isolate Collection date").is_not_null())
+    
+    # evaluate and sink into compressed Arrow file in batches
+    metadata.sink_ipc("validated-metadata.arrow", compression="zstd")
 # end main def
 
 if __name__ == "__main__":
