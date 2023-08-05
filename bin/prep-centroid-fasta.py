@@ -1,11 +1,25 @@
 #!/usr/bin/env python3
 
+"""
+CLEAN THE ALIGNED CENTROID FASTA FOR DOWNSTREAM USAGE
+-----------------------------------------------------
+
+Vsearch --cluster_fast can provide a multi-sequence alignment
+as one of its outputs, which we need to call a distance matrix.
+But that alignment has a few quirks. It will include cluster
+consensus sequences, which we are not interested in (at this
+stage, at least). It also adds a pesky "*" to one or more of
+the aligned sequences, which is not explained in the vsearch
+documentation. We do away with the entire consensus sequences,
+and clean the "*" symbols out of any remaining records here.
+"""
+
 import argparse
 from Bio import SeqIO
 
 def main(input_path: str, label: str, count: int):
     """
-    This script parses a FASTA file and removes all records with 
+    This function parses a FASTA file and removes all records with 
     "consensus" in their defline and then removes an asterisk 
     ("*") symbols in the deflines of the remaining records.
 
