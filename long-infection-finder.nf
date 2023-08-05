@@ -13,7 +13,7 @@ workflow {
 
 	GET_DESIGNATION_DATES ( )
 
-	if ( params.compare_lineage_dates == true ){
+	if ( params.reclassify_sc2_lineages == true ){
 
 		UPDATE_PANGO_CONTAINER ( )
 
@@ -171,12 +171,12 @@ workflow {
 	)
 	
 	// Steps for re-running pangolin and comparing dates
-	CLASSIFY_SC2_WITH_PANGOLIN (
+	RECLASSIFY_SC2_WITH_PANGOLIN (
 		FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 	)
 
 	FIND_CANDIDATE_LINEAGES_BY_DATE (
-		CLASSIFY_SC2_WITH_PANGOLIN.out
+		RECLASSIFY_SC2_WITH_PANGOLIN.out
 			.collectFile(name: 'new_pango_calls.csv', newLine: true),
 		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
 		FILTER_META_TO_GEOGRAPHY.out.metadata,
@@ -274,7 +274,7 @@ process UPDATE_PANGO_CONTAINER {
 	env(version), emit: cue
 	
 	when:
-	(params.pathogen == "SARS-CoV-2" || params.pathogen == "sars-cov-2") && params.compare_lineage_dates == true
+	(params.pathogen == "SARS-CoV-2" || params.pathogen == "sars-cov-2") && params.reclassify_sc2_lineages == true
 	
 	script:
 	"""
@@ -900,7 +900,7 @@ process META_CLUSTER_REPORT {
 
 }
 
-process CLASSIFY_SC2_WITH_PANGOLIN {
+process RECLASSIFY_SC2_WITH_PANGOLIN {
 
 	/*
 	Here, the workflow runs the filtered Genbank FASTA through
@@ -925,7 +925,7 @@ process CLASSIFY_SC2_WITH_PANGOLIN {
 	path "*.csv"
 
 	when:
-	params.compare_lineage_dates == true && params.pathogen == "SARS-CoV-2"
+	params.reclassify_sc2_lineages == true && params.pathogen == "SARS-CoV-2"
 
 	script:
 	"""
@@ -1015,7 +1015,7 @@ process SEARCH_NCBI_METADATA {
 	path "*.tsv"
 
 	when:
-	params.inspect_ncbi_metadata == true && params.pathogen == "SARS-CoV-2"
+	params.search_metadata_dates == true && params.pathogen == "SARS-CoV-2"
 		
 	script:
 	"""
@@ -1048,7 +1048,7 @@ process FIND_DOUBLE_CANDIDATES {
 	path "*.fasta"
 
 	when:
-	(params.compare_lineage_dates == true && params.make_distance_matrix == true) || (params.make_distance_matrix == true && params.inspect_ncbi_metadata == true)
+	(params.reclassify_sc2_lineages == true && params.make_distance_matrix == true) || (params.make_distance_matrix == true && params.search_metadata_dates == true)
 
 	script:
 	"""
