@@ -434,8 +434,6 @@ process VALIDATE_METADATA {
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
 
-	cpus 8
-
 	input:
 	path metadata
 
@@ -444,8 +442,7 @@ process VALIDATE_METADATA {
 
 	script:
 	"""
-	JULIA_NUM_THREADS=8 && \
-	validate-metadata.jl ${metadata}
+	validate-metadata.py ${metadata}
 	"""
 }
 
