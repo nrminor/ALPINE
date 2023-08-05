@@ -36,7 +36,7 @@ def main(metadata_path: str):
     None
     """
 
-    metadata = pl.read_csv(metadata_path, separator="\t")
+    metadata = pl.read_csv(metadata_path, separator="\t", low_memory=True, use_pyarrow=True)
 
     if "GC-Content" in metadata.columns:
 
