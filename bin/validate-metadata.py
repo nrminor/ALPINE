@@ -51,7 +51,7 @@ def main(metadata_path: str):
 
     # Double check the column name for geographic locations
     if "Geographic location" in metadata.columns:
-        metadata.rename({"Geographic location": "Geographic Location"})
+        metadata = metadata.rename({"Geographic location": "Geographic Location"})
 
     # make sure date column is typed as dates
     metadata = metadata.with_columns(
