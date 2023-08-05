@@ -133,7 +133,7 @@ workflow {
 
 	PREP_CENTROID_FASTAS (
 		CLUSTER_BY_IDENTITY.out.centroid_fasta
-			.filter { it[1].toInteger() > 1 }
+			.filter { it[2].toInteger() > 1 }
 	)
 
 	COMPUTE_DISTANCE_MATRIX (

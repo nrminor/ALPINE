@@ -112,6 +112,7 @@ COPY LongInfectionFinder.jl/ /root/.julia/environments/v1.9
 RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
             Pkg.instantiate(); \
+            Pkg.build(); \
             Pkg.precompile(); \
             using TimeZones; \
             using LongInfectionFinder'
