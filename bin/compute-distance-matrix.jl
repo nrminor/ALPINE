@@ -12,7 +12,7 @@ const stringency = ARGS[4]
 function main(fasta_file::String, table_path::String, yearmonth::String, stringency::String)
 
     # replace lowercase n symbols with uppercase Ns
-    const tmp = "tmp.fasta"
+    tmp = "tmp.fasta"
     touch(tmp)
     set_to_uppercase(fasta_file,tmp)
 
@@ -21,10 +21,10 @@ function main(fasta_file::String, table_path::String, yearmonth::String, stringe
 
     # define majority centroid
     centroids = filter(1 => ==("C"), cluster_table)
-    const majority_centroid = convert(String, centroids[argmax(centroids[:,3]), :Column9])
+    majority_centroid = convert(String, centroids[argmax(centroids[:,3]), :Column9])
 
     # count the number of clusters
-    const count = nrow(centroids)
+    count = nrow(centroids)
 
     # run the function
     distance_matrix(tmp, cluster_table, count, majority_centroid, yearmonth, stringency)

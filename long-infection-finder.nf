@@ -724,14 +724,16 @@ process CLUSTER_BY_IDENTITY {
 process PREP_CENTROID_FASTAS {
 
 	/*
-	This process adjusts the multi-sequence alignment of
-	each month's centroids to remove some odd VSEARCH 
-	conventions that will disrupt downstream processes.
+	This process runs Clustal Omega if the sequences in
+	the input FASTA are not aligned. It then adjusts the 
+	multi-sequence alignment of each month's centroids to
+	remove some odd VSEARCH conventions that will disrupt 
+	downstream processes.
 	*/
 
 	tag "${yearmonth}"
 	label "lif_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*.uc"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
@@ -742,11 +744,15 @@ process PREP_CENTROID_FASTAS {
 	tuple path(fasta), val(yearmonth), val(count)
 
 	output:
-	tuple path("*-centroids.fasta"), val(count)
+	tuple path("*-cleaned-centroids.fasta"), val(count)
 
 	script:
 	"""
-	prep-centroid-fasta.py ${fasta} ${yearmonth} ${count} ${task.cpus}
+	prep-centroid-fasta.py \
+	${fasta} \
+	${yearmonth} \
+	${count} \
+	${task.cpus}
 	"""
 
 }

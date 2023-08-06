@@ -97,7 +97,7 @@ def main(input_path: str, label: str, count: int, threads: int):
 
     working_fasta = align_centroids(input_path, label, threads)
 
-    output_filename = f"{label}-aligned-centroids.fasta"
+    output_filename = f"{label}-cleaned-centroids.fasta"
 
     with open(working_fasta, "r", encoding="utf-8") as infile, open(output_filename, "w", encoding="utf-8") as outfile:
         records = SeqIO.parse(infile, "fasta")
