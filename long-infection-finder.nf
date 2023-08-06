@@ -191,16 +191,40 @@ workflow {
 
 	// Steps for analyzing and visualizing the results from the 
 	// approaches above
-	FIND_DOUBLE_CANDIDATES (
-		SUMMARIZE_CANDIDATES.out.metadata
-			.mix(
-				SEARCH_NCBI_METADATA.out,
-				FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
-				FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
-					.filter { it[1].toInteger() > 2 }
-					.map { fasta, count -> fasta },
-			).collect()
-	)
+	if ( make_distance_matrix == true && search_metadata_dates == true && reclassify_sc2_lineages == false ){
+
+		FIND_DOUBLE_CANDIDATES (
+			SUMMARIZE_CANDIDATES.out.metadata
+				.mix(SEARCH_NCBI_METADATA.out).collect()
+		)
+
+	}
+	if ( make_distance_matrix == true && search_metadata_dates == false && reclassify_sc2_lineages == true ){
+
+		FIND_DOUBLE_CANDIDATES (
+			SUMMARIZE_CANDIDATES.out.metadata
+				.mix(
+					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
+					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
+						.filter { it[1].toInteger() > 2 }
+						.map { fasta, count -> fasta },
+				).collect()
+		)
+
+	}
+	if ( make_distance_matrix == false && search_metadata_dates == true && reclassify_sc2_lineages == true ){
+
+		FIND_DOUBLE_CANDIDATES (
+			SEARCH_NCBI_METADATA.out
+				.mix(
+					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
+					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
+						.filter { it[1].toInteger() > 2 }
+						.map { fasta, count -> fasta },
+				).collect()
+		)
+
+	}
 
 	// PREP_FOR_ESCAPE_CALC ()
 
@@ -693,6 +717,7 @@ process PREP_CENTROID_FASTAS {
 
 	tag "${yearmonth}"
 	label "lif_container"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*.uc"
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
@@ -707,7 +732,7 @@ process PREP_CENTROID_FASTAS {
 
 	script:
 	"""
-	prep-centroid-fasta.py ${fasta} ${yearmonth} ${count}
+	prep-centroid-fasta.py ${fasta} ${yearmonth} ${count} ${task.cpus}
 	"""
 
 }
