@@ -24,7 +24,7 @@ import pandas as pd
 from Bio import SeqIO
 from Bio.Align.Applications import ClustalOmegaCommandline 
 
-def align_centroids(fasta_path: str, label: str, threads: int) -> str:
+def align_centroids(fasta_path: str, threads: int) -> str:
     """
     This function optionally aligns the provided sequences
     depending on whether they are all the same length.
@@ -96,7 +96,7 @@ def main(input_path: str, label: str, count: int, threads: int):
     None
     """
 
-    working_fasta = align_centroids(input_path, label, threads)
+    working_fasta = align_centroids(input_path, threads)
 
     output_filename = f"{label}-aligned-centroids.fasta"
 
