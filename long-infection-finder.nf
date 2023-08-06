@@ -665,7 +665,7 @@ process CLUSTER_BY_IDENTITY {
 
 	output:
 	path "*.uc", emit: cluster_table
-	tuple path("*msa.fasta"), val(yearmonth), env(count), emit: centroid_fasta
+	tuple path("*centroids.fasta"), val(yearmonth), env(count), emit: centroid_fasta
 	path "*-cluster-seqs*", emit: cluster_fastas
 	
 	script:
