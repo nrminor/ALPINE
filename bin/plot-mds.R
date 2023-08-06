@@ -27,7 +27,7 @@ run_mds <- compiler::cmpfun(function(dist_mat, meta_path, yearmonth, num_dims){
   }                
   
   # Read table
-  metadata <- read_ipc_file(meta_path,col_names=F,show_col_types = FALSE, trim_ws = TRUE)
+  metadata <- read_ipc_file(meta_path)
   metadata <- metadata[metadata$X1=="C",]
   no_seqs <- nrow(metadata)
   colnames(metadata)[2] <- "Cluster"
@@ -102,7 +102,7 @@ main <- compiler::cmpfun(function(fasta_path, meta_path, yearmonth){
   } else {
     
     # Read table
-    metadata <- read_ipc_file(meta_path,col_names=F)
+    metadata <- read_ipc_file(meta_path)
     metadata <- metadata[metadata$X1=="S" | 
                            metadata$X1=="H",]
     no_seqs <- nrow(metadata)
