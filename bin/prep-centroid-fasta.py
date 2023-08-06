@@ -16,6 +16,7 @@ with the consensus sequences and clean the "*" symbols out of
 any remaining records here.
 """
 
+import os
 import argparse
 import subprocess
 import io
