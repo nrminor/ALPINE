@@ -212,6 +212,20 @@ workflow {
 		)
 
 	}
+	if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
+
+		FIND_DOUBLE_CANDIDATES (
+			SUMMARIZE_CANDIDATES.out.metadata
+				.mix(
+					SEARCH_NCBI_METADATA.out,
+					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
+					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
+						.filter { it[1].toInteger() > 2 }
+						.map { fasta, count -> fasta },
+				).collect()
+		)
+
+	}
 	if ( params.make_distance_matrix == false && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
