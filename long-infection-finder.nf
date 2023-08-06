@@ -199,7 +199,7 @@ workflow {
 		)
 
 	}
-	if ( mparams.ake_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
+	if ( params.make_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
 			SUMMARIZE_CANDIDATES.out.metadata
