@@ -62,7 +62,7 @@ def align_centroids(fasta_path: str, label: str, threads: int) -> str:
         if unique_values > 1:
 
             # multiple sequence lengths indicates that the inputs are not aligned
-            new_fasta = f"{label}-aligned-centroids.fasta"
+            new_fasta = "tmp.fasta"
             clustalomega_cline = ClustalOmegaCommandline(infile = fasta_path,
                                                          outfile = new_fasta,
                                                          outfmt = 'fasta',
@@ -97,7 +97,7 @@ def main(input_path: str, label: str, count: int, threads: int):
 
     working_fasta = align_centroids(input_path, label, threads)
 
-    output_filename = f"{label}-cleaned-centroids.fasta"
+    output_filename = f"{label}-aligned-centroids.fasta"
 
     with open(working_fasta, "r", encoding="utf-8") as infile, open(output_filename, "w", encoding="utf-8") as outfile:
         records = SeqIO.parse(infile, "fasta")
@@ -109,6 +109,10 @@ def main(input_path: str, label: str, count: int, threads: int):
             record.description = record.description.replace(r"*", "")
             record.id = record.id.replace(r"*", "")
             SeqIO.write(record, outfile, "fasta")
+
+        # delete temporary clusalo fasta
+        if os.path.exists("tmp.fasta"):
+            os.remove("tmp.fasta")
 # end main function def
 
 if __name__ == "__main__":

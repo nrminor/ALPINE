@@ -744,15 +744,11 @@ process PREP_CENTROID_FASTAS {
 	tuple path(fasta), val(yearmonth), val(count)
 
 	output:
-	tuple path("*-cleaned-centroids.fasta"), val(count)
+	tuple path("*-centroids.fasta"), val(count)
 
 	script:
 	"""
-	prep-centroid-fasta.py \
-	${fasta} \
-	${yearmonth} \
-	${count} \
-	${task.cpus}
+	prep-centroid-fasta.py ${fasta} ${yearmonth} ${count} ${task.cpus}
 	"""
 
 }
