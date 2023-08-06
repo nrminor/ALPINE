@@ -191,7 +191,7 @@ workflow {
 
 	// Steps for analyzing and visualizing the results from the 
 	// approaches above
-	if ( make_distance_matrix == true && search_metadata_dates == true && reclassify_sc2_lineages == false ){
+	if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == false ){
 
 		FIND_DOUBLE_CANDIDATES (
 			SUMMARIZE_CANDIDATES.out.metadata
@@ -199,7 +199,7 @@ workflow {
 		)
 
 	}
-	if ( make_distance_matrix == true && search_metadata_dates == false && reclassify_sc2_lineages == true ){
+	if ( mparams.ake_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
 			SUMMARIZE_CANDIDATES.out.metadata
@@ -212,7 +212,7 @@ workflow {
 		)
 
 	}
-	if ( make_distance_matrix == false && search_metadata_dates == true && reclassify_sc2_lineages == true ){
+	if ( params.make_distance_matrix == false && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
 			SEARCH_NCBI_METADATA.out
