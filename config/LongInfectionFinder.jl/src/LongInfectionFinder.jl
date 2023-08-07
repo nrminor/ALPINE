@@ -359,12 +359,24 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
     # Sort both dataframes by Accession
     sort!(metadata1_filtered, :Accession)
     sort!(metadata2_filtered, :Accession)
+    
+    if "Anachronicity" in names(metadata2_filtered)
 
-    # Add the last column from metadata2 to metadata1
-    metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
+        # Add the last column from metadata2 to metadata1
+        metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
 
-    # Write the combined metadata to a TSV file
-    CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+        # Write the combined metadata to a TSV file
+        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+
+    else
+
+        # Add the last column from metadata2 to metadata1
+        metadata2_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
+
+        # Write the combined metadata to a TSV file
+        CSV.write("double_candidate_metadata.tsv", metadata2_filtered, delim='\t')
+
+    end
 
     # Open FASTA files and perform the filtering operation
     FastaReader(seqs) do fr
@@ -400,11 +412,23 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     sort!(metadata1_filtered, :Accession)
     sort!(metadata_joined_filtered, :Accession)
 
-    # Add the last column from metadata2 to metadata1
-    metadata1_filtered[!, :Anachronicity] = metadata_joined_filtered[!, end]
+    if "Anachronicity" in names(metadata2_filtered)
 
-    # Write the combined metadata to a TSV file
-    CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+        # Add the last column from metadata2 to metadata1
+        metadata1_filtered[!, :Anachronicity] = metadata_joined_filtered[!, end]
+
+        # Write the combined metadata to a TSV file
+        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+
+    else
+
+        # Add the last column from metadata2 to metadata1
+        metadata_joined_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
+
+        # Write the combined metadata to a TSV file
+        CSV.write("double_candidate_metadata.tsv", metadata_joined_filtered, delim='\t')
+
+    end
 
     # Open FASTA files and perform the filtering operation
     FastaReader(seqs) do fr
@@ -440,11 +464,23 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     sort!(metadata1_filtered, :Accession)
     sort!(metadata_joined_filtered, :Accession)
 
-    # Add the last column from metadata2 to metadata1
-    metadata1_filtered[!, :Anachronicity] = metadata_joined_filtered[!, end]
+    if "Anachronicity" in names(metadata2_filtered)
 
-    # Write the combined metadata to a TSV file
-    CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+        # Add the last column from metadata2 to metadata1
+        metadata1_filtered[!, :Anachronicity] = metadata_joined_filtered[!, end]
+
+        # Write the combined metadata to a TSV file
+        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+
+    else
+
+        # Add the last column from metadata2 to metadata1
+        metadata_joined_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
+
+        # Write the combined metadata to a TSV file
+        CSV.write("double_candidate_metadata.tsv", metadata_joined_filtered, delim='\t')
+
+    end
 
 end
 
@@ -461,11 +497,23 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
     sort!(metadata1_filtered, :Accession)
     sort!(metadata2_filtered, :Accession)
 
-    # Add the last column from metadata2 to metadata1
-    metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
+    if "Anachronicity" in names(metadata2_filtered)
 
-    # Write the combined metadata to a TSV file
-    CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+        # Add the last column from metadata2 to metadata1
+        metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
+
+        # Write the combined metadata to a TSV file
+        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+
+    else
+
+        # Add the last column from metadata2 to metadata1
+        metadata2_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
+
+        # Write the combined metadata to a TSV file
+        CSV.write("double_candidate_metadata.tsv", metadata2_filtered, delim='\t')
+
+    end
 
 end
 

@@ -99,7 +99,7 @@ RUN mamba install -y -n base -c defaults -c bioconda -c conda-forge \
     nextflow
 
 # Install Nextstrain CLI
-RUN curl -fsSL --proto '=https' https://nextstrain.org/cli/installer/linux | bash
+# RUN curl -fsSL --proto '=https' https://nextstrain.org/cli/installer/linux | bash
 
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
