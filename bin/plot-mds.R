@@ -2,19 +2,18 @@
 args = commandArgs(trailingOnly=TRUE)
 
 # load packages
-require(tidyverse)
-require(ape)
-require(arrow)
-require(ggplot2)
-require(readr)
+library(tidyverse)
+library(ape)
+library(ggplot2)
+library(readr)
 
 # Read command-line arguments, which will serve as the script's only globals
 yearmonth <- args[1]
-meta_path <- args[2]
+tsv_path <- args[2]
 fasta_path <- args[3]
 
 # define a function that runs and plots the MDS
-run_mds <- compiler::cmpfun(function(dist_mat, meta_path, yearmonth, num_dims){
+run_mds <- compiler::cmpfun(function(dist_mat, tsv_path, yearmonth, num_dims){
   
   # Perform MDS
   mds_result <- stats::cmdscale(dist_mat, k = num_dims) %>% 
@@ -26,18 +25,18 @@ run_mds <- compiler::cmpfun(function(dist_mat, meta_path, yearmonth, num_dims){
     colnames(mds_result) <- c("Accession", "Dim1", "Dim2")
   }                
   
-  # Read table
-  metadata <- read_ipc_file(meta_path)
-  metadata <- metadata[metadata$X1=="C",]
-  no_seqs <- nrow(metadata)
-  colnames(metadata)[2] <- "Cluster"
-  metadata$Cluster <- as.factor(metadata$Cluster)
-  colnames(metadata)[3] <- "Size"
-  metadata$Size <- as.numeric(metadata$Size)
-  colnames(metadata)[9] <- "Accession"
+  # Read TSV table
+  tsv_data <- readr::read_tsv(tsv_path,col_names=F,show_col_types = FALSE, trim_ws = TRUE)
+  tsv_data <- tsv_data[tsv_data$X1=="C",]
+  no_seqs <- nrow(tsv_data)
+  colnames(tsv_data)[2] <- "Cluster"
+  tsv_data$Cluster <- as.factor(tsv_data$Cluster)
+  colnames(tsv_data)[3] <- "Size"
+  tsv_data$Size <- as.numeric(tsv_data$Size)
+  colnames(tsv_data)[9] <- "Accession"
   
-  # Merge MDS results with table
-  merged_data <- merge(mds_result, metadata, by = "Accession", all.x = TRUE)
+  # Merge MDS results with TSV table
+  merged_data <- merge(mds_result, tsv_data, by = "Accession", all.x = TRUE)
   
   # Plot MDS with colored points based on the table
   ggplot(merged_data, aes(x = Dim1, y = Dim2, color = Cluster, size = Size)) +
@@ -55,8 +54,8 @@ run_mds <- compiler::cmpfun(function(dist_mat, meta_path, yearmonth, num_dims){
   if (num_dims == 3){
     
     # plotly code for interactive 3D-plotting
-    require(plotly)
-    require(htmlwidgets)
+    library(plotly)
+    library(htmlwidgets)
     p <- plot_ly(data = merged_data, x = ~Dim1, y = ~Dim2, z = ~Dim3,
                  color = ~Cluster, size = ~Size,
                  type = "scatter3d", mode = "markers") %>%
@@ -81,7 +80,7 @@ run_mds <- compiler::cmpfun(function(dist_mat, meta_path, yearmonth, num_dims){
   
 })
 
-main <- compiler::cmpfun(function(fasta_path, meta_path, yearmonth){
+main <- compiler::cmpfun(function(fasta_path, tsv_path, yearmonth){
   
   # Read FASTA file
   fasta_data <- ape::read.dna(fasta_path, format = "fasta")
@@ -93,25 +92,25 @@ main <- compiler::cmpfun(function(fasta_path, meta_path, yearmonth){
     
     # Perform MDS
     if (length(labels(fasta_data)) > 3){
-      run_mds(dist_matrix, meta_path, yearmonth, 3)
+      run_mds(dist_matrix, tsv_path, yearmonth, 3)
     } else {
-      run_mds(dist_matrix, meta_path, yearmonth, 2)
+      run_mds(dist_matrix, tsv_path, yearmonth, 2)
     }
     
     
   } else {
     
-    # Read table
-    metadata <- read_ipc_file(meta_path)
-    metadata <- metadata[metadata$X1=="S" | 
-                           metadata$X1=="H",]
-    no_seqs <- nrow(metadata)
-    colnames(metadata)[2] <- "Cluster"
-    metadata$Cluster <- as.factor(metadata$Cluster)
-    colnames(metadata)[9] <- "Accession"
+    # Read TSV table
+    tsv_data <- readr::read_tsv(tsv_path,col_names=F)
+    tsv_data <- tsv_data[tsv_data$X1=="S" | 
+                           tsv_data$X1=="H",]
+    no_seqs <- nrow(tsv_data)
+    colnames(tsv_data)[2] <- "Cluster"
+    tsv_data$Cluster <- as.factor(tsv_data$Cluster)
+    colnames(tsv_data)[9] <- "Accession"
     
     mds_failed <- data.frame(`MDS Failure Report` = 
-                               paste("Accession ", metadata$Accession, 
+                               paste("Accession ", tsv_data$Accession, 
                                      " is alone in its own cluster in ", yearmonth,
                                      " and thus a distance matrix cannot be generated.", sep = ""))
     
@@ -124,4 +123,4 @@ main <- compiler::cmpfun(function(fasta_path, meta_path, yearmonth){
 })
 
 # run the code
-main(fasta_path, meta_path, yearmonth)
+main(fasta_path, tsv_path, yearmonth)

@@ -159,8 +159,6 @@ workflow {
 
 	RUN_META_CLUSTER (
 		SUMMARIZE_CANDIDATES.out.high_dist_seqs
-			.filter { it[1].toInteger() > 2 }
-			.map { fasta, count -> fasta }
 	)
 
 	META_CLUSTER_REPORT (
@@ -195,38 +193,40 @@ workflow {
 
 		FIND_DOUBLE_CANDIDATES (
 			SUMMARIZE_CANDIDATES.out.metadata
-				.mix(SEARCH_NCBI_METADATA.out).collect()
-		)
-
-	}
-	if ( params.make_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
-
-		FIND_DOUBLE_CANDIDATES (
-			SUMMARIZE_CANDIDATES.out.metadata
 				.mix(
-					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
-					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
-						.filter { it[1].toInteger() > 2 }
-						.map { fasta, count -> fasta },
+					SUMMARIZE_CANDIDATES.out.high_dist_seqs,
+					SEARCH_NCBI_METADATA.out
 				).collect()
 		)
 
-	}
-	if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
+	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
 			SUMMARIZE_CANDIDATES.out.metadata
 				.mix(
+					SUMMARIZE_CANDIDATES.out.high_dist_seqs,
+					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
+					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
+						.filter { it[1].toInteger() > 2 }
+						.map { fasta, count -> fasta }
+				).collect()
+		)
+
+	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
+
+		FIND_DOUBLE_CANDIDATES (
+			SUMMARIZE_CANDIDATES.out.metadata
+				.mix(
+					SUMMARIZE_CANDIDATES.out.high_dist_seqs,
 					SEARCH_NCBI_METADATA.out,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
 						.filter { it[1].toInteger() > 2 }
-						.map { fasta, count -> fasta },
+						.map { fasta, count -> fasta }
 				).collect()
 		)
 
-	}
-	if ( params.make_distance_matrix == false && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
+	} else if ( params.make_distance_matrix == false && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
 			SEARCH_NCBI_METADATA.out
@@ -234,7 +234,7 @@ workflow {
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
 						.filter { it[1].toInteger() > 2 }
-						.map { fasta, count -> fasta },
+						.map { fasta, count -> fasta }
 				).collect()
 		)
 
@@ -784,11 +784,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
 	"""
-	compute-distance-matrix.jl \
-	${fasta} \
-	${cluster_table} \
-	${yearmonth} \
-	${params.strictness_mode}
+	compute-distance-matrix.jl ${fasta} ${cluster_table} ${yearmonth} ${params.strictness_mode}
 	"""
 
 }
@@ -852,13 +848,12 @@ process SUMMARIZE_CANDIDATES {
 
 	output:
 	path "*.tsv", emit: metadata
-	tuple path("*.fasta"), env(count), emit: high_dist_seqs
+	path "*.fasta", emit: high_dist_seqs
 	path "*.pdf", emit: plots
 
 	script:
 	"""
-	report-high-dist-candidates.R ${metadata} ${params.strictness_mode} && \
-	count=\$(grep -c "^>" high_distance_candidates.fasta)
+	report-high-dist-candidates.R ${metadata} ${params.strictness_mode}
 	"""
 
 }
@@ -929,7 +924,7 @@ process META_CLUSTER_REPORT {
 	val whether_repeats
 
 	output:
-	path "*"
+	path "repeat-lineage*"
 
 	when:
 	whether_repeats == "true"
@@ -1078,18 +1073,14 @@ process FIND_DOUBLE_CANDIDATES {
 	label "lif_container"
 	publishDir params.double_candidates, mode: 'copy'
 	
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	input:
 	path collected_files
 
 	output:
-	path "*.tsv"
-	path "*.fasta"
-
-	when:
-	(params.reclassify_sc2_lineages == true && params.make_distance_matrix == true) || (params.make_distance_matrix == true && params.search_metadata_dates == true)
+	path "double_candidate*"
 
 	script:
 	"""

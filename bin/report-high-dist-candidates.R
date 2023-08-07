@@ -44,7 +44,7 @@ process_meta <- compiler::cmpfun(function(yearmonths, metadata){
     distmat$Distance_Score <- vapply(2:ncol(distmat), FUN = 
                                        function(j){
                                          
-                                         distances <- as.numeric(distmat[,j])
+                                         distances <- distmat[,j]
                                          distances <- distances[distances!=0]
                                          new_sum <- sum(distances)
                                          
@@ -57,17 +57,17 @@ process_meta <- compiler::cmpfun(function(yearmonths, metadata){
     cluster_table <- read_tsv(paste(i, "-clusters.uc", sep = ""), 
                               col_names = FALSE, trim_ws = TRUE, show_col_types = FALSE)
     if (nrow(distmat)==1){
-      cluster_table <- cluster_table[cluster_table$V9==distmat$Sequence_Name[1],]
+      cluster_table <- cluster_table[cluster_table$X9==distmat$Sequence_Name[1],]
     }
-    centroids <- cluster_table[cluster_table$V1=="C",]
-    centroids <- centroids[order(centroids$V9),] ; rownames(centroids) <- NULL
+    centroids <- cluster_table[cluster_table$X1=="C",]
+    centroids <- centroids[order(centroids$X9),] ; rownames(centroids) <- NULL
     stopifnot(nrow(distmat) == nrow(centroids))
-    stopifnot(unique(distmat$Sequence_Name == centroids$V9) == TRUE)
+    stopifnot(unique(distmat$Sequence_Name == centroids$X9) == TRUE)
     distmat$Cluster <- 0
-    distmat$Cluster_Size <- centroids$V3
+    distmat$Cluster_Size <- centroids$X3
     distmat <- distmat[order(distmat$Distance_Score, decreasing = T),] ; rownames(distmat) <- NULL
     distmat$Month <- i 
-    distmat$Cluster <- centroids$V2
+    distmat$Cluster <- centroids$X2
     
     # new cluster table
     all_seqs <- distmat[, 
@@ -75,13 +75,13 @@ process_meta <- compiler::cmpfun(function(yearmonths, metadata){
                           "Cluster_Size", "Month", "Cluster")]
     
     # adding all cluster sequences
-    if ("H" %in% cluster_table$V1){
-      hits <- cluster_table[cluster_table$V1 == "H",]
+    if ("H" %in% cluster_table$X1){
+      hits <- cluster_table[cluster_table$X1 == "H",]
       for (j in 1:nrow(hits)){
         
         # record accession and the centroid for that accession
-        accession <- hits$V9[j]
-        centroid <- hits$V10[j]
+        accession <- hits$X9[j]
+        centroid <- hits$X10[j]
         distance <- all_seqs[all_seqs$Sequence_Name==centroid, "Distance_Score"]
         cluster_size <- all_seqs[all_seqs$Sequence_Name==centroid, "Cluster_Size"]
         month <- i
@@ -89,6 +89,7 @@ process_meta <- compiler::cmpfun(function(yearmonths, metadata){
         
         # construct a new row for the all_seqs dataframe
         new_row <- c(accession, distance, cluster_size, month, cluster)
+        names(new_row) <- colnames(all_seqs)
         
         # bind to table
         all_seqs <- rbind(all_seqs, new_row)
@@ -98,8 +99,8 @@ process_meta <- compiler::cmpfun(function(yearmonths, metadata){
     } else {
       
       # record accession and the centroid for that accession
-      accession <- centroids$V9[1]
-      centroid <- centroids$V9[1]
+      accession <- centroids$X9[1]
+      centroid <- centroids$X9[1]
       distance <- as.numeric(all_seqs[all_seqs$Sequence_Name==centroid, "Distance_Score"])
       cluster_size <- as.numeric(all_seqs[all_seqs$Sequence_Name==centroid, "Cluster_Size"])
       month <- i
@@ -107,9 +108,14 @@ process_meta <- compiler::cmpfun(function(yearmonths, metadata){
       
       # construct a new row for the all_seqs dataframe
       new_row <- c(accession, distance, cluster_size, month, cluster)
+      names(new_row) <- colnames(all_seqs)
       
-      # bind to table
-      all_seqs <- rbind(all_seqs, new_row)
+      if (!(accession %in% all_seqs$Sequence_Name)) {
+        
+        # bind to table
+        all_seqs <- rbind(all_seqs, new_row)
+        
+      }
       
     }
     

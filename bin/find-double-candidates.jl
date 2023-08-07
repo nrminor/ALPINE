@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 # load pipeline module
-using LongInfectionFinder, CSV, Dataframes
+using LongInfectionFinder, CSV, DataFrames
 
 # load I/O
 const metadata_files = filter(x->occursin(".tsv",x), readdir(abspath("."), join=true))
