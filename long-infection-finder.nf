@@ -184,6 +184,7 @@ workflow {
 	// Steps for inspecting NCBI metadata
 	SEARCH_NCBI_METADATA ( 
 		FILTER_META_TO_GEOGRAPHY.out.metadata,
+		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
 		GET_DESIGNATION_DATES.out
 	)
 
@@ -195,7 +196,7 @@ workflow {
 			SUMMARIZE_CANDIDATES.out.metadata
 				.mix(
 					SUMMARIZE_CANDIDATES.out.high_dist_seqs,
-					SEARCH_NCBI_METADATA.out
+					SEARCH_NCBI_METADATA.out.metadata
 				).collect()
 		)
 
@@ -218,7 +219,7 @@ workflow {
 			SUMMARIZE_CANDIDATES.out.metadata
 				.mix(
 					SUMMARIZE_CANDIDATES.out.high_dist_seqs,
-					SEARCH_NCBI_METADATA.out,
+					SEARCH_NCBI_METADATA.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
 						.filter { it[1].toInteger() > 2 }
@@ -229,7 +230,7 @@ workflow {
 	} else if ( params.make_distance_matrix == false && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
-			SEARCH_NCBI_METADATA.out
+			SEARCH_NCBI_METADATA.out.metadata
 				.mix(
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
@@ -581,12 +582,11 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	output:
 	path "*.fasta.zst", emit: fasta
-	env count, emit: count
 
 	script:
 	"""
-	seqkit grep -j ${task.cpus} -f ${accessions} ${fasta} -o filtered-to-geography.fasta.zst
-	count=\$(cat ${accessions} | wc -l)
+	seqkit replace --f-by-name --keep-untouch --pattern "\\|" --replacement " " ${fasta} \
+	| seqkit grep -j ${task.cpus} -f ${accessions} -o filtered-to-geography.fasta.zst
 	"""
 
 }
@@ -1045,17 +1045,21 @@ process SEARCH_NCBI_METADATA {
 
 	input:
 	path metadata
+	path fasta
 	path lineage_dates
 
 	output:
-	path "*.tsv"
+	path "*.tsv", emit: metadata
+	path "*.fasta", emit: fasta
 
 	when:
 	params.search_metadata_dates == true && params.pathogen == "SARS-CoV-2"
 		
 	script:
 	"""
-	search-ncbi-metadata.py ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus}
+	search-ncbi-metadata.py ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus} && \
+	cut -f 1 > anachronistic_accessions.txt && \
+	seqkit grep -j ${task.cpus} -f anachronistic_accessions ${fasta} -o anachronistic_metadata_only_candidates.fasta
 	"""
 
 }
