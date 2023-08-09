@@ -4,6 +4,7 @@ import os
 import argparse
 import numpy as np
 import polars as pl
+import pyarrow
 from polars.testing import assert_frame_equal
 
 def quantify_stringency(stringency: str) -> int:
