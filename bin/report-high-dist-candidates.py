@@ -1,5 +1,20 @@
 #!/usr/bin/env python3
 
+"""
+REPORT EVOLUTIONARILY ADVANCED SEQUENCES FOR ADDITIONAL SCRUTINY
+----------------------------------------------------------------
+
+This script collates a large number of clustering, genetic distance, 
+and sequence files to identify sequences that are suitable for 
+additional review. To do so efficiently, it uses the Polars
+library to represent data frames and strictly separates file
+reading and writing from CPU-intensive computations. See function
+docstrings below for more granular explanations.
+----------------------------------------------------------------
+"""
+
+
+# bring in the modules used in this namespace
 import os
 import argparse
 import numpy as np
@@ -7,17 +22,21 @@ import polars as pl
 import pyarrow
 from polars.testing import assert_frame_equal
 
+
+# define functions:
 def quantify_stringency(stringency: str) -> int:
     """
     Define strictness level as a quantile.
 
     Args:
-    stringency: a string supplied by the user or the workflow specifying
+    stringency: a string supplied by the user or the pipeline specifying
     the level of stringency to apply when choosing which candidates to
     retain.
 
     Returns:
-    Integer representing a quantile to apply out of 1,000.
+    Integer representing a quantile to apply out of 1,000. This quantile
+    will be used to select a retention threshold base on the true
+    distribution of distance scores in the data in question.
     """
 
     if stringency == "strict":
@@ -35,7 +54,7 @@ def read_metadata_files(metadata_path: str,
                         yearmonths: list,
                         workingdir: str) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
     """
-    Metadata reading is relegated to this function so that other functions
+    Metadata file reading is relegated to this function so that other functions
     can be CPU-bound alone instead of interleaving IO and additional computations.
     The dataframes returned by this function have been organized so that it will
     be trivial to use joins with them downstream.
@@ -45,11 +64,11 @@ def read_metadata_files(metadata_path: str,
     workingdir: the working directory. By default, it is the current `pwd` working directory.
 
     Returns:
-    A tuple of two polars dataframes, one recording the distance scores for each
-    accession, and one recording clustering metadata for each accession. These
-    metadata include 1) whether an accession is a "hit" or a "centroid," 2) the
-    cluster index for the month each accession was collected it, 3) the size of
-    each cluster, and 4) the sequence accessions themselves.
+    A tuple of three polars dataframes, one of which is the full database metadata, one
+    of which records the distance scores for each accession, and one of which records 
+    clustering metadata for each accession. These metadata include 1) whether an accession
+    is a "hit" or a "centroid," 2) the cluster index for the month each accession was 
+    collected it, 3) the size of each cluster, and 4) the sequence accessions themselves.
     """
 
     # Make some empty dataframes to vstack on top of
@@ -70,8 +89,8 @@ def read_metadata_files(metadata_path: str,
     # go through each month of data and bring in its various files
     for yearmonth in yearmonths:
 
-        # sum up distance score for each accession and prep to vstack on 
-        # the distance score data frame, which we will use in some joins 
+        # sum up distance score for each accession and prep to vstack on
+        # the distance score data frame, which we will use in some joins
         # in a later, non-IO-bound function.
         distmat = pl.read_csv(f"{workingdir}/{yearmonth}-dist-matrix.csv")
         distmat = distmat.with_columns(
@@ -105,7 +124,7 @@ def read_metadata_files(metadata_path: str,
                 pl.col("Index").cast(pl.Int64)
             )
 
-        # Use an assertions to check for possible silent errors before vstacking and 
+        # Use an assertion to check for possible silent errors before vstacking and
         # returning the dataframes
         assert_frame_equal(
             left=distmat.select(pl.col("Accession")).unique().sort(by="Accession"),
@@ -137,7 +156,7 @@ def collate_metadata(metadata: pl.DataFrame,
     computations is to join them together with the whole-database 
     metadata while maximizing helpful information for each candidate
     cluster. Notably, this function handles the CPU-bound tasks that
-    are required with the metadata. 
+    are required with the provided metadata. 
     
     Future updates may implement multiprocessing for some of the slower
     steps here. They may also implement LazyFrames instead of dataframes
@@ -151,7 +170,7 @@ def collate_metadata(metadata: pl.DataFrame,
                    clustering algorithm.
     """
 
-    # join distance scores onto the cluster metadata, which will add 
+    # join distance scores onto the cluster metadata, which will add
     # scores to the centroids from each cluster
     cluster_meta = cluster_meta.join(dist_scores, on = "Accession", how="left")
 
@@ -161,11 +180,11 @@ def collate_metadata(metadata: pl.DataFrame,
     ])
 
     # Use a series of Polars expressions to:
-    # 1 - replace sequence length entries in "H" entries with the cluster 
-    # size entries from the associated "C" entries. 
+    # 1 - replace sequence length entries in "H" entries with the cluster
+    # size entries from the associated "C" entries.
     # 2 - Spread the distance scores from each centroid to all the hit
-    # sequences in their clusters, and 
-    # 3 - select only the cluster size, distance, accession, and month 
+    # sequences in their clusters, and
+    # 3 - select only the cluster size, distance, accession, and month
     # columns for joining with the big metadata
     centroid_data = cluster_meta.filter(
         pl.col("Type") == "C"
