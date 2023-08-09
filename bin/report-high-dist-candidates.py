@@ -30,7 +30,9 @@ def quantify_stringency(stringency: str) -> int:
 
     return strict_quant
 
-def read_metadata_files(metadata_path: str, yearmonths: list, workingdir: str) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
+def read_metadata_files(metadata_path: str,
+                        yearmonths: list,
+                        workingdir: str) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
     """
     Metadata reading is relegated to this function so that other functions
     can be CPU-bound alone instead of interleaving IO and additional computations.
@@ -72,7 +74,9 @@ def read_metadata_files(metadata_path: str, yearmonths: list, workingdir: str) -
         # in a later, non-IO-bound function.
         distmat = pl.read_csv(f"{workingdir}/{yearmonth}-dist-matrix.csv")
         distmat = distmat.with_columns(
-            Distance_Score=pl.Series([distmat.select(col).sum().item() for col in distmat.columns[1:]])
+            Distance_Score=pl.Series(
+            [distmat.select(col).sum().item() for col in distmat.columns[1:]]
+            )
         ).rename({
             "Sequence_Name": "Accession",
             "Distance_Score": "Distance Score"
@@ -122,7 +126,10 @@ def read_metadata_files(metadata_path: str, yearmonths: list, workingdir: str) -
 
 # end read_metadata_files def
 
-def collate_metadata(metadata: pl.DataFrame, dist_scores: pl.DataFrame, cluster_meta: pl.DataFrame, stringency: int) -> pl.DataFrame:
+def collate_metadata(metadata: pl.DataFrame,
+                     dist_scores: pl.DataFrame,
+                     cluster_meta: pl.DataFrame,
+                     stringency: int) -> pl.DataFrame:
     """
     This function takes the dataframes read by read_metadata_files and 
     runs a number of computations on them. The thrust of all these
