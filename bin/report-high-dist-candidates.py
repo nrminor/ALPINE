@@ -51,7 +51,7 @@ def quantify_stringency(stringency: str) -> int:
 
     return strict_quant
 
-def read_metadata_files(metadata_path: str,
+def read_metadata_files(metadata_filename: str,
                         yearmonths: list,
                         workingdir: str) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
     """
@@ -141,7 +141,7 @@ def read_metadata_files(metadata_path: str,
         cluster_meta.vstack(cluster_table, in_place=True)
 
     # parse the full database metadata as a data frame to return
-    metadata = pl.read_ipc(f"{workingdir}/{metadata_path}", use_pyarrow = True)
+    metadata = pl.read_ipc(f"{workingdir}/{metadata_filename}", use_pyarrow = True)
 
     return (metadata, dist_scores, cluster_meta)
 
@@ -150,7 +150,7 @@ def read_metadata_files(metadata_path: str,
 def collate_metadata(metadata: pl.DataFrame,
                     dist_scores: pl.DataFrame,
                     cluster_meta: pl.DataFrame,
-                    stringency: int) -> list:
+                    stringency: int) -> tuple[pl.DataFrame, pl.DataFrame]:
     """
     This function takes the dataframes read by read_metadata_files and 
     runs a number of computations on them. The thrust of all these
@@ -231,17 +231,14 @@ def collate_metadata(metadata: pl.DataFrame,
         pl.col("Distance Score") >= retention_threshold
     )
 
-    # write the metadata
-    high_dist_metadata.write_csv(f"{workingdir}/high_distance_candidates.tsv", separator="\t")
-    
     # separate out the accessions
-    accessions = high_dist_meta.select("Accession").to_series().to_list()
+    accessions = high_dist_meta.select("Accession")
 
-    return accessions
+    return high_dist_meta, accessions
 
 # end collate_metadata def
 
-def main(metadata_path: str, fasta_path: str, stringency: str, workingdir: str):
+def main(metadata_filename: str, fasta_path: str, stringency: str, workingdir: str):
     """
     Main function. Main ties together all the above functions if 
     they are being invoked as a script. It also works to "glue" 
@@ -260,14 +257,25 @@ def main(metadata_path: str, fasta_path: str, stringency: str, workingdir: str):
     yearmonths = [f.replace('-dist-matrix.csv', '') for f in files]
 
     # retrieve all candidate metadata
-    metadata, dist_scores, cluster_meta = read_metadata_files(metadata_path, yearmonths, workingdir)
+    metadata, dist_scores, cluster_meta = read_metadata_files(metadata_filename, yearmonths, workingdir)
 
     # pile up all metadata from clustering, distance-calling, and the original database
-    accessions = collate_metadata(metadata, dist_scores, cluster_meta, strict_quant)
-    
+    high_dist_meta, accessions = collate_metadata(metadata, dist_scores, cluster_meta, strict_quant)
+
+    # Use an assertion to spare the computer some effort if no candidates were found
+    assert accessions.shape[0] > 0, "No candidate sequences identified."
+
+    # write the metadata and the accessions
+    high_dist_meta.write_csv(f"{workingdir}/high_distance_candidates.tsv", separator="\t")
+    accessions.write_csv(f"{workingdir}/high-dist-accessions.txt", has_header=False, separator="\t")
+
     # Use Seqkit to separate out high distance sequences based on the metadata
-    cmd = ["seqkit", "grep", "-p", accessions, fasta_path, "-o", "high_distance_candidates.fasta"]
+    cmd = ["seqkit", "grep", "-f", "high-dist-accessions.txt",
+           fasta_path, "-o", f"{workingdir}/high_distance_candidates.fasta"]
     subprocess.run(cmd, check=True)
+
+    # remove the accessions file that is now unnecessary
+    os.remove("high-dist-accessions.txt")
 
 # end main def
 
@@ -276,7 +284,7 @@ if __name__ == "__main__":
     parser.add_argument("--sequences", "-s",
                         default="filtered-to-geography.fasta",
                         type=str,
-                        help="The name of the database FASTA file to filter for high distance candidates.")
+                        help="The name of the database FASTA file to filter for candidates.")
     parser.add_argument("--metadata", "-m",
                         default="filtered-to-geography.arrow",
                         type=str,
