@@ -148,9 +148,9 @@ def read_metadata_files(metadata_path: str,
 # end read_metadata_files def
 
 def collate_metadata(metadata: pl.DataFrame,
-                     dist_scores: pl.DataFrame,
-                     cluster_meta: pl.DataFrame,
-                     stringency: int) -> list:
+                    dist_scores: pl.DataFrame,
+                    cluster_meta: pl.DataFrame,
+                    stringency: int) -> list:
     """
     This function takes the dataframes read by read_metadata_files and 
     runs a number of computations on them. The thrust of all these
@@ -166,9 +166,9 @@ def collate_metadata(metadata: pl.DataFrame,
     Args:
     metadata - a polars dataframe that contains the whole-dataset metadata
     dist_scores - a polars dataframe that contains distance scores for each
-                  cluster centroid
+                cluster centroid
     cluster_meta - a polars dataframe that contains metadata from the
-                   clustering algorithm.
+                clustering algorithm.
     """
 
     # join distance scores onto the cluster metadata, which will add
