@@ -152,7 +152,7 @@ workflow {
 
 	SUMMARIZE_CANDIDATES (
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
-		CLUSTER_BY_IDENTITY.out.cluster_fastas.collect(),
+		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
 		COMPUTE_DISTANCE_MATRIX.out.collect(),
 		FILTER_META_TO_GEOGRAPHY.out.metadata
 	)

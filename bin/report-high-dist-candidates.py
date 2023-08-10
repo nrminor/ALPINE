@@ -20,6 +20,7 @@ import argparse
 import numpy as np
 import polars as pl
 import pyarrow
+import subprocess
 from polars.testing import assert_frame_equal
 
 
@@ -149,7 +150,7 @@ def read_metadata_files(metadata_path: str,
 def collate_metadata(metadata: pl.DataFrame,
                      dist_scores: pl.DataFrame,
                      cluster_meta: pl.DataFrame,
-                     stringency: int) -> pl.DataFrame:
+                     stringency: int) -> list:
     """
     This function takes the dataframes read by read_metadata_files and 
     runs a number of computations on them. The thrust of all these
@@ -230,17 +231,26 @@ def collate_metadata(metadata: pl.DataFrame,
         pl.col("Distance Score") >= retention_threshold
     )
 
-    return high_dist_meta
+    # write the metadata
+    high_dist_metadata.write_csv(f"{workingdir}/high_distance_candidates.tsv", separator="\t")
+    
+    # separate out the accessions
+    accessions = high_dist_meta.select("Accession").to_series().to_list()
+
+    return accessions
 
 # end collate_metadata def
 
-def main(metadata_path: str, stringency: str, workingdir: str):
+def main(metadata_path: str, fasta_path: str, stringency: str, workingdir: str):
     """
     Main function. Main ties together all the above functions if 
-    they are being invoked as a script.
+    they are being invoked as a script. It also works to "glue" 
+    in a subprocess command using Seqkit to handle FASTA filtering
+    (Seqkit, written in Go, is much faster at filtering large
+    numbers of FASTA records than Python).
     """
 
-    # Retrive a quantile to use to define a retention threshold downstream
+    # Retrieve a quantile to use to define a retention threshold downstream
     strict_quant = quantify_stringency(stringency)
 
     # List all files in current directory that end with '-dist-matrix.csv'
@@ -253,22 +263,31 @@ def main(metadata_path: str, stringency: str, workingdir: str):
     metadata, dist_scores, cluster_meta = read_metadata_files(metadata_path, yearmonths, workingdir)
 
     # pile up all metadata from clustering, distance-calling, and the original database
-    high_dist_metadata = collate_metadata(metadata, dist_scores, cluster_meta, strict_quant)
-
-    # write the metadata
-    high_dist_metadata.write_csv(f"{workingdir}/high_distance_candidates.tsv", separator="\t")
+    accessions = collate_metadata(metadata, dist_scores, cluster_meta, strict_quant)
+    
+    # Use Seqkit to separate out high distance sequences based on the metadata
+    cmd = ["seqkit", "grep", "-p", accessions, fasta_path, "-o", "high_distance_candidates.fasta"]
+    subprocess.run(cmd, check=True)
 
 # end main def
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("metadata",
+    parser.add_argument("--sequences", "-s",
+                        default="filtered-to-geography.fasta",
+                        type=str,
+                        help="The name of the database FASTA file to filter for high distance candidates.")
+    parser.add_argument("--metadata", "-m",
                         default="filtered-to-geography.arrow",
+                        type=str,
                         help="The name of the database metadata file to join other files to.")
-    parser.add_argument("stringency",
+    parser.add_argument("--stringency", "-str",
+                        type=str,
+                        required=True,
                         help="The chosen level of strictness for retaining candidates.")
-    parser.add_argument("workingdir",
+    parser.add_argument("--workingdir", "-wd",
                         default=".",
+                        type=str,
                         help="Directory where the script should search for files.")
     args = parser.parse_args()
-    main(args.metadata, args.stringency, args.workingdir)
+    main(args.metadata, args.sequences, args.stringency, args.workingdir)
