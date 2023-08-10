@@ -853,7 +853,7 @@ process SUMMARIZE_CANDIDATES {
 
 	script:
 	"""
-	report-high-dist-candidates.R ${metadata} ${params.strictness_mode}
+	report-high-dist-candidates.py --stringency ${params.strictness_mode}
 	"""
 
 }
