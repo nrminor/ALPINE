@@ -489,8 +489,8 @@ process FILTER_META_TO_GEOGRAPHY {
 	tag "${params.pathogen}, ${params.geography}"
 	label "lif_container"
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	input:
 	path metadata
@@ -522,13 +522,13 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	label "lif_container"
 	publishDir params.ncbi_results, mode: params.publishMode
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	cpus 8
 
 	input:
-	each path(fasta)
+	path fasta
 	path accessions
 
 	output:
@@ -536,8 +536,8 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	script:
 	"""
-	seqkit replace --f-by-name --keep-untouch --pattern "\\|" --replacement " " ${fasta} \
-	| seqkit grep -j ${task.cpus} -f ${accessions} -o filtered-to-geography.fasta.zst
+	seqkit replace -j 4 --f-by-name --keep-untouch --pattern "\\|" --replacement " " ${fasta} \
+	| seqkit grep -j 4 -f ${accessions} -o filtered-to-geography.fasta.zst
 	"""
 
 }
@@ -554,8 +554,8 @@ process REMOVE_FASTA_GAPS {
 	label "lif_container"
 
 	tag "${params.pathogen}, ${params.geography}"
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 1 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	input:
 	path fasta
@@ -584,8 +584,8 @@ process FILTER_BY_MASKED_BASES {
 	label "lif_container"
 
 	tag "${params.pathogen}, ${params.geography}"
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	input:
 	path fasta
@@ -613,8 +613,8 @@ process SEPARATE_BY_MONTH {
 	label "lif_container"
 
 	tag "${params.pathogen}, ${params.geography}"
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	input:
 	path fasta
@@ -644,8 +644,8 @@ process CLUSTER_BY_IDENTITY {
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*.uc"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*-cluster-seqs*"
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	cpus params.max_cpus
 
@@ -686,8 +686,8 @@ process PREP_CENTROID_FASTAS {
 	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	cpus params.max_cpus
 
@@ -717,8 +717,8 @@ process COMPUTE_DISTANCE_MATRIX {
 	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	cpus 1
 
@@ -754,8 +754,8 @@ process MULTIDIMENSIONAL_SCALING {
 	label "lif_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	input:
 	path cluster_table
@@ -788,8 +788,8 @@ process SUMMARIZE_CANDIDATES {
 	label "lif_container"
 	publishDir params.high_distance_candidates, mode: 'copy'
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	input:
 	path cluster_tables
@@ -820,8 +820,8 @@ process RUN_META_CLUSTER {
 
 	label "lif_container"
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	cpus params.max_cpus
 
@@ -863,8 +863,8 @@ process META_CLUSTER_REPORT {
 
 	label "lif_container"
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	publishDir params.repeat_lineages, mode: 'copy'
 
@@ -900,8 +900,8 @@ process RECLASSIFY_SC2_WITH_PANGOLIN {
 	tag "${params.pathogen}, ${params.geography}"
 	label "lif_container"
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	cpus params.max_cpus
 	
@@ -989,8 +989,8 @@ process SEARCH_NCBI_METADATA {
 	label "lif_container"
 	publishDir params.metadata_candidates, mode: 'copy'
 	
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	cpus params.max_cpus
 
