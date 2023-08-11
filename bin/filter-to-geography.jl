@@ -21,4 +21,9 @@ function main(metadata_path::String, geo::String, max_date::String, min_date::St
     end
 
 end
+
+# precompile main to eek out a bit more performance
+precompile(main, (String,String,String,String,));
+
+# run main
 main(metadata_path, geo, max_date, min_date)

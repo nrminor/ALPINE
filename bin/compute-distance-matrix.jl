@@ -31,5 +31,8 @@ function main(fasta_file::String, table_path::String, yearmonth::String, stringe
 
 end
 
+# precompile main
+precompile(main, (String,String,String,String,));
+
 # run main
 main(fasta_file, table_path, yearmonth, stringency)
