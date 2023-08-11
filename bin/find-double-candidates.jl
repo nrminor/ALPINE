@@ -4,8 +4,8 @@
 using LongInfectionFinder, CSV, DataFrames
 
 # load I/O
-const metadata_files = filter(x->occursin(".tsv",x), readdir(abspath("."), join=true))
-const fasta_files = filter(x->occursin(".fasta",x), readdir(abspath("."), join=true))
+const METADATA_FILES::Vector{String} = filter(x->occursin(".tsv",x), readdir(abspath("."), join=true))
+const FASTA_FILES::Vector{String} = filter(x->occursin(".fasta",x), readdir(abspath("."), join=true))
 
 # use multiple dispatch to collect double candidates based on the 
 # number of available files
@@ -46,4 +46,4 @@ function main(metadata_files::Vector{String}, fasta_files::Vector{String})
 end
 
 # run main
-main(metadata_files, fasta_files)
+main(METADATA_FILES, FASTA_FILES)
