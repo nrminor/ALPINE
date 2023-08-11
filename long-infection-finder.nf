@@ -41,10 +41,6 @@ workflow {
 			UNZIP_NCBI_METADATA.out
 		)
 
-		// STORE_METADATA_WITH_ARROW (
-		// 	VALIDATE_METADATA.out
-		// )
-
 		FILTER_META_TO_GEOGRAPHY (
 			VALIDATE_METADATA.out
 		)
@@ -79,10 +75,6 @@ workflow {
 		VALIDATE_METADATA (
 			ch_local_metadata
 		)
-
-		// STORE_METADATA_WITH_ARROW (
-		// 	VALIDATE_METADATA.out
-		// )
 
 		FILTER_META_TO_GEOGRAPHY (
 			VALIDATE_METADATA.out
@@ -485,47 +477,6 @@ process VALIDATE_METADATA {
 	"""
 }
 
-// process STORE_METADATA_WITH_ARROW {
-
-// 	/*
-// 	This workflow uses the Apache Arrow in-memory representation
-// 	of metadata. This both improves the speed of the computations
-// 	it runs on large metadata and also the speed read/write, 
-// 	which is the predominant bottleneck for most processes 
-// 	in this workflow.
-
-// 	To convert the metadata to an arrow representation, we
-// 	use a suite of tools written in Rust by Dominik Moritz 
-// 	called arrow-tools, which is available at:
-// 	https://github.com/domoritz/arrow-tools
-// 	*/
-
-// 	tag "${params.pathogen}"
-
-// 	label "lif_container"
-
-// 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-// 	maxRetries 2
-
-// 	input:
-// 	path metadata
-
-// 	output:
-// 	path "*.arrow"
-
-// 	shell:
-// 	'''
-// 	if grep -q "GC-Content" <(cut -f 1 !{metadata}); then
-// 		csv2arrow --schema-file !{params.gisaid_schema} --header true --delimiter $'\t' \
-// 		!{metadata} full_database.arrow
-// 	else
-// 		csv2arrow --schema-file !{params.genbank_schema} --header true --delimiter $'\t' \
-// 		!{metadata} full_database.arrow
-// 	fi
-// 	'''
-
-// }
-
 process FILTER_META_TO_GEOGRAPHY {
 
 	/*
@@ -553,7 +504,7 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	script:
 	"""
-	filter-to-geography.jl ${metadata} ${params.geography}
+	filter-to-geography.jl ${metadata} ${params.geography} ${params.max_date} ${params.min_date}
 	"""
 
 }
