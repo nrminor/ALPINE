@@ -28,6 +28,51 @@ function filter_metadata_by_geo(input_table::String, geography::String)
     
 end
 
+function filter_metadata_by_geo(input_table::String, geography::String, min_date::String)
+
+    # Read in the metadata file as a dataframe
+    metadata_df = DataFrame(Arrow.Table(input_table))
+
+    # filter metadata based on desired geography
+    filtered = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
+
+    # filter metadata to desired date range
+    filtered = metadata_df[[date > Dates.Date(min_date) for date in metadata_df[!,"Isolate Collection date"]], :]
+
+    # Writing filtered metadata
+    Arrow.write("filtered-to-geography.arrow", filtered)
+
+    # separating out accessions
+    accessions = filtered[!,"Accession"]
+
+    # Writing accessions to a text file for use by seqtk subseq or seqkit grep
+    writedlm("accessions.txt", accessions, "\n")
+    
+end
+
+function filter_metadata_by_geo(input_table::String, geography::String, min_date::String, max_date::String)
+
+    # Read in the metadata file as a dataframe
+    metadata_df = DataFrame(Arrow.Table(input_table))
+
+    # filter metadata based on desired geography
+    filtered = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
+
+    # filter metadata to desired date range
+    filtered = metadata_df[[date > Dates.Date(min_date) &
+                            date < Dates.Date(max_date) for date in metadata_df[!,"Isolate Collection date"]], :]
+
+    # Writing filtered metadata
+    Arrow.write("filtered-to-geography.arrow", filtered)
+
+    # separating out accessions
+    accessions = filtered[!,"Accession"]
+
+    # Writing accessions to a text file for use by seqtk subseq or seqkit grep
+    writedlm("accessions.txt", accessions, "\n")
+    
+end
+
 function filter_by_geo(input_table::String, fasta_path::String, geography::String)
 
     # Read in the TSV file with metadata
