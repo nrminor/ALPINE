@@ -15,7 +15,7 @@ function filter_metadata_by_geo(input_table::String, geography::String)
     metadata_df = DataFrame(Arrow.Table(input_table))
 
     # filter metadata based on desired geography
-    @pipe filtered = metadata_df |>
+    filtered = @pipe metadata_df |>
     filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
 
     # Writing filtered metadata
@@ -35,7 +35,7 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
     metadata_df = DataFrame(Arrow.Table(input_table))
 
     # filter metadata based on desired geography
-    @pipe filtered = metadata_df |>
+    filtered = @pipe metadata_df |>
     filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
 
     # filter metadata to desired minimum range
@@ -59,7 +59,7 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
     metadata_df = DataFrame(Arrow.Table(input_table))
 
     # filter metadata based on desired geography
-    @pipe filtered = metadata_df |>
+    filtered = @pipe metadata_df |>
     filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
 
     # filter metadata to desired date range
