@@ -39,8 +39,8 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
     filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
 
     # filter metadata to desired minimum range
-    @pipe filtered = filtered |>
-    filter(Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),_)
+    @pipe filtered |>
+    filter!(Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),_)
 
     # Writing filtered metadata
     Arrow.write("filtered-to-geography.arrow", filtered)
@@ -63,7 +63,7 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
     filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
 
     # filter metadata to desired date range
-    @pipe filtered = filtered |>
+    @pipe filtered |>
     filter!(Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),_) |>
     filter!(Symbol("Isolate Collection date") => date -> date < Dates.Date(max_date),_)
 
