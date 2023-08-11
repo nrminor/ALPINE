@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 # loading packages
-using LongInfectionFinder, DelimitedFiles, DataFrames, CSV, Dates
+using LongInfectionFinder, DelimitedFiles, DataFrames, CSV, Dates, Pipe
 
 # saving command line arguments as static-typed constants
 const metadata_path = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
