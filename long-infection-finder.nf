@@ -56,18 +56,9 @@ workflow {
 
 	} else {
 
-		if ( workflow.profile == 'standard' || workflow.profile == 'docker' ){
 
-			ch_local_fasta = Channel
-				.fromPath( params.fasta_path )
-
-		} else {
-
-			ch_local_fasta = Channel
-				.fromPath( params.fasta_path )
-				.splitFasta( by: 5000, file: "genbank-${params.pathogen}.fasta" )
-
-		}
+		ch_local_fasta = Channel
+			.fromPath( params.fasta_path )
 
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
@@ -76,12 +67,16 @@ workflow {
 			ch_local_metadata
 		)
 
+		VALIDATE_SEQUENCES (
+			ch_local_fasta
+		)
+
 		FILTER_META_TO_GEOGRAPHY (
 			VALIDATE_METADATA.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
-			ch_local_fasta,
+			VALIDATE_SEQUENCES.out,
 			FILTER_META_TO_GEOGRAPHY.out.accessions
 		)
 
@@ -239,7 +234,17 @@ workflow {
 
 	// BUILD_NEXTSTRAIN_TREE ()
 
-	// PREP_FOR_USHER ()
+	// ALIGN_SARS_COV_2 (
+	// 	SUMMARIZE_CANDIDATES.out.high_dist_seqs
+	// )
+
+	// VARIANT_CALL_SC2 (
+	// 	ALIGN_SARS_COV_2.out
+	// )
+
+	// PREP_FOR_USHER (
+	// 	VARIANT_CALL_SC2.out
+	// )
 
 	// PLACE_WITH_USHER ()
 	
@@ -462,8 +467,8 @@ process VALIDATE_METADATA {
 
 	label "lif_container"
 
-	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
-	maxRetries 2
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
 
 	input:
 	path metadata
@@ -475,6 +480,39 @@ process VALIDATE_METADATA {
 	"""
 	validate-metadata.py ${metadata}
 	"""
+}
+
+process VALIDATE_SEQUENCES {
+
+	/*
+	This step quickly runs through the fasta to make sure that
+	the accession identifier for each record is accessible when
+	the defline is parsed by space (" "). This is mostly because
+	GISAID delimits its deflines with a pipe symbol ("|"). This
+	step does not run when data are coming directly from NCBI.
+	*/
+
+	tag "${params.pathogen}"
+
+	label "lif_container"
+
+	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+	maxRetries 1
+
+	cpus 8
+
+	input:
+	path fasta
+
+	output:
+	path "*.fasta.zst"
+
+	script:
+	"""
+	seqkit replace -j ${task.cpus} --f-by-name --keep-untouch --pattern "\\|" --replacement " " \
+	--compress-level 4 ${fasta} -o validated.fasta.zst
+	"""
+
 }
 
 process FILTER_META_TO_GEOGRAPHY {
@@ -536,8 +574,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	script:
 	"""
-	seqkit replace -j 4 --f-by-name --keep-untouch --pattern "\\|" --replacement " " ${fasta} \
-	| seqkit grep -j 4 -f ${accessions} -o filtered-to-geography.fasta.zst
+	seqkit grep -j ${task.cpus} -f ${accessions} ${fasta} -o filtered-to-geography.fasta.zst
 	"""
 
 }
@@ -799,7 +836,7 @@ process SUMMARIZE_CANDIDATES {
 
 	output:
 	path "*.tsv", emit: metadata
-	path "*.fasta", emit: high_dist_seqs
+	tuple path("*.fasta"), val("high_distance_clusters"), emit: high_dist_seqs
 	// path "*.pdf", emit: plots
 
 	script:
@@ -831,7 +868,7 @@ process RUN_META_CLUSTER {
 	output:
 	path "*.uc", emit: cluster_table
 	path "*meta-centroids.fasta", emit: centroid_fasta
-	path "*meta-cluster-seqs*", emit: cluster_fastas
+	tuple path("*meta-cluster-seqs*"), val("repeat_lineages"), emit: cluster_fastas
 	env repeats, emit: whether_repeats
 
 	script:
@@ -958,7 +995,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	output:
 	path "*.tsv", emit: metadata
-	tuple path("*.fasta"), env(sample_size), emit: sequences
+	tuple path("*.fasta"), val("anachronistic_candidates"), emit: sequences
 	path "*.pdf"
 
 	script:
@@ -968,8 +1005,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	${lineages} \
 	decompressed_genbank.fasta \
 	${metadata} && \
-	rm -f decompressed_genbank.fasta && \
-	sample_size=\$(grep -c "^>" anachronistic_seq_candidates.fasta)
+	rm -f decompressed_genbank.fasta
 	"""
 }
 
@@ -1001,7 +1037,7 @@ process SEARCH_NCBI_METADATA {
 
 	output:
 	path "*.tsv", emit: metadata
-	path "*.fasta", emit: fasta
+	tuple path("*.fasta"), val("metadata_candidates"), emit: fasta
 
 	when:
 	params.search_metadata_dates == true && params.pathogen == "SARS-CoV-2"
@@ -1009,8 +1045,8 @@ process SEARCH_NCBI_METADATA {
 	script:
 	"""
 	search-ncbi-metadata.py ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus} && \
-	cut -f 1 > anachronistic_accessions.txt && \
-	seqkit grep -j ${task.cpus} -f anachronistic_accessions ${fasta} -o anachronistic_metadata_only_candidates.fasta
+	cut -f 1 anachronistic_metadata_only_candidates.tsv > anachronistic_accessions.txt && \
+	seqkit grep -j ${task.cpus} -f anachronistic_accessions.txt ${fasta} -o anachronistic_metadata_only_candidates.fasta
 	"""
 
 }
@@ -1035,7 +1071,8 @@ process FIND_DOUBLE_CANDIDATES {
 	path collected_files
 
 	output:
-	path "double_candidate*"
+	tuple path("double_candidate*.fasta"), val("double_candidates"), emit: fasta
+	path "double_candidate*.tsv"
 
 	script:
 	"""
@@ -1061,9 +1098,12 @@ process FIND_DOUBLE_CANDIDATES {
 // 	maxRetries 1
 
 // 	input:
-// 	path fasta
+// 	tuple path(fasta), val(method)
 
 // 	output:
+
+// 	when:
+// 	params.pathogen == "SARS-CoV-2"
 
 // 	script:
 // 	"""

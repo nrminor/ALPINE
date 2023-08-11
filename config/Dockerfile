@@ -96,7 +96,8 @@ RUN mamba install -y -n base -c defaults -c bioconda -c conda-forge \
     seqkit \
     pangolin \ 
     clustalo \
-    nextflow
+    nextflow \
+    nextalign
 
 # Install Nextstrain CLI
 # RUN curl -fsSL --proto '=https' https://nextstrain.org/cli/installer/linux | bash
