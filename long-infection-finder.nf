@@ -1048,14 +1048,50 @@ process FIND_DOUBLE_CANDIDATES {
 
 // process RUN_ESCAPE_CALC {}
 
-// process BUILD_NEXTSTRAIN_TREE {
+// process PREP_FOR_USHER {
+
+// 	/*
+// 	*/
+
+// 	tag "${params.pathogen}, ${params.geography}"
+// 	label "lif_container"
+// 	publishDir params.double_candidates, mode: 'copy'
+	
+// 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+// 	maxRetries 1
+
+// 	input:
+// 	path fasta
+
+// 	output:
 
 // 	script:
 // 	"""
-// 	augur tree \
-//     --alignment ${fasta} \
-//     --output augur_output/wi_sequences_tree_raw.nwk
 // 	"""
+
+// }
+
+// process PLACE_WITH_USHER {
+
+// 	/*
+// 	*/
+
+// 	tag "${params.pathogen}, ${params.geography}"
+// 	label "lif_container"
+// 	publishDir params.double_candidates, mode: 'copy'
+	
+// 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
+// 	maxRetries 1
+
+// 	input:
+// 	path fasta
+
+// 	output:
+
+// 	script:
+// 	"""
+// 	"""
+
 // }
 
 
