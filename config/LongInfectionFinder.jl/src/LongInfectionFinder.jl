@@ -15,14 +15,14 @@ function filter_metadata_by_geo(input_table::String, geography::String)
     metadata_df = DataFrame(Arrow.Table(input_table))
 
     # filter metadata based on desired geography
-    @pipe metadata_df |>
-        filter!(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
+    @pipe filtered = metadata_df |>
+        filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
 
     # Writing filtered metadata
-    Arrow.write("filtered-to-geography.arrow", metadata_df)
+    Arrow.write("filtered-to-geography.arrow", filtered)
 
     # separating out accessions
-    accessions = metadata_df[!,"Accession"]
+    accessions = filtered[!,"Accession"]
 
     # Writing accessions to a text file for use by seqtk subseq or seqkit grep
     writedlm("accessions.txt", accessions, "\n")
@@ -35,18 +35,18 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
     metadata_df = DataFrame(Arrow.Table(input_table))
 
     # filter metadata based on desired geography
-    @pipe metadata_df |>
-        filter!(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
+    @pipe filtered = metadata_df |>
+        filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
 
     # filter metadata to desired minimum range
-    @pipe metadata_df |>
-        filter!(Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),_)
+    @pipe filtered = filtered |>
+        filter(Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),_)
 
     # Writing filtered metadata
-    Arrow.write("filtered-to-geography.arrow", metadata_df)
+    Arrow.write("filtered-to-geography.arrow", filtered)
 
     # separating out accessions
-    accessions = metadata_df[!,"Accession"]
+    accessions = filtered[!,"Accession"]
 
     # Writing accessions to a text file for use by seqtk subseq or seqkit grep
     writedlm("accessions.txt", accessions, "\n")
@@ -59,77 +59,23 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
     metadata_df = DataFrame(Arrow.Table(input_table))
 
     # filter metadata based on desired geography
-    filtered = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
+    @pipe filtered = metadata_df |>
+        filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
 
     # filter metadata to desired date range
-    @pipe metadata_df |>
+    @pipe filtered = filtered |>
         filter!(Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),_) |>
         filter!(Symbol("Isolate Collection date") => date -> date < Dates.Date(max_date),_)
 
     # Writing filtered metadata
-    Arrow.write("filtered-to-geography.arrow", metadata_df)
+    Arrow.write("filtered-to-geography.arrow", filtered)
 
     # separating out accessions
-    accessions = metadata_df[!,"Accession"]
+    accessions = filtered[!,"Accession"]
 
     # Writing accessions to a text file for use by seqtk subseq or seqkit grep
     writedlm("accessions.txt", accessions, "\n")
     
-end
-
-function filter_by_geo(input_table::String, fasta_path::String, geography::String)
-
-    # Read in the TSV file with metadata
-    metadata_df = DataFrame(Arrow.Table(input_table))
-
-    # Double check the column name for geographic locations
-    if "Geographic location" in names(metadata_df)
-        idx = findfirst(isequal("Geographic location"), names(metadata_df))
-        rename!(metadata_df, names(metadata_df)[idx] => "Geographic Location")
-    end
-
-    # filter metadata based on desired geography
-    filtered_meta = metadata_df[[contains(string(value), geography) for value in metadata_df[!,"Geographic Location"]], :]
-
-    # Writing filtered metadata
-    Arrow.write("filtered-to-geography.tsv", filtered_meta)
-
-    # separating out accessions
-    accessions = Set(filtered_meta[!,"Accession"])
-
-    # create a file lock to prevent threads from corrupting the output file
-    # u = ReentrantLock()
-
-    # create the output file
-    filtered_seqs = "filtered-to-geography.fasta.zst"
-
-    # use accessions list to filter FASTA records into a ZSTD
-    # compressed FASTA
-    open(ZstdCompressorStream, filtered_seqs, "w") do outstream
-        FastaWriter(outstream) do fa
-            FastaReader(fasta_path) do fr
-                # @sync for (name, seq) in fr
-                #     Threads.@spawn begin
-                #         accession = split(name, " ")[1]
-                #         if accession in accessions
-                #             Threads.lock(u) do
-                #                 writeentry(fa, accession, seq)
-                #             end
-                #         end
-                #     end
-                # end
-                for (name, seq) in fr
-                    accession = split(split(name, " ")[1], "|")[1]
-                    if accession in accessions
-                        writeentry(fa, accession, seq)
-                    end
-                end
-            end
-        end
-    end
-
-    return filtered_seqs
-
 end
 
 ### ----------------------------------------------------------------------- ###
