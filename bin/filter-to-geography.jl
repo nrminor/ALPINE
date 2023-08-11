@@ -12,11 +12,11 @@ const min_date = ARGS[4]
 # run the function based on the provided dates with multiple dispatch
 function main(metadata_path::String, geo::String, max_date::String, min_date::String)
 
-    if min_date == "none"
+    if min_date == "none" & max_date == string(Dates.today())
         filter_metadata_by_geo(metadata_path, geo)
-    elseif min_date != "none" & Date.Dates(max_date) == today()
+    elseif min_date != "none" & max_date == string(Dates.today())
         filter_metadata_by_geo(metadata_path, geo, min_date)
-    elseif min_date != "none" & Date.Dates(max_date) != today()
+    elseif min_date != "none" & max_date != string(Dates.today())
         filter_metadata_by_geo(metadata_path, geo, min_date, max_date)
     end
 
