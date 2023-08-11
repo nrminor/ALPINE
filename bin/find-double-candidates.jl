@@ -45,5 +45,8 @@ function main(metadata_files::Vector{String}, fasta_files::Vector{String})
     end
 end
 
+# precompile main to eek out a bit more performance
+precompile(main, (Vector{String},Vector{String}));
+
 # run main
 main(METADATA_FILES, FASTA_FILES)
