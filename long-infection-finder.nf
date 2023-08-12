@@ -830,7 +830,7 @@ process SUMMARIZE_CANDIDATES {
 
 	input:
 	path cluster_tables
-	path cluster_fastas
+	path fasta
 	path distance_matrices
 	path metadata
 
@@ -841,7 +841,9 @@ process SUMMARIZE_CANDIDATES {
 
 	script:
 	"""
-	report-high-dist-candidates.py --stringency ${params.strictness_mode}
+	report-high-dist-candidates.py \
+	--sequences ${fasta} \
+	--stringency ${params.strictness_mode}
 	"""
 
 }
