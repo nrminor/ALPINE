@@ -870,7 +870,7 @@ process RUN_META_CLUSTER {
 	output:
 	path "*.uc", emit: cluster_table
 	path "*meta-centroids.fasta", emit: centroid_fasta
-	tuple path("*meta-cluster-seqs*"), val("repeat_lineages"), emit: cluster_fastas
+	path "*meta-cluster-seqs*", emit: cluster_fastas
 	env repeats, emit: whether_repeats
 
 	script:
