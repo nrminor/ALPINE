@@ -836,7 +836,7 @@ process SUMMARIZE_CANDIDATES {
 
 	output:
 	path "*.tsv", emit: metadata
-	tuple path("*.fasta"), val("high_distance_clusters"), emit: high_dist_seqs
+	path "*.fasta", emit: high_dist_seqs
 	// path "*.pdf", emit: plots
 
 	script:
@@ -997,7 +997,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	output:
 	path "*.tsv", emit: metadata
-	tuple path("*.fasta"), val("anachronistic_candidates"), emit: sequences
+	path "*.fasta", emit: sequences
 	path "*.pdf"
 
 	script:
@@ -1039,7 +1039,7 @@ process SEARCH_NCBI_METADATA {
 
 	output:
 	path "*.tsv", emit: metadata
-	tuple path("*.fasta"), val("metadata_candidates"), emit: fasta
+	path "*.fasta", emit: fasta
 
 	when:
 	params.search_metadata_dates == true && params.pathogen == "SARS-CoV-2"
