@@ -379,7 +379,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	*/
 
 	tag "${params.pathogen}"
-	publishDir params.ncbi_results, mode: params.publishMode
+	// publishDir params.ncbi_results, mode: params.publishMode
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 5
