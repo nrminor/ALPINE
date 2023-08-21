@@ -281,9 +281,17 @@ params.dated_results = params.results + "/" + params.date
 
 // handling the case where no geography or date filters are provided
 if( params.geography == "" ){
-	params.ncbi_results = params.dated_results + "/GenBank"
+	if ( params.local_path == "" ){
+		params.ncbi_results = params.dated_results + "/GenBank"
+	} else {
+		params.ncbi_results = params.dated_results + "/LocalDataset"
+	}
 } else {
-	params.ncbi_results = params.dated_results + "/GenBank_" + params.geography
+	if ( params.local_path == "" ){
+		params.ncbi_results = params.dated_results + "/GenBank_" + params.geography
+	} else {
+		params.ncbi_results = params.dated_results + "/LocalDataset_" + params.geography
+	}
 }
 
 // creating results subfolders for the three orthogonal anachronistic
