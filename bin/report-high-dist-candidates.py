@@ -22,6 +22,8 @@ import polars as pl
 import pyarrow
 import subprocess
 from polars.testing import assert_frame_equal
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 # define functions:
@@ -50,6 +52,46 @@ def quantify_stringency(stringency: str) -> int:
         strict_quant = 995
 
     return strict_quant
+
+def visualize_distance_scores(metadata: pl.DataFrame, threshold: float):
+    """
+    This function uses Matplotlib and Seaborn to visualize the distribution
+    of distance scores in the provided metadata. It also plots the retention
+    threshold that was computed based on the data. The graphic is then written
+    to a PDF file called "distance_score_distribution.pdf".
+    
+    Args:
+    metadata - a Polars DataFrame with a column called "Distance Score"
+    threshold - a floating point value specifying the distance score retention threshold
+    
+    Returns:
+    None
+    """
+    
+    # retrieve the distance scores from the metadata dateframe
+    distance_scores = metadata.select(pl.col("Distance Score")).to_series().to_list()
+    
+    # Set the style and size of the plot
+    plt.figure(figsize=(7, 5.5))
+    sns.set_style("whitegrid")
+    
+    # Plot the histogram
+    sns.histplot(distance_scores, kde=True, color="lightblue", element="step")
+
+    # Add a vertical line at the retention threshold
+    plt.axvline(x=retention_threshold, color="red", lw=3)
+
+    # Add a text label for the retention threshold
+    max_count = max(plt.hist(metadata['Distance_Score'], bins=10, alpha=0)[0])
+    plt.text(retention_threshold + 5, max_count / 2, f"Retention Threshold:\n{retention_threshold}")
+
+    # Add labels
+    plt.xlabel("Distance Score")
+    plt.ylabel("Frequency")
+    plt.title("Frequency Distribution of Nucleotide Distances")
+
+    # Save the plot to a file
+    plt.savefig("distance_score_distribution.pdf")
 
 def read_metadata_files(metadata_filename: str,
                         yearmonths: list,
@@ -225,8 +267,10 @@ def collate_metadata(metadata: pl.DataFrame,
         pl.col("Distance Score").is_not_null()
     )
 
-    # And finally, filter down to distances above the retention threshold
+    # And finally, filter down to distances above the retention threshold while
+    # also visualizing the distance score distribution
     retention_threshold = np.quantile(high_dist_meta['Distance Score'], (stringency / 1000))
+    visualize_distance_scores(high_dist_meta, retention_threshold)
     high_dist_meta = high_dist_meta.filter(
         pl.col("Distance Score") >= retention_threshold
     )

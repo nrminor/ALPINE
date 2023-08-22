@@ -68,7 +68,7 @@ ENV PATH=/opt/conda/bin:$PATH
 RUN conda install -y -n base -c conda-forge mamba
 
 # Install python libraries
-RUN mamba install -y -n base -c anaconda -c conda-forge biopython pandas polars numpy pyarrow
+RUN mamba install -y -n base -c anaconda -c conda-forge biopython pandas polars numpy pyarrow matplotlib seaborn
 
 # Install R channel packages
 # (also including UShER because it wants access to BioconductoR)
