@@ -1,7 +1,7 @@
 module LongInfectionFinder
 
 # load dependencies
-using DelimitedFiles, DataFrames, CSV, Arrow, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib, FLoops, Missings
+using DelimitedFiles, DataFrames, CSV, Arrow, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib, FLoops, Missings, RCall
 import Base.Threads
 
 export filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, find_double_candidates
@@ -337,6 +337,164 @@ function prep_for_clustering(ncbi_metadata::String, desired_geography::String, n
     separate_by_month("filtered-by-n.fasta.gz", accession_to_date)
 
 end
+
+
+
+### FUNCTIONS TO IDENTIFY ANACHRONISTIC SEQUENCES WITH THE OUTBREAK.INFO API ###
+### ------------------------------------------------------------------------ ###
+function date_pango_calls(report_path::String, metadata::DataFrame)
+
+    # Read in the necessary pangolin report columns
+    pango_report = CSV.read(report_path, DataFrame)
+
+    pango_with_dates = @pipe pango_report |>
+        leftjoin(metadata, _, on = :taxon => :Accession) |>
+        select(-:Accession) |>
+        sort(:taxon)
+    
+    return pango_with_dates
+
+end
+
+function create_rarity_lookup(pango_report::DataFrame)
+
+    # create vector of unique lineages to iterate through
+    lineages = unique(pango_report[:,"lineage"])
+
+    # load R outbreakinfo package
+    @rlibrary outbreakinfo
+
+    # create empty rare dates vector
+    rarity_lookup = Dict{String, Int}()
+
+    # create rarity lookup vector
+    for lineage in lineages
+
+        # convert lineage into R object
+        rlineage = robject(lineage)
+
+        # call the outbreak.info API for prevalence estimates
+        prevalence_table = rcopy(R"getPrevalence(pangolin_lineage = rlineage, location = 'United States')")
+
+        # get rid of zeroes, which will skew our methods below. We also get
+        # rid of 1.0's, which are likely erroneous.
+        @pipe prevalence_table |>
+            filter!(:proportion => prop -> prop > 0.0, _) |>
+            filter!(:proportion => prop -> prop < 1.0, _)
+        
+        # deal with potential empty tables
+        if nrow(prevalence_table) == 0
+            rare_date = passmissing(Dates.Date(missing))
+            my_dict[lineage] = rare_date
+            break
+        end
+
+        # define a rarity level and then find the date when that level is reached
+        rare_date = @pipe quantile(prevalence_table.proportion, 0.05) |>
+            prevalence_table.proportion[argmin(abs.(prevalence_table.proportion .- _))] |>
+            maximum(prevalence_table[prevalence_table.proportion .== _, :date])
+
+        # make sure we are using a rarity date that is after the crest
+        if rare_date <= crest_date
+            @pipe prevalence_table |>
+                filter!(:date => date -> date > crest_date, _)
+            rare_date = @pipe post_crest.proportion[argmin(abs.(post_crest.proportion .- q))] |>
+                maximum(post_crest[post_crest.proportion .== _, :date])
+        end
+
+        # make sure a lineage isn't too recent
+        if (Dates.today() - crest_date) <= 30
+            rare_date = passmissing(Dates.Date(missing))
+            my_dict[lineage] = rare_date
+            break
+        end
+
+        # if the lineage has not yet crested, by definition it cannot be
+        # anachronistic
+        if nrow(filter(:date => dates -> date > crest_date, prevalence_table)) == 0
+            rare_date = passmissing(Dates.Date(missing))
+            my_dict[lineage] = rare_date
+            break
+        end
+
+        # push any rarity dates that passed the above conditions
+        my_dict[lineage] = rare_date
+
+    end
+
+    return rarity_lookup
+
+end
+
+function assign_anachron(metadata_path::String, report_path::String)
+
+    # read in the metadata and sort by accession
+    metadata = Arrow.Table(metadata_path) |> DataFrame
+    new_metadata = sort(metadata, :Accession)
+
+    # date pango date_pango_calls
+    pango_report = date_pango_calls(report_path, new_metadata)
+
+    # make sure the accessions are the same and in the sample
+    # order between the metadata and the pango report
+    @assert new_metadata.Accession == pango_report.taxon
+
+    # create rare-date lookup with the outbreak.info API
+    rarity_lookup = create_rarity_lookup(pango_report)
+
+    # define anachronicities
+    anachronicities = []
+    for (lineage, date) in zip(pango_report.lineage, pango_report."Isolate Collection date")
+
+        # compute anachronicity as an integer
+        anachronicity = (date - get(rarity_lookup, lineage, Dates.today())).value
+
+        # make sure anachronicity isn't missing
+        if ismissing(anachronicity) 
+            return 0
+        end
+
+        # append in place to the list anachronicities
+        push!(anachronicities, anachronicity)
+        
+    end
+
+    # make sure enough anachronicities were computed
+    @assert length(anachronicities) == nrow(new_metadata)
+
+    # add anachronicities as a column in the metadata
+    new_metadata[:, "Anachronicity (days)"] = anachronicities
+
+    # filter to anachronicities greater than 0
+    filter!(Symbol("Anachronicity (days)") => days -> days > 0, new_metadata)
+
+    return new_metadata
+
+end
+
+function find_anachron_seqs(metadata::DataFrame, fasta_path::String)
+
+    # separate out accessions into a list
+    accessions = metadata.Accession
+
+    # iterate through the input fasta and write anachronistics
+    # to the output
+    output_handle = "anachronistic_seq_candidates.fasta"
+    touch(output_handle)
+    FastaWriter(output_handle , "a") do fasta_append
+        FastaReader(fasta_path) do fasta_read
+            for (name, seq) in fasta_read
+                if name in accessions
+                    writeentry(fasta_append, name, seq)
+                end
+            end
+        end
+    end
+
+end
+
+### ------------------------------------------------------------------------ ###
+
 
 
 
