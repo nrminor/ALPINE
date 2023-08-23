@@ -18,19 +18,30 @@ import pandas as pd
 import Bio.SeqIO
 import pyarrow as arrow
 
+def parse_command_line_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cluster_table_path", help="The path to the cluster table file.")
+    parser.add_argument("metadata_path", help="The path to the metadata file.")
+    args = parser.parse_args()
+    return args.cluster_table_path, args.metadata_path
+
 def main(cluster_table_path: str, metadata_path: str):
     """
     This function reads in a cluster table and metadata file,
     and then compiles FASTA sequences for each repeat cluster and
     collates metadata about these new clusters.
 
-    Args:
+    Args (parsed from the command line):
     cluster_table_path: The path to the cluster table file.
     metadata_path: The path to the metadata file.
 
     Returns:
     None
     """
+    
+    # parse command line arguments
+    cluster_table_path, metadata_path = parse_command_line_args()
     
     cluster_df = pd.read_csv(cluster_table_path,
                             sep='\t',
@@ -71,8 +82,4 @@ def main(cluster_table_path: str, metadata_path: str):
 # end def main
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("cluster_table_path", help="The path to the cluster table file.")
-    parser.add_argument("metadata_path", help="The path to the metadata file.")
-    args = parser.parse_args()
-    main(args.cluster_table_path, args.metadata_path)
+    main()

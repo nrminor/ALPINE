@@ -19,7 +19,15 @@ for future scripts.
 import argparse
 import polars as pl
 
-def main(metadata_path: str):
+
+def parse_command_line_args():
+    """parse command line arguments"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("metadata_path", help="The path to the large metadata TSV.")
+    args = parser.parse_args()
+    return args.metadata_path
+
+def main():
     """
     This script uses Polars to read a very large TSV file 
     using Apache Arrow in memory-representation. It saves 
@@ -30,12 +38,15 @@ def main(metadata_path: str):
     and stored as date objects. Finally, it writes the validated 
     metadata to Apache Arrow IPC format on disk for downstream usage.
 
-    Args:
+    Args (parsed from the command line):
     metadata_path: The path to metadata in TSV format.
 
     Returns:
     None
     """
+    
+    # parse command line arguments
+    metadata_path = parse_command_line_args()
 
     # Scan the CSV into a LazyFrame
     metadata = pl.scan_csv(metadata_path, separator="\t", low_memory=True)
@@ -66,11 +77,4 @@ def main(metadata_path: str):
 # end main def
 
 if __name__ == "__main__":
-
-    # parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument("metadata_path", help="The path to the large metadata TSV.")
-    args = parser.parse_args()
-
-    # run main
-    main(args.metadata_path)
+    main()

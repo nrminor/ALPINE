@@ -20,6 +20,22 @@ import pandas as pd
 import numpy as np
 import pyarrow as arrow
 
+def parse_command_line_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("metadata_path",
+                        help="The path to the metadata file.")
+    parser.add_argument("dates_path",
+                        help="The path to the pango lineage dates file.")
+    parser.add_argument("infection_cutoff",
+                        type=int,
+                        help="The minimum infection duration in days.")
+    parser.add_argument("cores",
+                        type=int,
+                        help="The number of cores to use for parallel processing.")
+    args = parser.parse_args()
+    return args.metadata_path, args.dates_path, args.infection_cutoff, args.cores
+
 # Defining functions for multiprocessing
 def add_designation_date(lineage: str, dates: pd.DataFrame) -> Optional[np.datetime64]:
     """
@@ -59,12 +75,12 @@ def add_infection_duration(i: int, ncbi_dates: list, desig_dates: list) -> Optio
 # end add_infection_duration()
 
 # define main function
-def main(metadata_path: str, dates_path: str, infection_cutoff: int, cores: int):
+def main():
     """
     This script reads in filtered metadata and pango lineage dates,
     and then identifies long infection candidates.
 
-    Args:
+    Args (parsed from the command line):
     metadata_path: The path to the metadata file.
     dates_path: The path to the pango lineage dates file.
     infection_cutoff: The minimum infection duration in days.
@@ -73,6 +89,9 @@ def main(metadata_path: str, dates_path: str, infection_cutoff: int, cores: int)
     Returns:
     None
     """
+    
+    # parse command line arguments
+    metadata_path, dates_path, infection_cutoff, cores = parse_command_line_args()
 
     # Memory-map arrow IPC-formatted metadata
     with arrow.memory_map(metadata_path, 'r') as source:
@@ -113,20 +132,4 @@ def main(metadata_path: str, dates_path: str, infection_cutoff: int, cores: int)
 
 # run the script if not imported as a module
 if __name__ == "__main__":
-
-    # parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument("metadata_path",
-                        help="The path to the metadata file.")
-    parser.add_argument("dates_path",
-                        help="The path to the pango lineage dates file.")
-    parser.add_argument("infection_cutoff",
-                        type=int,
-                        help="The minimum infection duration in days.")
-    parser.add_argument("cores",
-                        type=int,
-                        help="The number of cores to use for parallel processing.")
-    args = parser.parse_args()
-
-    # run main
-    main(args.metadata_path, args.dates_path, args.infection_cutoff, args.cores)
+    main()

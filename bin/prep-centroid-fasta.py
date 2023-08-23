@@ -24,6 +24,16 @@ import pandas as pd
 from Bio import SeqIO
 from Bio.Align.Applications import ClustalOmegaCommandline 
 
+def parse_command_line_args():
+    """parse command line arguments"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("fasta_path", help="The path to the FASTA file.")
+    parser.add_argument("label", help="Label to use when naming the output file.")
+    parser.add_argument("count", type=int, help="An expected count of the records in the FASTA.")
+    parser.add_argument("threads", type=int, help="The number of processors to use for alignment.")
+    args = parser.parse_args()
+    return args.fasta_path, args.label, args.count, args.threads
+
 def align_centroids(fasta_path: str, threads: int) -> str:
     """
     This function optionally aligns the provided sequences
@@ -81,7 +91,7 @@ def align_centroids(fasta_path: str, threads: int) -> str:
             return fasta_path
 # end align_centroids def
 
-def main(input_path: str, label: str, count: int, threads: int):
+def main():
     """
     This function parses a FASTA file and removes all records with 
     "consensus" in their defline and then removes an asterisk 
@@ -95,6 +105,8 @@ def main(input_path: str, label: str, count: int, threads: int):
     Returns:
     None
     """
+    
+    input_path, label, count, threads = parse_command_line_args()
 
     working_fasta = align_centroids(input_path, threads)
 
@@ -117,14 +129,4 @@ def main(input_path: str, label: str, count: int, threads: int):
 # end main function def
 
 if __name__ == "__main__":
-
-    # parse command line arguments
-    parser = argparse.ArgumentParser()
-    parser.add_argument("fasta_path", help="The path to the FASTA file.")
-    parser.add_argument("label", help="Label to use when naming the output file.")
-    parser.add_argument("count", type=int, help="An expected count of the records in the FASTA.")
-    parser.add_argument("threads", type=int, help="The number of processors to use for alignment.")
-    args = parser.parse_args()
-
-    # run main
-    main(args.fasta_path, args.label, args.count, args.threads)
+    main()

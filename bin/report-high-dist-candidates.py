@@ -27,6 +27,28 @@ import seaborn as sns
 
 
 # define functions:
+def parse_command_line_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sequences", "-s",
+                        default="filtered-to-geography.fasta",
+                        type=str,
+                        help="The name of the database FASTA file to filter for candidates.")
+    parser.add_argument("--metadata", "-m",
+                        default="filtered-to-geography.arrow",
+                        type=str,
+                        help="The name of the database metadata file to join other files to.")
+    parser.add_argument("--stringency", "-str",
+                        type=str,
+                        required=True,
+                        help="The chosen level of strictness for retaining candidates.")
+    parser.add_argument("--workingdir", "-wd",
+                        default=".",
+                        type=str,
+                        help="Directory where the script should search for files.")
+    args = parser.parse_args()
+    return args.metadata, args.sequences, args.stringency, args.workingdir
+
 def quantify_stringency(stringency: str) -> int:
     """
     Define strictness level as a quantile.
@@ -205,7 +227,7 @@ def collate_metadata(metadata: pl.DataFrame,
     steps here. They may also implement LazyFrames instead of dataframes
     to handle very large metadata files.
 
-    Args:
+    Args (parsed from the command line):
     metadata - a polars dataframe that contains the whole-dataset metadata
     dist_scores - a polars dataframe that contains distance scores for each
                 cluster centroid
@@ -282,7 +304,7 @@ def collate_metadata(metadata: pl.DataFrame,
 
 # end collate_metadata def
 
-def main(metadata_filename: str, fasta_path: str, stringency: str, workingdir: str):
+def main():
     """
     Main function. Main ties together all the above functions if 
     they are being invoked as a script. It also works to "glue" 
@@ -290,6 +312,9 @@ def main(metadata_filename: str, fasta_path: str, stringency: str, workingdir: s
     (Seqkit, written in Go, is much faster at filtering large
     numbers of FASTA records than Python).
     """
+    
+    # retrieve file paths and settings from keyword command line arguments
+    metadata_filename, fasta_path, stringency, workingdir = parse_command_line_args()
 
     # Retrieve a quantile to use to define a retention threshold downstream
     strict_quant = quantify_stringency(stringency)
@@ -324,22 +349,4 @@ def main(metadata_filename: str, fasta_path: str, stringency: str, workingdir: s
 # end main def
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sequences", "-s",
-                        default="filtered-to-geography.fasta",
-                        type=str,
-                        help="The name of the database FASTA file to filter for candidates.")
-    parser.add_argument("--metadata", "-m",
-                        default="filtered-to-geography.arrow",
-                        type=str,
-                        help="The name of the database metadata file to join other files to.")
-    parser.add_argument("--stringency", "-str",
-                        type=str,
-                        required=True,
-                        help="The chosen level of strictness for retaining candidates.")
-    parser.add_argument("--workingdir", "-wd",
-                        default=".",
-                        type=str,
-                        help="Directory where the script should search for files.")
-    args = parser.parse_args()
-    main(args.metadata, args.sequences, args.stringency, args.workingdir)
+    main()
