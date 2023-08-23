@@ -97,7 +97,7 @@ def main():
     "consensus" in their defline and then removes an asterisk 
     ("*") symbols in the deflines of the remaining records.
 
-    Args:
+    Args (parsed from the command line):
     fasta_path: The path to the FASTA file.
     label: A label or prefix for the output file.
     count: An expected count to sanity check with.
