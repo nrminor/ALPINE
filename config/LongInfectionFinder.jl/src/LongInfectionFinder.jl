@@ -4,11 +4,17 @@ module LongInfectionFinder
 using DelimitedFiles, DataFrames, CSV, Arrow, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib, FLoops, Missings, RCall
 import Base.Threads
 
-export filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, prep_for_clustering, date_pango_calls, create_rarity_lookup, assign_anachron, find_anachron_seqs, find_double_candidates
+export filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, date_pango_calls, create_rarity_lookup, assign_anachron, find_anachron_seqs, find_double_candidates
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
 
+"""
+Filter the Apache Arrow representation of the metadata, supplied by the argument
+`input_table::String`, to only those rows that contain the string in argument
+`geography::String`. Then, write the output to a new filtered arrow IPC file as
+well as a text file listing one filter-passing accession per line.
+"""
 function filter_metadata_by_geo(input_table::String, geography::String)
 
     # Read in the metadata file as a dataframe
@@ -29,6 +35,13 @@ function filter_metadata_by_geo(input_table::String, geography::String)
     
 end
 
+"""
+Filter the Apache Arrow representation of the metadata, supplied by the argument
+`input_table::String`, to only those rows that contain the string in argument
+`geography::String` and contain a collection date that is after `min_date::String`. 
+Then, write the output to a new filtered arrow IPC file as well as a text file 
+listing one filter-passing accession per line.
+"""
 function filter_metadata_by_geo(input_table::String, geography::String, min_date::String)
 
     # Read in the metadata file as a dataframe
@@ -53,6 +66,13 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
     
 end
 
+"""
+Filter the Apache Arrow representation of the metadata, supplied by the argument
+`input_table::String`, to only those rows that contain the string in argument
+`geography::String` and contain a collection date that is after `min_date::String`
+and before `max_date::String`. Then, write the output to a new filtered arrow IPC
+file as well as a text file listing one filter-passing accession per line.
+"""
 function filter_metadata_by_geo(input_table::String, geography::String, min_date::String, max_date::String)
 
     # Read in the metadata file as a dataframe
@@ -84,6 +104,13 @@ end
 
 ### FUNCTION(S) TO REPLACE "-" SYMBOLS WITH "N" CHARACTERS ###
 ### ------------------------------------------------------ ###
+
+"""
+Replace all "-" symbols in the nucleotide sequence of each input FASTA 
+record (supplied by the argument `fasta_path::String`) with the masked base
+character "N." Then, write the updated FASTA with the file name provided by
+the argument `output_filename::String`.
+"""
 function replace_gaps(fasta_path::String, output_filename::String)
 
     # create the output file
@@ -112,6 +139,15 @@ end
 
 ### FUNCTION(S) TO FILTER A FASTA BY THE NUMBER OF MASKED BASES ("N") IT CONTAINS ###
 ### ----------------------------------------------------------------------------- ###
+
+"""
+Read the input FASTA from the file path provided by `input_fasta_path::String` and
+remove any records with more than 10% of their bases masked with the "N" character.
+This is potentially crucial quality control to ensure that consensus sequences 
+processed downstream are not the result of un-rigorous bioinformatic processing.
+The filtered FASTA is then written with the file name provided by the argument 
+`output_filename::String`.
+"""
 function filter_by_n(input_fasta_path::String, output_filename::String)
 
     touch(output_filename)
@@ -145,7 +181,13 @@ end
 
 ### FUNCTION(S) TO SEPARATE FASTA INTO ONE FASTA FOR EACH MONTH IN GENBANK METADATA ### 
 ### ------------------------------------------------------------------------------- ###
-# function that returns full accession-to-date lookup
+
+"""
+Read an input metadata file in Apache Arrow format, supplied by the argument 
+`input_path::String`, and create a more compact dictionary where accession strings
+are the keys, and collection dates are the values, and return that dictionary for
+usage downstream.
+"""
 function date_accessions(input_path::String)
 
     # read in metadata
@@ -158,7 +200,10 @@ function date_accessions(input_path::String)
 
 end
 
-# function that accesses the collection date for each record name
+"""
+Return the date associated with an accession of interest provided by the argument
+`record_name::String`. The lookup itself is provided with the argument `lookup::Dict`.
+"""
 function lookup_date(record_name::String, lookup::Dict)
 
     # Look up the collection date for the accession number
@@ -171,6 +216,13 @@ function lookup_date(record_name::String, lookup::Dict)
 end
 
 # function that pulls in metadata to separate each sequence into a FASTA for the month it was collected in
+"""
+Read an input FASTA, supplied by the argument `input_fasta::String` and use the dictionary
+supplied by the argument `accession_to_date::Dict` to separate each input FASTA record
+into a new FASTA according to its collection month. Each FASTA record will be output into
+a FASTA for the month it was collected in, such that records will be separated into one
+FASTA per month present in the provided dataset.
+"""
 function separate_by_month(input_fasta::String, accession_to_date::Dict)
 
     # creating a dictionary of FastaWriters for each year_month
@@ -210,6 +262,14 @@ end
 ### FUNCTION(S) TO COMPUTE WEIGHTED DISTANCE MATRICES FOR GENBANK FASTA FILES ###
 ### ------------------------------------------------------------------------- ###
 # replace lowercase n symbols with uppercase Ns
+"""
+The `vsearch --cluster_fast` algorithm produces some unusual patterns in its
+outputs, including lowercase "n" symbols for masked bases. To avoid confusing
+algorithms downstream, this function opens the input FASTA provided by the
+argument `fasta_filename::String`, sets all its characters to uppercase, and
+writes them to a temporary FASTA file with a name supplied by the argument
+`temp_filename::String`.
+"""
 function set_to_uppercase(fasta_filename::String, temp_filename::String)
     open(fasta_filename) do infile
         open(temp_filename, "w") do outfile
@@ -227,6 +287,13 @@ function set_to_uppercase(fasta_filename::String, temp_filename::String)
 end
 
 # determine how many sequences are in each cluster to compute weighted distances
+"""
+For the sequence identified by argument `seq_name::String` in the dataframe `dist_df::DataFrame`
+and the `vsearch --cluster_fast` output table provided by argument `cluster_table::DataFrame`,
+use the size of that sequence's cluster to "weight" its distances from other clusters. This 
+weight, adjusted by `stringency::String`, will penalize large clusters and advantage small
+clusters
+"""
 function weight_by_cluster_size(seq_name::String, stringency::String, dist_df::DataFrame, cluster_table::DataFrame)
 
     # filter down to centroid rows only
@@ -255,6 +322,13 @@ function weight_by_cluster_size(seq_name::String, stringency::String, dist_df::D
 end
 
 # compute cluster-size-weighted weighted distance matrices
+
+"""
+Compute a pairwise Hamming distance matrix between all the sequences in the FASTA provided
+by argument `temp_filename::String`. Use the information in argument `cluster_table::DataFrame`
+and `stringency::String` to weight the distances by sequence ID, and use arguments `count::Int`,
+`majority_centroid::String`, and `yearmonth::String` to structure and name output CSV files.
+"""
 function distance_matrix(temp_filename::String, cluster_table::DataFrame, count::Int, majority_centroid::String, yearmonth::String, stringency::String)
 
     # Collect both names and sequences
@@ -307,41 +381,15 @@ end
 
 
 
-### FUNCTION THAT IS A COMBINATION OF THE ABOVE FUNCTIONS TO COMPLETE ALL DESIRED OPERATIONS ### 
-### ---------------------------------------------------------------------------------------- ###
-function prep_for_clustering(ncbi_metadata::String, desired_geography::String, ncbi_fasta::String)
-
-    # ------------------------------------------------------------------------
-    # Note that the custom functions below are defined and precompiled in the
-    # LongInfectionFinder.jl module created for this project. These functions
-    # are best run in the context of the project Docker container, the Dockerfile 
-    # for which is provided and built in the config subdirectory of the project
-    # root directory.
-    # ------------------------------------------------------------------------
-    
-    # filter metadata and fasta to determine which accessions will be retained downstream
-    fasta = filter_by_geo(ncbi_metadata,ncbi_fasta,desired_geography)
-
-    # Quickly go through the FASTA and replace all "-" characters with "N" characters
-    replace_gaps(fasta, "no-gaps.fasta.gz")
-
-    # Now that "-" characters have been substituted for "N" characters, go through all
-    # the sequences from the geographic region of interest, and remove any records 
-    # with sequences whose bases are >10% N
-    filter_by_n("no-gaps.fasta.gz", "filtered-by-n.fasta.gz")
-
-    # Finally, we figure out which months each sequence comes from, and separate them 
-    # out into one FASTA per month (or more specifically, per year-month)
-    metadata_df = CSV.read("filtered-to-geography.tsv", DataFrame, delim="\t")
-    accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
-    separate_by_month("filtered-by-n.fasta.gz", accession_to_date)
-
-end
-
-
-
 ### FUNCTIONS TO IDENTIFY ANACHRONISTIC SEQUENCES WITH THE OUTBREAK.INFO API ###
 ### ------------------------------------------------------------------------ ###
+
+"""
+Take a the pangolin output report supplied by argument `report_path::String` and 
+associated metadata supplied by the argument `metadata::DataFrame`, join the
+metadata collection dates onto the pangolin report dataframe, and return it
+for downstream usage.
+"""
 function date_pango_calls(report_path::String, metadata::DataFrame)
 
     # Read in the necessary pangolin report columns
@@ -356,6 +404,15 @@ function date_pango_calls(report_path::String, metadata::DataFrame)
 
 end
 
+"""
+Use the [outbreak.info R package](https://outbreak-info.github.io/R-outbreak-info/) to access the outbreak.info
+API, which we use to access prevalence estimates for the lineages provided by argument
+`pango_report::DataFrame` in the United States. This is possible thanks to the Julia package
+`RCall.jl`, which makes it easy to call R libraries and functions and convert their output
+objects into Julia objects. Then, use the prevalence estimates to compute a "rarity date" for
+each lineage. After that rarity date, any additional collections of that lineage may be considered
+anachronistic, and therefore likely stem from prolonged infections or animal spillbacks.
+"""
 function create_rarity_lookup(pango_report::DataFrame)
 
     # create vector of unique lineages to iterate through
@@ -426,6 +483,13 @@ function create_rarity_lookup(pango_report::DataFrame)
 
 end
 
+"""
+Take the pangolin report, with dates, provided by argument `report_path::String`,
+and use the lineages in that report and the collection dates from argument
+`metadata_path::String` to assign "anachronicities" to each row. Here, we define
+anachronicity as the number of days past the date at which a SARS-CoV-2 lineage
+can be considered rare.
+"""
 function assign_anachron(metadata_path::String, report_path::String)
 
     # read in the metadata and sort by accession
@@ -472,6 +536,12 @@ function assign_anachron(metadata_path::String, report_path::String)
 
 end
 
+"""
+Take the outputs of `assign_anachron()` and filter a FASTA file
+to only those sequences with a positive "anachronicity", where 
+anachronicity is defined as the number of days past the date at
+which a SARS-CoV-2 lineage can be considered rare.
+"""
 function find_anachron_seqs(metadata::DataFrame, fasta_path::String)
 
     # separate out accessions into a list
@@ -500,6 +570,14 @@ end
 
 ### FUNCTION THAT FINDS THE OVERLAP BETWEEN HIGH-DISTANCE AND ANACHRONISTIC SEQUENCES ###
 ### --------------------------------------------------------------------------------- ###
+
+"""
+Here, "double candidates" are defined as sequences that are both highly evolved,
+with a large number of nucleotide substitutions relative to co-occurring sequences,
+and are anachronistic, occurring long after a lineage is circulating and prevalent.
+This method compares between the output of a highly evolved detector and a single
+anachronistic reporter, and then filters a FASTA to any identifiable double candidates.
+"""
 function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs::String)
 
     # Get the intersecting accessions
@@ -545,6 +623,14 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
 
 end
 
+"""
+Here, "double candidates" are defined as sequences that are both highly evolved,
+with a large number of nucleotide substitutions relative to co-occurring sequences,
+and are anachronistic, occurring long after a lineage is circulating and prevalent.
+This method looks for double candidates among a single highly evolved sequence
+detector and two anachronistic sequence detectors, and then filters a FASTA to any
+identifiable double candidates.
+"""
 function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, metadata3::DataFrame, seqs::String)
 
     # join the metadata based on anachronistic accessions
@@ -597,6 +683,12 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
 
 end
 
+"""
+Here, "double candidates" are defined as sequences that are both highly evolved,
+with a large number of nucleotide substitutions relative to co-occurring sequences,
+and are anachronistic, occurring long after a lineage is circulating and prevalent.
+This method looks for double candidates from three anachronistic sequence detectors.
+"""
 function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, metadata3::DataFrame)
 
     # join the metadata based on anachronistic accessions
@@ -637,6 +729,12 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
 
 end
 
+"""
+Here, "double candidates" are defined as sequences that are both highly evolved,
+with a large number of nucleotide substitutions relative to co-occurring sequences,
+and are anachronistic, occurring long after a lineage is circulating and prevalent.
+This method looks for double candidates from two anachronistic sequence detectors.
+"""
 function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
 
     # Get the intersecting accessions
