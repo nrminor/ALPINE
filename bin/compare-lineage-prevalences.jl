@@ -1,4 +1,4 @@
-#!/usr/bin/env julia -t auto
+#!/usr/bin/env julia
 
 using LongInfectionFinder, RCall, CSV, DataFrames
 
