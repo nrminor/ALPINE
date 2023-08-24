@@ -148,7 +148,7 @@ processed downstream are not the result of un-rigorous bioinformatic processing.
 The filtered FASTA is then written with the file name provided by the argument 
 `output_filename::String`.
 """
-function filter_by_n(input_fasta_path::String, output_filename::String)
+function filter_by_n(input_fasta_path::String, max_ambiguity::Float64, output_filename::String)
 
     touch(output_filename)
 
@@ -162,7 +162,7 @@ function filter_by_n(input_fasta_path::String, output_filename::String)
             # @sync for (name, seq) in fr
                 # Threads.@spawn begin
             for (name, seq) in fr
-                max_n_count = floor(length(seq) * 0.1)
+                max_n_count = floor(length(seq) * max_ambiguity)
                 n_count = count("N", convert(String, seq))
                 if n_count < max_n_count
                             # Threads.lock(u) do

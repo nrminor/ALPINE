@@ -397,7 +397,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 
 	script:
 	"""
-	datasets download virus genome taxon ${pathogen} --complete-only
+	datasets download virus genome taxon ${pathogen}
 	"""	
 
 }
@@ -640,7 +640,7 @@ process FILTER_BY_MASKED_BASES {
 
 	script:
 	"""
-	filter-by-n-count.jl ${fasta}
+	filter-by-n-count.jl ${fasta} ${params.max_ambiguity}
 	"""
 
 }
