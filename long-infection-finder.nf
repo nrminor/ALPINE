@@ -484,6 +484,9 @@ process VALIDATE_METADATA {
 	output:
 	path "validated-metadata.arrow"
 
+	when:
+	params.download_only == false
+
 	script:
 	"""
 	validate-metadata.py ${metadata}
@@ -515,6 +518,9 @@ process VALIDATE_SEQUENCES {
 	output:
 	path "*.fasta.zst"
 
+	when:
+	params.download_only == false
+
 	script:
 	"""
 	seqkit replace -j ${task.cpus} --f-by-name --keep-untouch --pattern "\\|" --replacement " " \
@@ -544,9 +550,6 @@ process FILTER_META_TO_GEOGRAPHY {
 	output:
 	path "*.arrow", emit: metadata
 	path "*.txt", emit: accessions
-
-	when:
-	params.download_only == false
 
 	script:
 	"""
