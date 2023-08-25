@@ -10,7 +10,7 @@ end
 const METADATA_PATH::String = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
 const MAX_DATE::String = ARGS[2]
 const MIN_DATE::String = ARGS[3]
-const GEOGRAPHY::String = ARGS[4:end]
+const GEOGRAPHY::String = join(ARGS[4:end], " ")
 
 # run the function based on the provided dates with multiple dispatch
 function main(metadata_path::String, geo::String, max_date::String, min_date::String)
