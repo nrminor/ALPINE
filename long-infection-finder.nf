@@ -524,7 +524,7 @@ process VALIDATE_SEQUENCES {
 	script:
 	"""
 	seqkit replace -j ${task.cpus} --f-by-name --keep-untouch --pattern "\\|" --replacement " " \
-	--compress-level 4 ${fasta} -o validated.fasta.zst
+	${fasta} -o validated.fasta.zst
 	"""
 
 }
@@ -553,7 +553,7 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	script:
 	"""
-	filter-to-geography.jl ${metadata} ${params.geography} ${params.max_date} ${params.min_date}
+	filter-to-geography.jl ${metadata} ${params.max_date} ${params.min_date} "${params.geography}"
 	"""
 
 }
