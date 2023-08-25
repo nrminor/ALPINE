@@ -390,7 +390,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	// publishDir params.ncbi_results, mode: params.publishMode
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
-	maxRetries 5
+	maxRetries 3
 
 	output:
 	path "*.zip", emit: zip_archive
