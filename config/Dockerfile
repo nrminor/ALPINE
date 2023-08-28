@@ -1,5 +1,8 @@
 FROM ubuntu:20.04
 
+# Set working directory
+WORKDIR /scratch
+
 # Set environment variables
 ENV DEBIAN_FRONTEND noninteractive
 ENV TZ America/New_York
@@ -110,6 +113,7 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
 
 # Copy Julia functions to precompile as a module
 ENV JULIA_DEPOT_PATH=/root/.julia
+ENV JULIA_SCRATCH_TRACK_ACCESS=0
 COPY LongInfectionFinder.jl/ /root/.julia/environments/v1.9
 RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
@@ -121,7 +125,7 @@ RUN julia -e 'using Pkg; \
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV NXF_HOME=/scratch/.nextflow
-ENV PATH=$PATH:/opt/julia-1.9.0/bin:/root/.julia/compiled/v1.9:
+ENV PATH=$PATH:/opt/julia-1.9.0/bin:/scratch/.julia/compiled/v1.9
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \
@@ -137,10 +141,7 @@ RUN chmod +x /usr/local/bin/* && \
     chmod -R +rwx /root/.julia/compiled/v1.9/* && \
     chmod -R +rwx /root/.julia/logs/* && \
     chmod -R +rwx /root/.julia/packages/ && \
-    chmod -R +rwx /root/.julia/packages/Scratch
-
-# Set working directory
-WORKDIR /scratch
+    chmod -R 755 /root/.julia/scratchspaces/
 
 # make sure shells are bash
 CMD ["/bin/bash"]
