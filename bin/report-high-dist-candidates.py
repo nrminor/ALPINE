@@ -17,10 +17,9 @@ docstrings below for more granular explanations.
 # bring in the modules used in this namespace
 import os
 import argparse
+import subprocess
 import numpy as np
 import polars as pl
-import pyarrow
-import subprocess
 from polars.testing import assert_frame_equal
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -89,14 +88,14 @@ def visualize_distance_scores(metadata: pl.DataFrame, threshold: float):
     Returns:
     None
     """
-    
+
     # retrieve the distance scores from the metadata dateframe
     metadata_pd = metadata.to_pandas()
-    
+
     # Set the style and size of the plot
     plt.figure(figsize=(7, 5.5))
     sns.set_style("whitegrid")
-    
+
     # Plot the histogram
     sns.histplot(metadata_pd["Distance Score"], kde=True, color="lightblue", element="step")
 
@@ -312,9 +311,9 @@ def main():
     (Seqkit, written in Go, is much faster at filtering large
     numbers of FASTA records than Python).
     """
-    
+
     # retrieve file paths and settings from keyword command line arguments
-    metadata_filename, fasta_path, stringency, workingdir = parse_command_line_args()
+    metadata_name, fasta_path, stringency, workingdir = parse_command_line_args()
 
     # Retrieve a quantile to use to define a retention threshold downstream
     strict_quant = quantify_stringency(stringency)
@@ -326,7 +325,7 @@ def main():
     yearmonths = [f.replace('-dist-matrix.csv', '') for f in files]
 
     # retrieve all candidate metadata
-    metadata, dist_scores, cluster_meta = read_metadata_files(metadata_filename, yearmonths, workingdir)
+    metadata, dist_scores, cluster_meta = read_metadata_files(metadata_name,yearmonths,workingdir)
 
     # pile up all metadata from clustering, distance-calling, and the original database
     high_dist_meta, accessions = collate_metadata(metadata, dist_scores, cluster_meta, strict_quant)

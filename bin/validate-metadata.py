@@ -44,13 +44,13 @@ def main():
     Returns:
     None
     """
-    
+
     # parse command line arguments
     metadata_path = parse_command_line_args()
 
     # Scan the CSV into a LazyFrame
     metadata = pl.scan_csv(metadata_path, separator="\t", low_memory=True)
-    
+
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
 
@@ -66,12 +66,14 @@ def main():
     # Double check the column name for geographic locations
     if "Geographic location" in metadata.columns:
         metadata = metadata.rename({"Geographic location": "Geographic Location"})
-        
+
     # Correct date typing
     metadata = metadata.with_columns(
-        pl.col("Isolate Collection date").str.strptime(pl.Date, format="%Y-%m-%d", strict=False).alias("Isolate Collection date")
+        pl.col("Isolate Collection date").str.strptime(
+        pl.Date, format="%Y-%m-%d", strict=False
+        ).alias("Isolate Collection date")
     ).filter(pl.col("Isolate Collection date").is_not_null())
-    
+
     # evaluate and sink into compressed Arrow file in batches
     metadata.sink_ipc("validated-metadata.arrow", compression="zstd")
 # end main def
