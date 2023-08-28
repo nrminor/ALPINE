@@ -553,7 +553,7 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	script:
 	"""
-	filter-to-geography.jl ${metadata} ${params.max_date} ${params.min_date} "${params.geography}"
+	filter-to-geography.jl ${metadata} ${params.max_date} ${params.min_date} ${params.geography}
 	"""
 
 }
