@@ -26,7 +26,7 @@ def parse_command_line_args():
     args = parser.parse_args()
     return args.cluster_table_path, args.metadata_path
 
-def main(cluster_table_path: str, metadata_path: str):
+def main():
     """
     This function reads in a cluster table and metadata file,
     and then compiles FASTA sequences for each repeat cluster and

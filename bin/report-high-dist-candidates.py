@@ -91,21 +91,21 @@ def visualize_distance_scores(metadata: pl.DataFrame, threshold: float):
     """
     
     # retrieve the distance scores from the metadata dateframe
-    netadata_pd = metadata.to_pandas()
+    metadata_pd = metadata.to_pandas()
     
     # Set the style and size of the plot
     plt.figure(figsize=(7, 5.5))
     sns.set_style("whitegrid")
     
     # Plot the histogram
-    sns.histplot(netadata_pd["Distance Score"], kde=True, color="lightblue", element="step")
+    sns.histplot(metadata_pd["Distance Score"], kde=True, color="lightblue", element="step")
 
     # Add a vertical line at the retention threshold
     plt.axvline(x=threshold, color="red", lw=3)
 
     # Add a text label for the retention threshold
-    max_count = max(plt.hist(metadata['Distance_Score'], bins=10, alpha=0)[0])
-    plt.text(threshold + 5, max_count / 2, f"Retention Threshold:\n{threshold}")
+    max_count = max(plt.hist(metadata_pd['Distance_Score'], bins=10, alpha=0)[0])
+    plt.text(threshold + 20, max_count / 2, f"Retention Threshold:\n{threshold}")
 
     # Add labels
     plt.xlabel("Distance Score")
