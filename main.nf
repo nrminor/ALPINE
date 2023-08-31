@@ -175,8 +175,6 @@ workflow {
 		GET_DESIGNATION_DATES.out
 	)
 
-	// Steps for analyzing and visualizing the results from the 
-	// approaches above
 	if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == false ){
 
 		FIND_DOUBLE_CANDIDATES (
@@ -228,27 +226,6 @@ workflow {
 
 	}
 
-	// PREP_FOR_ESCAPE_CALC ()
-
-	// RUN_ESCAPE_CALC ()
-
-	// BUILD_NEXTSTRAIN_TREE ()
-
-	// ALIGN_SARS_COV_2 (
-	// 	SUMMARIZE_CANDIDATES.out.high_dist_seqs
-	// )
-
-	// VARIANT_CALL_SC2 (
-	// 	ALIGN_SARS_COV_2.out
-	// )
-
-	// PREP_FOR_USHER (
-	// 	VARIANT_CALL_SC2.out
-	// )
-
-	// PLACE_WITH_USHER ()
-	
-
 }
 // --------------------------------------------------------------- //
 
@@ -264,14 +241,7 @@ if ( workflow.profile == "chtc" ){
 	params.max_cpus = params.max_shared_cpus
 }
 
-// specifying whether to run in low disk mode
-if( params.low_disk_mode == true ) {
-    params.publishMode = 'symlink'
-}
-else {
-    params.publishMode = 'copy'
-}
-
+// calling pathogen taxID if pulling SARS-CoV-2
 if ( params.pathogen == "SARS-CoV-2" || params.pathogen == "sars-cov-2" ){
 	pathogen = "2697049"
 }
@@ -282,26 +252,26 @@ params.dated_results = params.results + "/" + params.date
 // handling the case where no geography or date filters are provided
 if( params.geography == "" ){
 	if ( params.fasta_path == "" ){
-		params.ncbi_results = params.dated_results + "/GenBank"
+		params.results_subdir = params.dated_results + "/GenBank"
 	} else {
-		params.ncbi_results = params.dated_results + "/LocalDataset"
+		params.results_subdir = params.dated_results + "/LocalDataset"
 	}
 } else {
 	if ( params.fasta_path == "" ){
-		params.ncbi_results = params.dated_results + "/GenBank_" + params.geography
+		params.results_subdir = params.dated_results + "/GenBank_" + params.geography
 	} else {
-		params.ncbi_results = params.dated_results + "/LocalDataset_" + params.geography
+		params.results_subdir = params.dated_results + "/LocalDataset_" + params.geography
 	}
 }
 
 // creating results subfolders for the three orthogonal anachronistic
 // sequence search methods
-params.clustering_results = params.ncbi_results + "/all_clustering_results"
-params.high_distance_candidates = params.ncbi_results + "/high_distance_clusters"
+params.clustering_results = params.results_subdir + "/all_clustering_results"
+params.high_distance_candidates = params.results_subdir + "/high_distance_clusters"
 params.repeat_lineages = params.high_distance_candidates + "/repeat_lineages"
-params.anachronistic_candidates = params.ncbi_results + "/anachronistic_candidates"
-params.metadata_candidates = params.ncbi_results + "/metadata_candidates"
-params.double_candidates = params.ncbi_results + "/double_candidates"
+params.anachronistic_candidates = params.results_subdir + "/anachronistic_candidates"
+params.metadata_candidates = params.results_subdir + "/metadata_candidates"
+params.double_candidates = params.results_subdir + "/double_candidates"
 
 // --------------------------------------------------------------- //
 
@@ -387,7 +357,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	*/
 
 	tag "${params.pathogen}"
-	// publishDir params.ncbi_results, mode: params.publishMode
+	// publishDir params.results_subdir, mode: 'copy'
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
 	maxRetries 3
@@ -411,7 +381,7 @@ process UNZIP_NCBI_METADATA {
 
 	tag "${params.pathogen}"
 
-	publishDir params.ncbi_results, pattern: "*.tsv", mode: params.publishMode
+	publishDir params.results_subdir, pattern: "*.tsv", mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
@@ -442,7 +412,7 @@ process EXTRACT_NCBI_FASTA {
 	tag "${params.pathogen}"
 
 	label "lif_container"
-	publishDir params.ncbi_results, mode: params.publishMode
+	publishDir params.results_subdir, mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
 	maxRetries 2
@@ -569,7 +539,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "lif_container"
-	publishDir params.ncbi_results, mode: params.publishMode
+	publishDir params.results_subdir, mode: 'copy'
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
 	maxRetries 1
@@ -1093,59 +1063,5 @@ process FIND_DOUBLE_CANDIDATES {
 	"""
 
 }
-
-// process PREP_FOR_ESCAPE_CALC {}
-
-// process RUN_ESCAPE_CALC {}
-
-// process PREP_FOR_USHER {
-
-// 	/*
-// 	*/
-
-// 	tag "${params.pathogen}, ${params.geography}"
-// 	label "lif_container"
-// 	publishDir params.double_candidates, mode: 'copy'
-	
-// 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
-// 	maxRetries 1
-
-// 	input:
-// 	tuple path(fasta), val(method)
-
-// 	output:
-
-// 	when:
-// 	params.pathogen == "SARS-CoV-2"
-
-// 	script:
-// 	"""
-// 	"""
-
-// }
-
-// process PLACE_WITH_USHER {
-
-// 	/*
-// 	*/
-
-// 	tag "${params.pathogen}, ${params.geography}"
-// 	label "lif_container"
-// 	publishDir params.double_candidates, mode: 'copy'
-	
-// 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
-// 	maxRetries 1
-
-// 	input:
-// 	path fasta
-
-// 	output:
-
-// 	script:
-// 	"""
-// 	"""
-
-// }
-
 
 // --------------------------------------------------------------- //
