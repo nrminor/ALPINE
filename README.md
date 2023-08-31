@@ -1,5 +1,4 @@
-# ALPINE
-Anachronistic Lineage and Persistent INfection Explorer
+# ALPINE: Anachronistic Lineage and Persistent INfection Explorer
 
 _Disclaimer: This project is under active development and will likely be revised often in the near term. More documentation to come._
 
