@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 # loading necessary packages
-using LongInfectionFinder, FastaIO, BioSequences, Distances, Statistics, DataFrames, CSV
+using ALPINE, FastaIO, BioSequences, Distances, Statistics, DataFrames, CSV
 
 # parse supplied command line arguments to locate files and set parameters
 const FASTA_PATH::String = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]

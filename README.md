@@ -1,10 +1,10 @@
-# Advanced Virus & Prolonged Infection Finder
-High-throughput NextFlow Pipeline for discovering evolutionarily advanced pathogens and prolonged infection candidates in public sequence databases.
+# ALPINE
+Anachronistic Lineage and Persistent INfection Explorer
 
 _Disclaimer: This project is under active development and will likely be revised often in the near term. More documentation to come._
 
 ## Overview
-This pipeline was designed to probe large numbers of pathogen sequences, numbering in the millions to tens of millions, for _highly evolved_ and/or _anachronistic_ sequences. These two concepts are core to understanding the pipeline's outputs, as they encompass two ways of identifying pathogens that may be greater public health risks than other co-occuring pathogens.
+ALPINE is a high-throughput NextFlow Pipeline pipeline for discovering evolutionarily advanced pathogens and prolonged infection candidates in public sequence databases. It was designed to probe large numbers of pathogen sequences, numbering in the millions to tens of millions, for _highly evolved_ and/or _anachronistic_ sequences. These two concepts are core to understanding the pipeline's outputs, as they encompass two ways of identifying pathogens that may be greater public health risks than other co-occuring pathogens.
 
 ### What the pipeline looks for
 **Highly evolved or evolutionarily advanced pathogens** are the bread and butter of this pipeline. It considers a sequence highly evolved if it carries an exceptional number of substitutions compared to co-circulating sequences. When placed on a phylogenetic tree for the pathogen of interest, these sequences end up on unusually long branches. In the case of SARS-CoV-2, these long branches may be reminiscent of the original Omicron lineage, which was highly advanced compared the co-circulating lineages at the time.
@@ -33,7 +33,7 @@ For more details on exactly what the pipeline does, see the Workflow Overview se
 If Docker and NextFlow are already installed on your system, simply run the following command in the directory of your choice to execute the workflow with default settings (more below):
 
 ```
-nextflow run nrminor/long-infection-finder.nf
+nextflow run dholab/ALPINE
 ```
 
 ## Detailed Setup Instructions

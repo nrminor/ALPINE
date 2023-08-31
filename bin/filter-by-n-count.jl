@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 # loading necessary packages
-using FastaIO, FileIO, LongInfectionFinder
+using FastaIO, FileIO, ALPINE
 import Base.Threads
 
 # Check if the input FASTA file is a symlink, and if it is, follow the symlink,

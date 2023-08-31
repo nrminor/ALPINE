@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 # loading necessary packages
-using LongInfectionFinder, FastaIO, FileIO, Dates, DataFrames, Arrow
+using ALPINE, FastaIO, FileIO, Dates, DataFrames, Arrow
 
 # bring in command line arguments as static-typed constants, while
 # checking for and following any symlinks

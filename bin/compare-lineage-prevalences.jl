@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-using LongInfectionFinder, RCall, CSV, DataFrames
+using ALPINE, RCall, CSV, DataFrames
 
 # define typed global constants based on command line arguments
 const REPORT_PATH::String = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]

@@ -1,4 +1,4 @@
-module LongInfectionFinder
+module ALPINE
 
 # load dependencies
 using DelimitedFiles, DataFrames, CSV, Arrow, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib, FLoops, Missings, RCall, Scratch

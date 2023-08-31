@@ -1,4 +1,4 @@
-name = "LongInfectionFinder"
+name = "ALPINE"
 uuid = "86e0aada-7cfe-4a3c-b0f8-902a8a7d1317"
 authors = ["Nicholas Minor <nrminor@wisc.edu>"]
 version = "0.1.0"

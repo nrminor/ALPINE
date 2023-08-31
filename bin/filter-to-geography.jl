@@ -1,7 +1,7 @@
 #!/usr/bin/env julia
 
 # loading packages
-using LongInfectionFinder, DelimitedFiles, DataFrames, CSV, Dates, Pipe
+using ALPINE, DelimitedFiles, DataFrames, CSV, Dates, Pipe
 
 # saving command line arguments as static-typed constants
 if length(ARGS) < 4

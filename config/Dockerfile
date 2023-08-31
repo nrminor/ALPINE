@@ -114,14 +114,14 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
 # Copy Julia functions to precompile as a module
 ENV JULIA_DEPOT_PATH=/root/.julia
 ENV JULIA_SCRATCH_TRACK_ACCESS=0
-COPY LongInfectionFinder.jl/ /root/.julia/environments/v1.9
+COPY ALPINE.jl/ /root/.julia/environments/v1.9
 RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
             Pkg.instantiate(); \
             Pkg.build(); \
             Pkg.precompile(); \
             using TimeZones; \
-            using LongInfectionFinder'
+            using ALPINE'
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV NXF_HOME=/scratch/.nextflow
