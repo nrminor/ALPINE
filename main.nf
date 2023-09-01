@@ -304,7 +304,7 @@ process DOWNLOAD_REFSEQ {
 	available, is downloaded for downstream usage.
 	*/
 
-	label "lif_container"
+	label "alpine_container"
 	tag "${params.pathogen}"
 	publishDir params.resources, mode: 'copy'
 
@@ -331,7 +331,7 @@ process GET_DESIGNATION_DATES {
 	// from Cornelius Roemer's GitHub. These dates represent when each lineage was
 	// added to pangolin, after which point sequences could be classified as such 
 
-	label "lif_container"
+	label "alpine_container"
 	publishDir params.resources, mode: 'copy', overwrite: true
 	
 	output:
@@ -411,7 +411,7 @@ process EXTRACT_NCBI_FASTA {
 
 	tag "${params.pathogen}"
 
-	label "lif_container"
+	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : 'ignore' }
@@ -443,7 +443,7 @@ process VALIDATE_METADATA {
 
 	tag "${params.pathogen}"
 
-	label "lif_container"
+	label "alpine_container"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
 	maxRetries 1
@@ -475,7 +475,7 @@ process VALIDATE_SEQUENCES {
 
 	tag "${params.pathogen}"
 
-	label "lif_container"
+	label "alpine_container"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
 	maxRetries 1
@@ -509,7 +509,7 @@ process FILTER_META_TO_GEOGRAPHY {
 	*/
 
 	tag "${params.pathogen}, ${params.geography}"
-	label "lif_container"
+	label "alpine_container"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
 	maxRetries 1
@@ -523,6 +523,7 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	script:
 	"""
+	export JULIA_SCRATCH_TRACK_ACCESS=0 && \
 	filter-to-geography.jl ${metadata} ${params.max_date} ${params.min_date} ${params.geography}
 	"""
 
@@ -538,7 +539,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	*/
 
 	tag "${params.pathogen}, ${params.geography}"
-	label "lif_container"
+	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
@@ -569,7 +570,7 @@ process REMOVE_FASTA_GAPS {
 	a fasta julia script to scan through each sequence.
 	*/
 	
-	label "lif_container"
+	label "alpine_container"
 
 	tag "${params.pathogen}, ${params.geography}"
 	errorStrategy { task.attempt < 1 ? 'retry' : 'ignore' }
@@ -599,7 +600,7 @@ process FILTER_BY_MASKED_BASES {
 	i.e., are "N" instead of a defined base.
 	*/
 
-	label "lif_container"
+	label "alpine_container"
 
 	tag "${params.pathogen}, ${params.geography}"
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
@@ -628,7 +629,7 @@ process SEPARATE_BY_MONTH {
 	most evolved (which, almost by definition, they are!)
 	*/
 
-	label "lif_container"
+	label "alpine_container"
 
 	tag "${params.pathogen}, ${params.geography}"
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
@@ -658,7 +659,7 @@ process CLUSTER_BY_IDENTITY {
 	*/
 
 	tag "${yearmonth}"
-	label "lif_container"
+	label "alpine_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*.uc"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*-cluster-seqs*"
 
@@ -701,7 +702,7 @@ process PREP_CENTROID_FASTAS {
 	*/
 
 	tag "${yearmonth}"
-	label "lif_container"
+	label "alpine_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
@@ -732,7 +733,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	*/
 
 	tag "${yearmonth}"
-	label "lif_container"
+	label "alpine_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
@@ -769,7 +770,7 @@ process MULTIDIMENSIONAL_SCALING {
 	*/
 
 	tag "${yearmonth}"
-	label "lif_container"
+	label "alpine_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
@@ -803,7 +804,7 @@ process SUMMARIZE_CANDIDATES {
 	the two additional methods used in this pipeline.
 	*/
 
-	label "lif_container"
+	label "alpine_container"
 	publishDir params.high_distance_candidates, mode: 'copy'
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
@@ -838,7 +839,7 @@ process RUN_META_CLUSTER {
 	are potentially from the same prolonged infection.
 	*/
 
-	label "lif_container"
+	label "alpine_container"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
 	maxRetries 1
@@ -881,7 +882,7 @@ process META_CLUSTER_REPORT {
 	sampled multiple times, no report will be generated.
 	*/
 
-	label "lif_container"
+	label "alpine_container"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
 	maxRetries 1
@@ -918,7 +919,7 @@ process RECLASSIFY_SC2_WITH_PANGOLIN {
 	*/
 
 	tag "${params.pathogen}, ${params.geography}"
-	label "lif_container"
+	label "alpine_container"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
 	maxRetries 1
@@ -964,7 +965,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	*/
 	
 	tag "${params.pathogen}, ${params.geography}"
-	label "lif_container"
+	label "alpine_container"
 	publishDir params.anachronistic_candidates, mode: 'copy'
 	
 	errorStrategy { task.attempt < 3 ? {sleep(Math.pow(2, task.attempt) * 2000 as long); return 'retry'} : 'ignore' }
@@ -1005,7 +1006,7 @@ process SEARCH_NCBI_METADATA {
 	*/
 
 	tag "${params.pathogen}, ${params.geography}"
-	label "lif_container"
+	label "alpine_container"
 	publishDir params.metadata_candidates, mode: 'copy'
 	
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
@@ -1044,7 +1045,7 @@ process FIND_DOUBLE_CANDIDATES {
 	*/
 
 	tag "${params.pathogen}, ${params.geography}"
-	label "lif_container"
+	label "alpine_container"
 	publishDir params.double_candidates, mode: 'copy'
 	
 	errorStrategy { task.attempt < 2 ? 'retry' : 'ignore' }
