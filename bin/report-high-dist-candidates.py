@@ -97,6 +97,7 @@ def visualize_distance_scores(metadata: pl.DataFrame, threshold: float):
     sns.set_style("whitegrid")
 
     # Plot the histogram
+    assert "Distance Score" in metadata_pd.columns
     sns.histplot(metadata_pd["Distance Score"], kde=True, color="lightblue", element="step")
 
     # Add a vertical line at the retention threshold
@@ -157,6 +158,8 @@ def read_metadata_files(metadata_filename: str,
         # the distance score data frame, which we will use in some joins
         # in a later, non-IO-bound function.
         distmat = pl.read_csv(f"{workingdir}/{yearmonth}-dist-matrix.csv")
+        assert "Sequence_Name" in distmat.columns
+        assert "Distance_Score" in distmat.columns
         distmat = distmat.with_columns(
             Distance_Score=pl.Series(
             [distmat.select(col).sum().item() for col in distmat.columns[1:]]
@@ -236,6 +239,7 @@ def collate_metadata(metadata: pl.DataFrame,
 
     # join distance scores onto the cluster metadata, which will add
     # scores to the centroids from each cluster
+    assert "Accession" in cluster_meta.columns
     cluster_meta = cluster_meta.join(dist_scores, on = "Accession", how="left")
 
     # merge the month and cluster index columns to make a unique identifier
@@ -250,6 +254,10 @@ def collate_metadata(metadata: pl.DataFrame,
     # sequences in their clusters, and
     # 3 - select only the cluster size, distance, accession, and month
     # columns for joining with the big metadata
+    assert "Type" in cluster_meta.columns
+    assert "Month Index" in cluster_meta.columns
+    assert "Size" in cluster_meta.columns
+    assert "Distance Score" in cluster_meta.columns
     centroid_data = cluster_meta.filter(
         pl.col("Type") == "C"
     ).select([

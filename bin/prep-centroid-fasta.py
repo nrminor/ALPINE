@@ -105,7 +105,7 @@ def main():
     Returns:
     None
     """
-    
+
     input_path, label, count, threads = parse_command_line_args()
 
     working_fasta = align_centroids(input_path, threads)

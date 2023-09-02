@@ -101,7 +101,10 @@ def main():
         # read in dates
         dates = pd.read_csv(dates_path,
                             na_values=["", "NA"])
-        
+
+        # make sure the expected columns are present
+        assert "Isolate Collection date" in metadata.columns
+
         # Ensure dates are properly formatted
         metadata["Isolate Collection date"] = pd.to_datetime(metadata["Isolate Collection date"], errors='coerce')
         dates.designation_date = pd.to_datetime(dates.designation_date, errors="ignore", format="%Y-%m-%d").fillna("2021-02-18")
@@ -120,7 +123,7 @@ def main():
             desig_dates = metadata['lineage_designation']
             args2 = [(i, ncbi_dates, desig_dates) for i in range(len(ncbi_dates))]
             metadata['infection_duration'] = p.starmap(add_infection_duration, args2)
-        
+
         # Filter down to long infection candidates
         long_infections = metadata.loc[(metadata["infection_duration"] >= infection_cutoff) & ~metadata["Accession"].isna()].sort_values("infection_duration", ascending=False)
 
