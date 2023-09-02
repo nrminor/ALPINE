@@ -1,4 +1,4 @@
-#!/usr/bin/env julia
+#!/usr/bin/env -S julia -t auto
 
 # load pipeline module
 using ALPINE, CSV, DataFrames

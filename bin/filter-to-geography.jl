@@ -1,4 +1,4 @@
-#!/usr/bin/env julia
+#!/usr/bin/env -S julia -t auto
 
 # loading packages
 using ALPINE, DelimitedFiles, DataFrames, CSV, Dates, Pipe

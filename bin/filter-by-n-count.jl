@@ -1,4 +1,4 @@
-#!/usr/bin/env julia
+#!/usr/bin/env -S julia -t auto
 
 # loading necessary packages
 using FastaIO, FileIO, ALPINE

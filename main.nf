@@ -50,6 +50,10 @@ workflow {
 			FILTER_META_TO_GEOGRAPHY.out.accessions
 		)
 
+		EARLY_STATS (
+			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
+		)
+
 		REMOVE_FASTA_GAPS ( 
 			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 		)
@@ -225,6 +229,17 @@ workflow {
 		)
 
 	}
+
+	LATE_STATS (
+		FIND_DOUBLE_CANDIDATES.out.fasta
+	)
+
+	COMPUTE_PREVALENCE_ESTIMATE (
+		EARLY_STATS.out,
+		LATE_STATS.out
+	)
+
+	COMPUTE_PREVALENCE_ESTIMATE.out.view()
 
 }
 // --------------------------------------------------------------- //
@@ -557,6 +572,41 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	script:
 	"""
 	seqkit grep -j ${task.cpus} -f ${accessions} ${fasta} -o filtered-to-geography.fasta.zst
+	"""
+
+}
+
+process EARLY_STATS {
+
+	/*
+	This process computes a variety of sequence statistics for
+	the sequences flagged as double candidates, with the most
+	important being the number of sequences. This number will
+	be used to compute the prevalence of these high-distance,
+	anachronistic sequences among the input sequences. The
+	input sequence database is surely a biased sample, but we
+	attempt to use it here as a proxy for the prevalence of
+	these pathogens in the general population.
+	*/
+	
+	tag "${params.pathogen}, ${params.geography}"
+	label "alpine_container"
+	publishDir params.results_subdir, mode: 'copy'
+
+	errorStrategy { task.attempt < 1 ? 'retry' : 'ignore' }
+	maxRetries 1
+
+	cpus params.max_cpus
+
+	input:
+	path fasta
+
+	output:
+	path "*.tsv"
+
+	script:
+	"""
+	seqkit stats -j ${task.cpus} ${fasta} > early_stats.tsv
 	"""
 
 }
@@ -1061,6 +1111,67 @@ process FIND_DOUBLE_CANDIDATES {
 	script:
 	"""
 	find-double-candidates.jl
+	"""
+
+}
+
+process LATE_STATS {
+
+	/*
+	This process computes the same statistics post-run as the
+	process `EARLY_STATS` above. Refer to the docstring there
+	for more explanation and caveats.
+	*/
+	
+	tag "${params.pathogen}, ${params.geography}"
+	label "alpine_container"
+	publishDir params.results_subdir, mode: 'copy'
+
+	errorStrategy { task.attempt < 1 ? 'retry' : 'ignore' }
+	maxRetries 1
+
+	cpus params.max_cpus
+
+	input:
+	path fasta
+
+	output:
+	path "*.tsv"
+
+	script:
+	"""
+	seqkit stats -j ${task.cpus} ${fasta} > early_stats.tsv
+	"""
+
+}
+
+process COMPUTE_PREVALENCE_ESTIMATE {
+
+	/*
+	As a final step, the workflow compares the sequence statistics
+	from above to estimate and print out a prevalence estimate for
+	the double-candidates identified above.
+	*/
+	
+	tag "${params.pathogen}, ${params.geography}"
+	label "alpine_container"
+	publishDir params.results_subdir, mode: 'copy'
+
+	errorStrategy { task.attempt < 1 ? 'retry' : 'ignore' }
+	maxRetries 1
+
+	cpus 1
+
+	input:
+	path early_stats
+	path late_states
+
+	output:
+	stdout
+
+	script:
+	"""
+	estimate-prevalence.jl ${early_stats} ${late_stats}
 	"""
 
 }

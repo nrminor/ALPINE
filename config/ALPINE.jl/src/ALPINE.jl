@@ -4,7 +4,7 @@ module ALPINE
 using DelimitedFiles, DataFrames, CSV, Arrow, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib, FLoops, Missings, RCall, Scratch
 import Base.Threads
 
-export filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, date_pango_calls, create_rarity_lookup, assign_anachron, find_anachron_seqs, find_double_candidates
+export filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, date_pango_calls, create_rarity_lookup, assign_anachron, find_anachron_seqs, find_double_candidates, estimate_prevalence
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
@@ -19,6 +19,12 @@ function filter_metadata_by_geo(input_table::String, geography::String)
 
     # Read in the metadata file as a dataframe
     metadata_df = DataFrame(Arrow.Table(input_table))
+
+    # use assertions to catch runtime errors more informatively and make
+    # assumptions about the data explicit
+    @assert "Geographic Location" in names(metadata_df)
+    @assert "Isolate Collection date" in names(metadata_df)
+    @assert "Accession" in names(metadata_df)
 
     # filter metadata based on desired geography
     filtered = @pipe metadata_df |>
@@ -46,6 +52,12 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
 
     # Read in the metadata file as a dataframe
     metadata_df = DataFrame(Arrow.Table(input_table))
+
+    # use assertions to catch runtime errors more informatively and make
+    # assumptions about the data explicit
+    @assert "Geographic Location" in names(metadata_df)
+    @assert "Isolate Collection date" in names(metadata_df)
+    @assert "Accession" in names(metadata_df)
 
     # filter metadata based on desired geography
     filtered = @pipe metadata_df |>
@@ -77,6 +89,12 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
 
     # Read in the metadata file as a dataframe
     metadata_df = DataFrame(Arrow.Table(input_table))
+
+    # use assertions to catch runtime errors more informatively and make
+    # assumptions about the data explicit
+    @assert "Geographic Location" in names(metadata_df)
+    @assert "Isolate Collection date" in names(metadata_df)
+    @assert "Accession" in names(metadata_df)
 
     # filter metadata based on desired geography
     filtered = @pipe metadata_df |>
@@ -194,6 +212,8 @@ function date_accessions(input_path::String)
     metadata_df = DataFrame(Arrow.Table(input_path))
 
     # create lookup of dates and accessions
+    @assert "Accession" in names(metadata_df)
+    @assert "Isolate Collection date" in names(metadata_df)
     accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
 
     return(accession_to_date)
@@ -332,8 +352,8 @@ and `stringency::String` to weight the distances by sequence ID, and use argumen
 function distance_matrix(temp_filename::String, cluster_table::DataFrame, count::Int, majority_centroid::String, yearmonth::String, stringency::String)
 
     # Collect both names and sequences
-    seqs = [seq for (name, seq) in FastaReader(temp_filename)]
-    seq_names = [name for (name, seq) in FastaReader(temp_filename)]
+    seqs = [seq for (_, seq) in FastaReader(temp_filename)]
+    seq_names = [name for (name, _) in FastaReader(temp_filename)]
 
     # Convert the sequences to BioSequence objects, replacing 'N' characters
     filtered_seqs = [replace(seq, 'N' => '-') for seq in seqs]
@@ -395,6 +415,9 @@ function date_pango_calls(report_path::String, metadata::DataFrame)
     # Read in the necessary pangolin report columns
     pango_report = CSV.read(report_path, DataFrame)
 
+    @assert "taxon" in names(pango_report)
+    @assert "Accession" in names(metadata)
+
     pango_with_dates = @pipe pango_report |>
         leftjoin(metadata, _, on = :taxon => :Accession) |>
         select(-:Accession) |>
@@ -432,6 +455,9 @@ function create_rarity_lookup(pango_report::DataFrame)
 
         # call the outbreak.info API for prevalence estimates
         prevalence_table = rcopy(R"getPrevalence(pangolin_lineage = rlineage, location = 'United States')")
+
+        @assert "proportion" in names(prevalence_table)
+        @assert "date" in names(prevalence_table)
 
         # get rid of zeroes, which will skew our methods below. We also get
         # rid of 1.0's, which are likely erroneous.
@@ -502,6 +528,7 @@ function assign_anachron(metadata_path::String, report_path::String)
     # make sure the accessions are the same and in the sample
     # order between the metadata and the pango report
     @assert new_metadata.Accession == pango_report.taxon
+    @assert "Isolate Collection date" in names(pango_report)
 
     # create rare-date lookup with the outbreak.info API
     rarity_lookup = create_rarity_lookup(pango_report)
@@ -580,6 +607,13 @@ anachronistic reporter, and then filters a FASTA to any identifiable double cand
 """
 function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs::String)
 
+    # use assertions to catch runtime errors more informatively and make
+    # assumptions about the data explicit
+    @assert ncol(metadata1) > 0
+    @assert ncol(metadata2) > 0
+    @assert names(metadata1)[1] == "Accession"
+    @assert names(metadata2)[1] == "Accession"
+
     # Get the intersecting accessions
     common_accessions = intersect(metadata1[!, 1], metadata2[!, 1])
 
@@ -591,7 +625,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
     sort!(metadata1_filtered, :Accession)
     sort!(metadata2_filtered, :Accession)
     
-    if "Anachronicity" in names(metadata2_filtered)
+    if occursin("Anachronicity", names(metadata2_filtered)[end])
 
         # Add the last column from metadata2 to metadata1
         metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
@@ -600,6 +634,8 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
         CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
 
     else
+
+        @assert occursin("Anachronicity", names(metadata1_filtered)[end])
 
         # Add the last column from metadata2 to metadata1
         metadata2_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
@@ -633,6 +669,15 @@ identifiable double candidates.
 """
 function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, metadata3::DataFrame, seqs::String)
 
+    # use assertions to catch runtime errors more informatively and make
+    # assumptions about the data explicit
+    @assert ncol(metadata1) > 0
+    @assert ncol(metadata2) > 0
+    @assert ncol(metadata3) > 0
+    @assert names(metadata1)[1] == "Accession"
+    @assert names(metadata2)[1] == "Accession"
+    @assert names(metadata3)[1] == "Accession"
+
     # join the metadata based on anachronistic accessions
     if nrow(metadata2) >= nrow(metadata3)
         metadata_joined = leftjoin(metadata2, metadata3, on = :Accession)
@@ -651,7 +696,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     sort!(metadata1_filtered, :Accession)
     sort!(metadata_joined_filtered, :Accession)
 
-    if "Anachronicity" in names(metadata2_filtered)
+    if occursin("Anachronicity", names(metadata_joined_filtered)[end])
 
         # Add the last column from metadata2 to metadata1
         metadata1_filtered[!, :Anachronicity] = metadata_joined_filtered[!, end]
@@ -660,6 +705,8 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
         CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
 
     else
+
+        @assert occursin("Anachronicity", names(metadata1_filtered)[end])
 
         # Add the last column from metadata2 to metadata1
         metadata_joined_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
@@ -691,6 +738,15 @@ This method looks for double candidates from three anachronistic sequence detect
 """
 function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, metadata3::DataFrame)
 
+    # use assertions to catch runtime errors more informatively and make
+    # assumptions about the data explicit
+    @assert ncol(metadata1) > 0
+    @assert ncol(metadata2) > 0
+    @assert ncol(metadata3) > 0
+    @assert names(metadata1)[1] == "Accession"
+    @assert names(metadata2)[1] == "Accession"
+    @assert names(metadata3)[1] == "Accession"
+
     # join the metadata based on anachronistic accessions
     if nrow(metadata2) >= nrow(metadata3)
         metadata_joined = leftjoin(metadata2, metadata3, on = :Accession)
@@ -709,7 +765,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     sort!(metadata1_filtered, :Accession)
     sort!(metadata_joined_filtered, :Accession)
 
-    if "Anachronicity" in names(metadata2_filtered)
+    if "Anachronicity" in names(metadata_joined_filtered)
 
         # Add the last column from metadata2 to metadata1
         metadata1_filtered[!, :Anachronicity] = metadata_joined_filtered[!, end]
@@ -718,6 +774,8 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
         CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
 
     else
+
+        @assert occursin("Anachronicity", names(metadata1_filtered)[end])
 
         # Add the last column from metadata2 to metadata1
         metadata_joined_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
@@ -736,6 +794,14 @@ and are anachronistic, occurring long after a lineage is circulating and prevale
 This method looks for double candidates from two anachronistic sequence detectors.
 """
 function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
+
+    # use assertions to catch runtime errors more informatively
+    @assert ncol(metadata1) > 0
+    @assert ncol(metadata2) > 0
+    @assert "Accession" in names(metadata1)
+    @assert "Accession" in names(metadata2)
+    @assert names(metadata1)[1] == "Accession"
+    @assert names(metadata2)[1] == "Accession"
 
     # Get the intersecting accessions
     common_accessions = intersect(metadata1[!, 1], metadata2[!, 1])
@@ -758,6 +824,8 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
 
     else
 
+        @assert occursin("Anachronicity", names(metadata1_filtered)[end])
+
         # Add the last column from metadata2 to metadata1
         metadata2_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
 
@@ -765,6 +833,31 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
         CSV.write("double_candidate_metadata.tsv", metadata2_filtered, delim='\t')
 
     end
+
+end
+
+"""
+Function `estimate_prevalence` uses the outputs from `seqkit stats` to
+estimate the proportion of sequences flagged at the end of ALPINE in the
+sequences used as the workflow's input.
+"""
+function estimate_prevalence(early_stats::DataFrame, late_stats::DataFrame)
+
+    # use an assertion to make sure the necessary column names are present
+    @assert "num_seqs" in names(early_stats)
+    @assert "num_seqs" in names(late_stats)
+
+    # make sure that candidates were found at all before pulling out
+    # the final sample size
+    candidate_count = nrow(late_stats) == 0 ? 0 : unique(late_stats.num_seqs)
+
+    # pull out the input sample size
+    sample_size = unique(early_stats.num_seqs)
+
+    # compute the prevalence estimate
+    prevalence = (candidate_count / sample_size) * 100
+
+    return (prevalence, sample_size)
 
 end
 
