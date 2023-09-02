@@ -67,28 +67,22 @@ def align_centroids(fasta_path: str, threads: int) -> str:
         seqkit_results = io.StringIO(result.stdout)
         lengths_df = pd.read_csv(seqkit_results, sep="\t")
 
-        # check if the sequences are all the same length. If not, align them
-        # with Clustal Omega
-        unique_values = lengths_df.iloc[:, -1].nunique()
-        if unique_values > 1:
+        # Align with Clustal Omega
 
-            # multiple sequence lengths indicates that the inputs are not aligned
-            new_fasta = "tmp.fasta"
-            clustalomega_cline = ClustalOmegaCommandline(infile = fasta_path,
-                                                         outfile = new_fasta,
-                                                         outfmt = 'fasta',
-                                                         threads = threads,
-                                                         wrap = 80,
-                                                         verbose = True,
-                                                         auto = False)
-            clustalomega_cline()
+        # multiple sequence lengths indicates that the inputs are not aligned
+        new_fasta = "tmp.fasta"
+        clustalomega_cline = ClustalOmegaCommandline(infile = fasta_path,
+                                                        outfile = new_fasta,
+                                                        outfmt = 'fasta',
+                                                        threads = threads,
+                                                        wrap = 80,
+                                                        verbose = True,
+                                                        auto = False)
+        clustalomega_cline()
 
-            # return the path to the aligned FASTA
-            return new_fasta
-        else:
-            # If input sequences are already aligned, let the script proceed
-            # without re-aligning
-            return fasta_path
+        # return the path to the aligned FASTA
+        return new_fasta
+        
 # end align_centroids def
 
 def main():

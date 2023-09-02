@@ -194,9 +194,7 @@ def read_metadata_files(metadata_filename: str,
             left=distmat.select(pl.col("Accession")).unique().sort(by="Accession"),
             right=cluster_table.filter(
             pl.col("Type")=="C"
-            ).select(
-            pl.col("Accession")).unique().sort(by="Accession"
-            )
+            ).select(pl.col("Accession")).unique().sort(by="Accession")
         )
 
         # vstack (i.e., append) them onto the growing metadata dataframes
