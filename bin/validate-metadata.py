@@ -54,6 +54,13 @@ def main():
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
 
+        # double check that the expected column names are present
+        assert "Virus name" in metadata.columns
+        assert "Accession ID" in metadata.columns
+        assert "Collection date" in metadata.columns
+        assert "Location" in metadata.columns
+        assert "Pango lineage" in metadata.columns
+
         # rename "Accession ID", "Collection date", "Location", and "Pango lineage"
         metadata = metadata.rename({
             "Virus name": "Accession",
@@ -68,6 +75,7 @@ def main():
         metadata = metadata.rename({"Geographic location": "Geographic Location"})
 
     # Correct date typing
+    assert "Isolate Collection date" in metadata.columns
     metadata = metadata.with_columns(
         pl.col("Isolate Collection date").str.strptime(
         pl.Date, format="%Y-%m-%d", strict=False
