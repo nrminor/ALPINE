@@ -159,7 +159,6 @@ def read_metadata_files(metadata_filename: str,
         # in a later, non-IO-bound function.
         distmat = pl.read_csv(f"{workingdir}/{yearmonth}-dist-matrix.csv")
         assert "Sequence_Name" in distmat.columns
-        assert "Distance_Score" in distmat.columns
         distmat = distmat.with_columns(
             Distance_Score=pl.Series(
             [distmat.select(col).sum().item() for col in distmat.columns[1:]]
