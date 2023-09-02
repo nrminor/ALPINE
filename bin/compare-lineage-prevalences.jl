@@ -14,6 +14,7 @@ function main(report_path::String, metadata_path::String, fasta_path::String)
 
     # filter the metadata
     new_metadata = assign_anachron(metadata_path, report_path)
+    @assert "Anachronicity (days)" in names(new_metadata)
     sort!(new_metadata, Symbol("Anachronicity (days)"), rev = true)
 
     # write metadata (the FASTA was already written incrementally in subset_fasta)
@@ -23,6 +24,6 @@ function main(report_path::String, metadata_path::String, fasta_path::String)
     find_anachron_seqs(new_metadata, fasta_path)
 
 end
-precompile(main, (string,string,string))
+precompile(main, (String,String,String))
 
 main(REPORT_PATH, METADATA_PATH, FASTA_PATH)
