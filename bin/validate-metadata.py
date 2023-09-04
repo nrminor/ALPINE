@@ -17,7 +17,7 @@ for future scripts.
 """
 
 import argparse
-import polars as pl
+import polars
 
 
 def parse_command_line_args():
@@ -49,7 +49,7 @@ def main():
     metadata_path = parse_command_line_args()
 
     # Scan the CSV into a LazyFrame
-    metadata = pl.scan_csv(metadata_path, separator="\t", low_memory=True)
+    metadata = polars.scan_csv(metadata_path, separator="\t", low_memory=True)
 
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
@@ -77,10 +77,10 @@ def main():
     # Correct date typing
     assert "Isolate Collection date" in metadata.columns
     metadata = metadata.with_columns(
-        pl.col("Isolate Collection date").str.strptime(
-        pl.Date, format="%Y-%m-%d", strict=False
+        polars.col("Isolate Collection date").str.strptime(
+        polars.Date, format="%Y-%m-%d", strict=False
         ).alias("Isolate Collection date")
-    ).filter(pl.col("Isolate Collection date").is_not_null())
+    ).filter(polars.col("Isolate Collection date").is_not_null())
 
     # evaluate and sink into compressed Arrow file in batches
     metadata.sink_ipc("validated-metadata.arrow", compression="zstd")

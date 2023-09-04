@@ -18,11 +18,8 @@ any remaining records here.
 
 import os
 import argparse
-import subprocess
-import io
-import pandas as pd
 from Bio import SeqIO
-from Bio.Align.Applications import ClustalOmegaCommandline 
+from Bio.Align.Applications import ClustalOmegaCommandline
 
 def parse_command_line_args():
     """parse command line arguments"""
@@ -51,38 +48,20 @@ def align_centroids(fasta_path: str, threads: int) -> str:
     has been aligned with Clustal Omega.
     """
 
-    # Create the seqkit command for checking sequence lengths
-    cmd = ["seqkit", "fx2tab", "--length", "--name", fasta_path]
+    # Align with Clustal Omega
+    new_fasta = "tmp.fasta"
+    clustalomega_cline = ClustalOmegaCommandline(infile = fasta_path,
+                                                    outfile = new_fasta,
+                                                    outfmt = 'fasta',
+                                                    threads = threads,
+                                                    wrap = 80,
+                                                    verbose = True,
+                                                    auto = False)
+    clustalomega_cline()
 
-    # Use subprocess.run to execute seqkit and create a tab-delimited sequence
-    # length table.
-    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    # return the path to the aligned FASTA
+    return new_fasta
 
-    # Check for errors
-    if result.stderr:
-        print("Error:", result.stderr)
-        return fasta_path
-    else:
-        # If there's no error, read the output as a tab-delimited file
-        seqkit_results = io.StringIO(result.stdout)
-        lengths_df = pd.read_csv(seqkit_results, sep="\t")
-
-        # Align with Clustal Omega
-
-        # multiple sequence lengths indicates that the inputs are not aligned
-        new_fasta = "tmp.fasta"
-        clustalomega_cline = ClustalOmegaCommandline(infile = fasta_path,
-                                                        outfile = new_fasta,
-                                                        outfmt = 'fasta',
-                                                        threads = threads,
-                                                        wrap = 80,
-                                                        verbose = True,
-                                                        auto = False)
-        clustalomega_cline()
-
-        # return the path to the aligned FASTA
-        return new_fasta
-        
 # end align_centroids def
 
 def main():

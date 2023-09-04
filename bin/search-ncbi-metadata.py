@@ -15,10 +15,10 @@ involve running Pangolin or clustering.
 # make necessary modules available
 import argparse
 from typing import Optional
-import multiprocessing as mp
-import pandas as pd
-import numpy as np
-import pyarrow as arrow
+import multiprocessing
+import pandas
+import numpy
+import pyarrow
 
 def parse_command_line_args():
     """Parse command line arguments."""
@@ -37,7 +37,7 @@ def parse_command_line_args():
     return args.metadata_path, args.dates_path, args.infection_cutoff, args.cores
 
 # Defining functions for multiprocessing
-def add_designation_date(lineage: str, dates: pd.DataFrame) -> Optional[np.datetime64]:
+def add_designation_date(lineage: str, dates: pandas.DataFrame) -> Optional[numpy.datetime64]:
     """
     This function collects a pangolin lineage and returns the date
     it was designated in pangolin.
@@ -47,7 +47,7 @@ def add_designation_date(lineage: str, dates: pd.DataFrame) -> Optional[np.datet
     dates: a pandas dataframe of lineage designation dates
 
     Returns:
-    Union[np.datetime64, None] of the designation date
+    Union[numpy.datetime64, None] of the designation date
     """
 
     date_values = dates.loc[dates['lineage'] == lineage, 'designation_date'].values
@@ -67,7 +67,7 @@ def add_infection_duration(i: int, ncbi_dates: list, desig_dates: list) -> Optio
     Union[int, None] representing the anachronicity
     """
 
-    if pd.isna(ncbi_dates[i]) or pd.isna(desig_dates[i]):
+    if pandas.isna(ncbi_dates[i]) or pandas.isna(desig_dates[i]):
         return None
 
     anachronicity = (ncbi_dates[i] - desig_dates[i]).days
@@ -94,30 +94,30 @@ def main():
     metadata_path, dates_path, infection_cutoff, cores = parse_command_line_args()
 
     # Memory-map arrow IPC-formatted metadata
-    with arrow.memory_map(metadata_path, 'r') as source:
-        metadata_arrays = arrow.ipc.open_file(source).read_all()
+    with pyarrow.memory_map(metadata_path, 'r') as source:
+        metadata_arrays = pyarrow.ipc.open_file(source).read_all()
         metadata = metadata_arrays.to_pandas()
 
         # read in dates
-        dates = pd.read_csv(dates_path,
+        dates = pandas.read_csv(dates_path,
                             na_values=["", "NA"])
 
         # make sure the expected columns are present
         assert "Isolate Collection date" in metadata.columns
 
         # Ensure dates are properly formatted
-        metadata["Isolate Collection date"] = pd.to_datetime(metadata["Isolate Collection date"], errors='coerce')
-        dates.designation_date = pd.to_datetime(dates.designation_date, errors="ignore", format="%Y-%m-%d").fillna("2021-02-18")
+        metadata["Isolate Collection date"] = pandas.to_datetime(metadata["Isolate Collection date"], errors='coerce')
+        dates.designation_date = pandas.to_datetime(dates.designation_date, errors="ignore", format="%Y-%m-%d").fillna("2021-02-18")
 
         # Parallelize looping through filtered metadata to merge designation dates
-        metadata["lineage_designation"] = np.NAN
+        metadata["lineage_designation"] = numpy.NAN
         metadata["infection_duration"] = 0
 
         # prepare the arguments as a list of tuples
         args1 = [(lineage, dates) for lineage in metadata['Virus Pangolin Classification']]
 
         # iterate through rows in parallel
-        with mp.Pool(cores) as p:
+        with multiprocessing.Pool(cores) as p:
             metadata['lineage_designation'] = p.starmap(add_designation_date, args1)
             ncbi_dates = metadata['Isolate Collection date']
             desig_dates = metadata['lineage_designation']

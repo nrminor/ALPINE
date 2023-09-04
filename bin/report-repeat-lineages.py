@@ -16,7 +16,7 @@ are possible.
 import argparse
 import pandas as pd
 import Bio.SeqIO
-import pyarrow as arrow
+import pyarrow
 
 def parse_command_line_args():
     """Parse command line arguments."""
@@ -39,10 +39,10 @@ def main():
     Returns:
     None
     """
-    
+
     # parse command line arguments
     cluster_table_path, metadata_path = parse_command_line_args()
-    
+
     cluster_df = pd.read_csv(cluster_table_path,
                             sep='\t',
                             header=None,
