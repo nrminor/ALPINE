@@ -520,6 +520,7 @@ function assign_anachron(metadata_path::String, report_path::String)
 
     # read in the metadata and sort by accession
     metadata = Arrow.Table(metadata_path) |> DataFrame
+    @assert "Accession" in metadata.columns
     new_metadata = sort(metadata, :Accession)
 
     # date pango date_pango_calls
