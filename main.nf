@@ -915,7 +915,7 @@ process RUN_META_CLUSTER {
 	script:
 	"""
 	vsearch --cluster_fast ${fasta} \
-	--id 0.9999 \
+	--id 0.999 \
 	--centroids meta-centroids.fasta \
 	--uc meta-clusters.uc \
 	--clusters meta-cluster-seqs \
