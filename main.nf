@@ -84,6 +84,10 @@ workflow {
 			FILTER_META_TO_GEOGRAPHY.out.accessions
 		)
 
+		EARLY_STATS (
+			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
+		)
+
 		REMOVE_FASTA_GAPS ( 
 			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 		)
