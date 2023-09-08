@@ -49,7 +49,7 @@ def main():
     metadata_path = parse_command_line_args()
 
     # Scan the CSV into a LazyFrame
-    metadata = polars.scan_csv(metadata_path, separator="\t", low_memory=True)
+    metadata = polars.scan_csv(metadata_path, separator="\t")
 
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
