@@ -602,7 +602,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
     @assert "Accession" in names(metadata2)
 
     # Get the intersecting accessions
-    common_accessions = intersect(metadata1[!, :Accession], metadmetadata2[!, :Accession])
+    common_accessions = intersect(metadata1[!, :Accession], metadata2[!, :Accession])
 
     # Filter metadata to only common accessions
     metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)
@@ -673,7 +673,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     end
 
     # Get the intersecting accessions
-    common_accessions = intersect(metadata1[!, :Accession], metadmetadata_joined[!, :Accession])
+    common_accessions = intersect(metadata1[!, :Accession], metadata_joined[!, :Accession])
 
     # Filter metadata to only common accessions
     metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)
@@ -742,7 +742,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     end
 
     # Get the intersecting accessions
-    common_accessions = intersect(metadata1[!, :Accession], metadmetadata_joined[!, :Accession])
+    common_accessions = intersect(metadata1[!, :Accession], metadata_joined[!, :Accession])
 
     # Filter metadata to only common accessions
     metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)
@@ -791,7 +791,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
     @assert "Accession" in names(metadata2)
 
     # Get the intersecting accessions
-    common_accessions = intersect(metadata1[!, :Accession], metadmetadata2[!, :Accession])
+    common_accessions = intersect(metadata1[!, :Accession], metadata2[!, :Accession])
 
     # Filter metadata to only common accessions
     metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)

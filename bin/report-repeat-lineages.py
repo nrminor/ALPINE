@@ -72,7 +72,7 @@ def main():
     merged_metadata = pd.merge(metadata, repeat_clusts, on="Accession", how="inner")
     merged_metadata = merged_metadata.loc[~merged_metadata["Repeat Cluster Number"].isna()]
     merged_metadata = merged_metadata.sort_values("Repeat Cluster Number")
-    merged_metadata = merged_metadata.drop(["Distance_Score", "Cluster_Size"], axis=1)
+    merged_metadata = merged_metadata.drop(["Distance Score", "Cluster Size"], axis=1)
 
     # Write repeat lineage metadata
     merged_metadata.to_csv("repeat-lineage-metadata.tsv",
