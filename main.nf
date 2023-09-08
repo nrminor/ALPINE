@@ -617,7 +617,7 @@ process EARLY_STATS {
 
 	script:
 	"""
-	seqkit stats -j ${task.cpus} ${fasta} > early_stats.tsv
+	seqkit stats -j ${task.cpus} --tabular ${fasta} > early_stats.tsv
 	"""
 
 }
@@ -1116,7 +1116,7 @@ process FIND_DOUBLE_CANDIDATES {
 	path collected_files
 
 	output:
-	tuple path("double_candidate*.fasta"), val("double_candidates"), emit: fasta
+	path "double_candidate*.fasta", emit: fasta
 	path "double_candidate*.tsv"
 
 	script:
@@ -1151,7 +1151,7 @@ process LATE_STATS {
 
 	script:
 	"""
-	seqkit stats -j ${task.cpus} ${fasta} > early_stats.tsv
+	seqkit stats -j ${task.cpus} --tabular ${fasta} > late_stats.tsv
 	"""
 
 }
@@ -1175,7 +1175,7 @@ process COMPUTE_PREVALENCE_ESTIMATE {
 
 	input:
 	path early_stats
-	path late_states
+	path late_stats
 
 	output:
 	stdout

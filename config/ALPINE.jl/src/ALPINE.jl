@@ -4,7 +4,7 @@ module ALPINE
 using DelimitedFiles, DataFrames, CSV, Arrow, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib, FLoops, Missings, RCall, Scratch
 import Base.Threads
 
-export filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, date_pango_calls, create_rarity_lookup, assign_anachron, find_anachron_seqs, find_double_candidates
+export filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, date_pango_calls, create_rarity_lookup, assign_anachron, find_anachron_seqs, find_double_candidates, estimate_prevalence
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
@@ -622,8 +622,6 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
 
     else
 
-        @assert occursin("Anachronicity", names(metadata1_filtered)[end])
-
         # Add the last column from metadata2 to metadata1
         metadata2_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
 
@@ -693,8 +691,6 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
 
     else
 
-        @assert occursin("Anachronicity", names(metadata1_filtered)[end])
-
         # Add the last column from metadata2 to metadata1
         metadata_joined_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
 
@@ -752,7 +748,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     sort!(metadata1_filtered, :Accession)
     sort!(metadata_joined_filtered, :Accession)
 
-    if "Anachronicity" in names(metadata_joined_filtered)
+    if occursin("Anachronicity", names(metadata_joined_filtered))
 
         # Add the last column from metadata2 to metadata1
         metadata1_filtered[!, :Anachronicity] = metadata_joined_filtered[!, end]
@@ -761,8 +757,6 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
         CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
 
     else
-
-        @assert occursin("Anachronicity", names(metadata1_filtered)[end])
 
         # Add the last column from metadata2 to metadata1
         metadata_joined_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
@@ -801,7 +795,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
     sort!(metadata1_filtered, :Accession)
     sort!(metadata2_filtered, :Accession)
 
-    if "Anachronicity" in names(metadata2_filtered)
+    if occursin("Anachronicity", names(metadata2_filtered))
 
         # Add the last column from metadata2 to metadata1
         metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
@@ -810,8 +804,6 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
         CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
 
     else
-
-        @assert occursin("Anachronicity", names(metadata1_filtered)[end])
 
         # Add the last column from metadata2 to metadata1
         metadata2_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
@@ -839,10 +831,10 @@ function estimate_prevalence(early_stats::DataFrame, late_stats::DataFrame)
     candidate_count = nrow(late_stats) == 0 ? 0 : unique(late_stats.num_seqs)
 
     # pull out the input sample size
-    sample_size = unique(early_stats.num_seqs)
+    sample_size = unique(early_stats.num_seqs)[1]
 
     # compute the prevalence estimate
-    prevalence = (candidate_count / sample_size) * 100
+    prevalence = join((candidate_count / sample_size) * 100, ";")
 
     return (prevalence, sample_size)
 

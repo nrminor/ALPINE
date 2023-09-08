@@ -1,6 +1,6 @@
 #!/usr/bin/env -S julia -t auto
 
-using ALPINE, DataFrames, CSV
+using ALPINE, CSV, DataFrames
 
 # define input paths from the command line as typed constants
 const STATS_FILE1::String = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
@@ -15,7 +15,7 @@ function main(file1::String, file2::String)
     # estimate prevalence
     prevalence, sample_size = estimate_prevalence(early_stats, late_stats)
 
-    println("$prevalence % of $sample_size sequences were flagged.")
+    println("$prevalence% of $sample_size sequences were flagged.")
     
 end
 precompile(main, (String, String))
