@@ -506,7 +506,7 @@ process VALIDATE_SEQUENCES {
 	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
 	maxRetries 1
 
-	cpus 8
+	cpus params.max_cpus
 
 	input:
 	path fasta
@@ -571,7 +571,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
 	maxRetries 1
 
-	cpus 8
+	cpus params.max_cpus
 
 	input:
 	path fasta
