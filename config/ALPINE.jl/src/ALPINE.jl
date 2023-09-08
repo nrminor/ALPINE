@@ -598,11 +598,11 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
     # assumptions about the data explicit
     @assert ncol(metadata1) > 0
     @assert ncol(metadata2) > 0
-    @assert names(metadata1)[1] == "Accession"
-    @assert names(metadata2)[1] == "Accession"
+    @assert "Accession" in names(metadata1)
+    @assert "Accession" in names(metadata2)
 
     # Get the intersecting accessions
-    common_accessions = intersect(metadata1[!, 1], metadata2[!, 1])
+    common_accessions = intersect(metadata1[!, :Accession], metadmetadata2[!, :Accession])
 
     # Filter metadata to only common accessions
     metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)
@@ -661,9 +661,9 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     @assert ncol(metadata1) > 0
     @assert ncol(metadata2) > 0
     @assert ncol(metadata3) > 0
-    @assert names(metadata1)[1] == "Accession"
-    @assert names(metadata2)[1] == "Accession"
-    @assert names(metadata3)[1] == "Accession"
+    @assert "Accession" in names(metadata1)
+    @assert "Accession" in names(metadata2)
+    @assert "Accession" in names(metadata3)
 
     # join the metadata based on anachronistic accessions
     if nrow(metadata2) >= nrow(metadata3)
@@ -673,7 +673,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     end
 
     # Get the intersecting accessions
-    common_accessions = intersect(metadata1[!, 1], metadata_joined[!, 1])
+    common_accessions = intersect(metadata1[!, :Accession], metadmetadata_joined[!, :Accession])
 
     # Filter metadata to only common accessions
     metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)
@@ -730,9 +730,9 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     @assert ncol(metadata1) > 0
     @assert ncol(metadata2) > 0
     @assert ncol(metadata3) > 0
-    @assert names(metadata1)[1] == "Accession"
-    @assert names(metadata2)[1] == "Accession"
-    @assert names(metadata3)[1] == "Accession"
+    @assert "Accession" in names(metadata1)
+    @assert "Accession" in names(metadata2)
+    @assert "Accession" in names(metadata3)
 
     # join the metadata based on anachronistic accessions
     if nrow(metadata2) >= nrow(metadata3)
@@ -742,7 +742,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     end
 
     # Get the intersecting accessions
-    common_accessions = intersect(metadata1[!, 1], metadata_joined[!, 1])
+    common_accessions = intersect(metadata1[!, :Accession], metadmetadata_joined[!, :Accession])
 
     # Filter metadata to only common accessions
     metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)
@@ -787,11 +787,11 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
     @assert ncol(metadata2) > 0
     @assert "Accession" in names(metadata1)
     @assert "Accession" in names(metadata2)
-    @assert names(metadata1)[1] == "Accession"
-    @assert names(metadata2)[1] == "Accession"
+    @assert "Accession" in names(metadata1)
+    @assert "Accession" in names(metadata2)
 
     # Get the intersecting accessions
-    common_accessions = intersect(metadata1[!, 1], metadata2[!, 1])
+    common_accessions = intersect(metadata1[!, :Accession], metadmetadata2[!, :Accession])
 
     # Filter metadata to only common accessions
     metadata1_filtered = filter(row -> row[1] in common_accessions, metadata1)
