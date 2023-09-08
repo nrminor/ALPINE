@@ -349,7 +349,7 @@ by argument `temp_filename::String`. Use the information in argument `cluster_ta
 and `stringency::String` to weight the distances by sequence ID, and use arguments `count::Int`,
 `majority_centroid::String`, and `yearmonth::String` to structure and name output CSV files.
 """
-function distance_matrix(temp_filename::String, cluster_table::DataFrame, count::Int, majority_centroid::String, yearmonth::String, stringency::String)
+function distance_matrix(temp_filename::String, cluster_table::DataFrame, yearmonth::String, stringency::String)
 
     # Collect both names and sequences
     seqs = [seq for (_, seq) in FastaReader(temp_filename)]
@@ -378,22 +378,8 @@ function distance_matrix(temp_filename::String, cluster_table::DataFrame, count:
     # Move the Sequence_Name column to the front
     select!(dist_df, :Sequence_Name, :)
 
-    if count > 2
-
-        # Write the distance matrix to a CSV file
-        CSV.write("$yearmonth-dist-matrix.csv", dist_df)
-    
-    else
-
-        # constrain down to a simple one by one with the non-majority cluster 
-        # as the only row
-        filter!(:Sequence_Name => !=(majority_centroid), dist_df)
-        select!(dist_df, Not(Symbol(dist_df[1,:1])))
-
-        # Write the distance matrix to a CSV file
-        CSV.write("$yearmonth-dist-matrix.csv", dist_df)
-
-    end
+    # Write the distance matrix to a CSV file
+    CSV.write("$yearmonth-dist-matrix.csv", dist_df)
 
 end
 

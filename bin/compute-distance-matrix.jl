@@ -19,15 +19,8 @@ function main(fasta_file::String, table_path::String, yearmonth::String, stringe
     # read in the cluster table
     cluster_table = CSV.read(table_path, DataFrame, delim="\t", header=false)
 
-    # define majority centroid
-    centroids = filter(1 => ==("C"), cluster_table)
-    majority_centroid = convert(String, centroids[argmax(centroids[:,3]), :Column9])
-
-    # count the number of clusters
-    count = nrow(centroids)
-
     # run the function
-    distance_matrix(tmp, cluster_table, count, majority_centroid, yearmonth, stringency)
+    distance_matrix(tmp, cluster_table, yearmonth, stringency)
 
 end
 

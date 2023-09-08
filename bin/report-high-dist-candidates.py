@@ -192,12 +192,12 @@ def read_metadata_files(metadata_filename: str,
 
         # Use an assertion to check for possible silent errors before vstacking and
         # returning the dataframes
-        # assert_frame_equal(
-        #     left=distmat.select(polars.col("Accession")).unique().sort(by="Accession"),
-        #     right=cluster_table.filter(
-        #     polars.col("Type")=="C"
-        #     ).select(polars.col("Accession")).unique().sort(by="Accession")
-        # )
+        assert_frame_equal(
+            left=distmat.select(polars.col("Accession")).unique().sort(by="Accession"),
+            right=cluster_table.filter(
+            polars.col("Type")=="C"
+            ).select(polars.col("Accession")).unique().sort(by="Accession")
+        )
 
         # vstack (i.e., append) them onto the growing metadata dataframes
         dist_scores.vstack(distmat, in_place=True)
@@ -296,7 +296,10 @@ def collate_metadata(metadata: polars.DataFrame,
     # And finally, filter down to distances above the retention threshold while
     # also visualizing the distance score distribution
     retention_threshold = numpy.quantile(high_dist_meta['Distance Score'], (stringency / 1000))
-    visualize_distance_scores(high_dist_meta, retention_threshold)
+    try:
+        visualize_distance_scores(high_dist_meta, retention_threshold)
+    except Exception as e:
+        print(f"Plotting the distance score distribution failed: {e}")
     high_dist_meta = high_dist_meta.filter(
         polars.col("Distance Score") >= retention_threshold
     )
