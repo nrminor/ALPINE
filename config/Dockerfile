@@ -84,9 +84,7 @@ RUN mamba install -y -n base -c conda-forge -c r -c bioconda r-base \
     r-units \
     r-sf \
     r-arrow \
-    r-duckdb \
-    bioconductor-biostrings \
-    usher
+    bioconductor-biostrings
 
 # Install outbreak.info and cdc R packages
 RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library')"
@@ -99,8 +97,7 @@ RUN mamba install -y -n base -c defaults -c bioconda -c conda-forge \
     seqkit \
     pangolin \ 
     clustalo \
-    nextflow \
-    nextalign
+    nextflow
 
 # Install Nextstrain CLI
 # RUN curl -fsSL --proto '=https' https://nextstrain.org/cli/installer/linux | bash
