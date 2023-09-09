@@ -87,8 +87,8 @@ RUN mamba install -y -n base -c conda-forge -c r -c bioconda r-base \
     bioconductor-biostrings
 
 # Install outbreak.info and cdc R packages
-RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library')"
-RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library')"
+RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library', clean = TRUE)"
+RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library', clean = TRUE)"
 
 # install biology-specific CLI packages
 RUN mamba install -y -n base -c defaults -c bioconda -c conda-forge \
