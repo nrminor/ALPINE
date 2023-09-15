@@ -261,10 +261,10 @@ if ( params.debugmode == true ){
 }
 
 // Defining number of cpus to use based on execution environment
-if ( process.executor != "slurm" ){
-	params.max_cpus = params.max_shared_cpus
-} else {
+if ( workflow.configFiles.contains("chtc_hpc.config") ){
 	params.max_cpus = 20
+} else {
+	params.max_cpus = params.max_shared_cpus
 }
 
 // calling pathogen taxID if pulling SARS-CoV-2
