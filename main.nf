@@ -11,18 +11,9 @@ workflow {
 	ch_gisaid_token = Channel
 		.fromPath ( params.gisaid_token )
 
+	// Data setup steps
 	GET_DESIGNATION_DATES ( )
 
-	if ( params.reclassify_sc2_lineages == true ){
-
-		UPDATE_PANGO_CONTAINER ( )
-
-		println "This workflow will use the following Pangolin version:"
-		UPDATE_PANGO_CONTAINER.out.cue.view()
-
-	}
-
-	// Data setup steps
 	DOWNLOAD_REFSEQ ( )
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
@@ -306,23 +297,6 @@ params.double_candidates = params.results_subdir + "/double_candidates"
 // PROCESS SPECIFICATIONS
 // --------------------------------------------------------------- //
 
-process UPDATE_PANGO_CONTAINER {
-	
-	// This process builds a new docker image with the latest available pangolin version
-	
-	output:
-	env(version), emit: cue
-	
-	when:
-	(params.pathogen == "SARS-CoV-2" || params.pathogen == "sars-cov-2") && params.reclassify_sc2_lineages == true
-	
-	script:
-	"""
-	pangolin --update --update-data
-	version=`pangolin --version | sed 's/pangolin//g' | xargs`
-	"""
-}
-
 process DOWNLOAD_REFSEQ {
 
 	/*
@@ -339,7 +313,6 @@ process DOWNLOAD_REFSEQ {
 
 	output:
 	path "*.fasta", emit: ref_fasta
-	env ref_id, emit: ref_id
 
 	script:
 	"""
@@ -347,7 +320,6 @@ process DOWNLOAD_REFSEQ {
 	--refseq && \
 	unzip ncbi_dataset.zip
 	mv ncbi_dataset/data/genomic.fna ./${params.pathogen}_refseq.fasta
-	ref_id=\$(grep "^>" ${params.pathogen}_refseq.fasta | head -n 1 | cut -d' ' -f1 | sed 's/^>//')
 	"""
 }
 
@@ -998,6 +970,7 @@ process RECLASSIFY_SC2_WITH_PANGOLIN {
 
 	script:
 	"""
+	pangolin --update --update-data && \
 	zstd -d `realpath ${fasta}` -o ./decompressed_genbank.fasta && \
 	pangolin \
 	--skip-scorpio --skip-designation-cache \
