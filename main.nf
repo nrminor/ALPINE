@@ -304,7 +304,6 @@ process DOWNLOAD_REFSEQ {
 	available, is downloaded for downstream usage.
 	*/
 
-	label "alpine_container"
 	tag "${params.pathogen}"
 	publishDir params.resources, mode: 'copy'
 
