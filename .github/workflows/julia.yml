@@ -3,8 +3,12 @@ name: Julia CI
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'config/ALPINE.jl'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'config/ALPINE.jl'
 
 env:
     JULIA_SCRATCH_TRACK_ACCESS: 0
