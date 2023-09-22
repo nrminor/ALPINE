@@ -1,5 +1,5 @@
 # ALPINE: Anachronistic Lineage and Persistent INfection Explorer
-[Julia CI](https://github.com/nrminor/ALPINE/actions/workflows/julia.yml/badge.svg)
+![Julia CI](https://github.com/nrminor/ALPINE/actions/workflows/julia.yml/badge.svg)
 
 _Disclaimer: This project is under active development and will likely be revised often in the near term. More documentation to come._
 
