@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+    JULIA_SCRATCH_TRACK_ACCESS: 0
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Julia
+      uses: julia-actions/setup-julia@v1
+      with:
+        version: '1.9.0'
+    - name: Precompile
+      run: julia --project=config/ALPINE.jl -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
