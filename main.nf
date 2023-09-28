@@ -275,9 +275,9 @@ if( params.geography == "" ){
 	}
 } else {
 	if ( params.fasta_path == "" ){
-		params.results_subdir = params.dated_results + "/GenBank_" + params.geography
+		params.results_subdir = params.dated_results + "/GenBank_" + params.geography.replace(" ", "_")
 	} else {
-		params.results_subdir = params.dated_results + "/LocalDataset_" + params.geography
+		params.results_subdir = params.dated_results + "/LocalDataset_" + params.geography.replace(" ", "_")
 	}
 }
 
