@@ -568,7 +568,7 @@ function find_anachron_seqs(metadata::DataFrame, fasta_path::String)
     FastaWriter(output_handle , "a") do fasta_append
         FastaReader(fasta_path) do fasta_read
             for (name, seq) in fasta_read
-                if name in accessions
+                if split(name, " ")[1] in accessions
                     writeentry(fasta_append, name, seq)
                 end
             end
@@ -634,7 +634,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
     FastaReader(seqs) do fr
         FastaWriter("double_candidates.fasta", "w") do fw
             for (name, seq) in fr
-                if name in common_accessions
+                if split(name, " ")[1] in common_accessions
                     writeentry(fw, name, seq)
                 end
             end
@@ -703,7 +703,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
     FastaReader(seqs) do fr
         FastaWriter("double_candidates.fasta", "w") do fw
             for (name, seq) in fr
-                if name in common_accessions
+                if split(name, " ")[1] in common_accessions
                     writeentry(fw, name, seq)
                 end
             end
