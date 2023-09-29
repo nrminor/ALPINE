@@ -129,25 +129,65 @@ record (supplied by the argument `fasta_path::String`) with the masked base
 character "N." Then, write the updated FASTA with the file name provided by
 the argument `output_filename::String`.
 """
-function replace_gaps(fasta_path::String, output_filename::String)
+function replace_gaps(fasta_path::String)
 
     # create the output file
-    touch(output_filename)
+    output_filename = "no-gaps.fasta.gz"
 
-    # iterate through each line in the FASTA to minimuze memory usage
-    open(ZstdDecompressorStream, fasta_path, "r") do infile
-        open(GzipCompressorStream, output_filename, "w") do outfile
-            # Read, replace, and write one line at a time
-            for line in eachline(infile)
-                if startswith(line, ">")
-                    accession = split(line, ' ')[1]
-                    println(outfile, accession)
-                else
-                    new_line = replace(line, '-' => 'N')
-                    println(outfile, new_line)
+    # iterate through each line in the FASTA to minimize memory usage
+    if endswith(fasta_path, ".gz")
+        touch(output_filename)
+        open(GzipDecompressorStream, fasta_path, "r") do infile
+            open(GzipCompressorStream, output_filename, "w") do outfile
+                # Read, replace, and write one line at a time
+                for line in eachline(infile)
+                    if startswith(line, ">")
+                        accession = split(line, ' ')[1]
+                        println(outfile, accession)
+                    else
+                        new_line = replace(line, '-' => 'N')
+                        println(outfile, new_line)
+                    end
                 end
             end
         end
+        return(output_filename)
+    end
+    if endswith(fasta_path, ".zst") || endswith(fasta_path, ".zstd")
+        touch(output_filename)
+        open(ZstdDecompressorStream, fasta_path, "r") do infile
+            open(GzipCompressorStream, output_filename, "w") do outfile
+                # Read, replace, and write one line at a time
+                for line in eachline(infile)
+                    if startswith(line, ">")
+                        accession = split(line, ' ')[1]
+                        println(outfile, accession)
+                    else
+                        new_line = replace(line, '-' => 'N')
+                        println(outfile, new_line)
+                    end
+                end
+            end
+        end
+        return(output_filename)
+    end
+    if endswith(fasta_path, ".fasta") || endswith(fasta_path, ".fa")
+        touch(output_filename)
+        open(fasta_path, "r") do infile
+            open(output_filename, "w") do outfile
+                # Read, replace, and write one line at a time
+                for line in eachline(infile)
+                    if startswith(line, ">")
+                        accession = split(line, ' ')[1]
+                        println(outfile, accession)
+                    else
+                        new_line = replace(line, '-' => 'N')
+                        println(outfile, new_line)
+                    end
+                end
+            end
+        end
+        return(output_filename)
     end
 end
 
@@ -166,7 +206,7 @@ processed downstream are not the result of un-rigorous bioinformatic processing.
 The filtered FASTA is then written with the file name provided by the argument 
 `output_filename::String`.
 """
-function filter_by_n(input_fasta_path::String, max_ambiguity::Float64, ref_path::String, output_filename::String)
+function filter_by_n(input_fasta_path::String, max_ambiguity::Float64, ref_path::String)
 
     # count the bases in the reference FASTA and compute the max number
     # of masked bases
@@ -180,6 +220,7 @@ function filter_by_n(input_fasta_path::String, max_ambiguity::Float64, ref_path:
 
     # creating a loop that goes through sequence records and writes out
     # any sequences that have less than the minimum N count
+    output_filename = "filtered-by-n.fasta.gz"
     touch(output_filename)
     FastaWriter(output_filename , "a") do fa
         FastaReader(input_fasta_path) do fr
@@ -193,6 +234,7 @@ function filter_by_n(input_fasta_path::String, max_ambiguity::Float64, ref_path:
             end
         end
     end
+    rm(input_fasta_path)
 end
 
 ### ----------------------------------------------------------------------------- ###

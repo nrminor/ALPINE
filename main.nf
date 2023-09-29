@@ -45,10 +45,6 @@ workflow {
 			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 		)
 
-		REMOVE_FASTA_GAPS ( 
-			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
-		)
-
 	} else {
 
 
@@ -79,10 +75,6 @@ workflow {
 			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
 		)
 
-		REMOVE_FASTA_GAPS ( 
-			FILTER_SEQS_TO_GEOGRAPHY.out.fasta
-		)
-
 	}
 
 	// ADVANCED VIRUS &/OR LONG INFECTION FINDER:
@@ -104,7 +96,7 @@ workflow {
 
 	// Distance matrix clustering steps
 	FILTER_BY_MASKED_BASES (
-		REMOVE_FASTA_GAPS.out,
+		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
 		DOWNLOAD_REFSEQ.out.ref_fasta
 	)
 
@@ -594,37 +586,6 @@ process EARLY_STATS {
 
 }
 
-process REMOVE_FASTA_GAPS {
-
-	/*
-	In this process, we replace all dashes in the NCBI FASTA with
-	"N's", effectively converting them into masked bases instead of
-	gaps. As is the case throughout this pipeline, this process uses
-	a fasta julia script to scan through each sequence.
-	*/
-	
-	label "alpine_container"
-
-	tag "${params.pathogen}, ${params.geography}"
-	errorStrategy { task.attempt < 1 ? 'retry' : errorMode }
-	maxRetries 1
-
-	input:
-	path fasta
-
-	output:
-	path "*.fasta.gz"
-
-	when:
-	params.make_distance_matrix == true
-
-	script:
-	"""
-	remove-fasta-gaps.jl ${fasta}
-	"""
-	
-}
-
 process FILTER_BY_MASKED_BASES {
 
 	/*
@@ -644,11 +605,11 @@ process FILTER_BY_MASKED_BASES {
 	path reference
 
 	output:
-	path "*.fasta.gz"
+	path "filtered-by-n.fasta.gz"
 
 	script:
 	"""
-	filter-by-n-count.jl ${fasta} ${params.max_ambiguity}
+	filter-by-n-count.jl ${fasta} ${params.max_ambiguity} ${reference}
 	"""
 
 }
