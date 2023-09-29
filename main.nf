@@ -104,7 +104,8 @@ workflow {
 
 	// Distance matrix clustering steps
 	FILTER_BY_MASKED_BASES (
-		REMOVE_FASTA_GAPS.out
+		REMOVE_FASTA_GAPS.out,
+		DOWNLOAD_REFSEQ.out.ref_fasta
 	)
 
 	SEPARATE_BY_MONTH (
@@ -640,6 +641,7 @@ process FILTER_BY_MASKED_BASES {
 
 	input:
 	path fasta
+	path reference
 
 	output:
 	path "*.fasta.gz"

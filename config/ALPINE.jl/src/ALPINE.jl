@@ -166,28 +166,28 @@ processed downstream are not the result of un-rigorous bioinformatic processing.
 The filtered FASTA is then written with the file name provided by the argument 
 `output_filename::String`.
 """
-function filter_by_n(input_fasta_path::String, max_ambiguity::Float64, output_filename::String)
+function filter_by_n(input_fasta_path::String, max_ambiguity::Float64, ref_path::String, output_filename::String)
 
-    touch(output_filename)
-
-    # create a file lock to prevent threads from corrupting the output file
-    # u = ReentrantLock()
+    # count the bases in the reference FASTA and compute the max number
+    # of masked bases
+    ref_length = 0
+    FastaReader(ref_path) do read_ref
+        for (_, seq) in read_ref
+            ref_length += length(seq)
+        end
+    end
+    max_n_count = floor(ref_length * max_ambiguity)
 
     # creating a loop that goes through sequence records and writes out
     # any sequences that have less than the minimum N count
+    touch(output_filename)
     FastaWriter(output_filename , "a") do fa
         FastaReader(input_fasta_path) do fr
-            # @sync for (name, seq) in fr
-                # Threads.@spawn begin
             for (name, seq) in fr
-                max_n_count = floor(length(seq) * max_ambiguity)
                 n_count = count("N", convert(String, seq))
-                if n_count < max_n_count
-                            # Threads.lock(u) do
+                if n_count <= max_n_count
                     writeentry(fa, name, seq)
-                            # end
                 end
-                # end
             end
         end
     end
