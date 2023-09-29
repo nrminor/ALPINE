@@ -184,7 +184,9 @@ function filter_by_n(input_fasta_path::String, max_ambiguity::Float64, ref_path:
     FastaWriter(output_filename , "a") do fa
         FastaReader(input_fasta_path) do fr
             for (name, seq) in fr
-                n_count = count("N", convert(String, seq))
+                length_diff = ref_length - length(seq)
+                incompleteness = length_diff < 0 ? 0 : length_diff
+                n_count = count("N", convert(String, seq)) + incompleteness
                 if n_count <= max_n_count
                     writeentry(fa, name, seq)
                 end
