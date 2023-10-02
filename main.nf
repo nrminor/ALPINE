@@ -317,9 +317,11 @@ process DOWNLOAD_REFSEQ {
 
 process GET_DESIGNATION_DATES {
 	
-	// This process downloads a table of pangolin lineage designation dates
-	// from Cornelius Roemer's GitHub. These dates represent when each lineage was
-	// added to pangolin, after which point sequences could be classified as such 
+	/*
+	This process downloads a table of pangolin lineage designation dates
+	from Cornelius Roemer's GitHub. These dates represent when each lineage was
+	added to pangolin, after which point sequences could be classified as such 
+	*/
 
 	label "alpine_container"
 	publishDir params.resources, mode: 'copy', overwrite: true
