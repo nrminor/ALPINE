@@ -118,7 +118,7 @@ workflow {
 	COMPUTE_DISTANCE_MATRIX (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		PREP_CENTROID_FASTAS.out
-			.filter { it[1].toInteger() > 1 }
+			.filter { it[1].toInteger() > 2 }
 			.map { fasta, count -> fasta }
 	)
 
@@ -1053,6 +1053,9 @@ process FIND_DOUBLE_CANDIDATES {
 	output:
 	path "double_candidate*.fasta", emit: fasta
 	path "double_candidate*.tsv"
+
+	when:
+	collected_files.toString().count(".tsv") > 1
 
 	script:
 	"""

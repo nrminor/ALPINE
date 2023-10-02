@@ -272,7 +272,7 @@ def collate_metadata(metadata: polars.DataFrame,
     # filter out any clusters with only one entry (this shouldn't
     # be necessary when run in the context of the pipeline, but
     # we include it here just to be safe.)
-    cluster_meta = cluster_meta.groupby("Month Index").agg(
+    cluster_meta = cluster_meta.group_by("Month Index").agg(
         polars.col("Month Index").count().alias("count")
     ).join(
         cluster_meta, on="Month Index", how="left"

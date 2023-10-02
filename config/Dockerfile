@@ -29,6 +29,7 @@ RUN apt-get update && \
     libnss3-dev \
     libreadline-dev \
     libffi-dev \
+    libtiff5 \
     libsqlite3-dev \
     libbz2-dev \
     liblzma-dev \

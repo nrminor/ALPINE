@@ -15,7 +15,7 @@ function main(file1::String, file2::String)
     # estimate prevalence
     prevalence, sample_size = estimate_prevalence(early_stats, late_stats)
 
-    println("$prevalence% of $sample_size sequences were flagged.")
+    println("$prevalence% of $sample_size sequences were flagged as highly evolved and anachronistic.")
     
 end
 precompile(main, (String, String))

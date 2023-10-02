@@ -9,6 +9,8 @@ const REF_PATH::String = islink(ARGS[3]) ? readlink(ARGS[3]) : ARGS[3]
 
 function main(fasta::String, max_ambiguity::Float64, ref_path::String)
 
+    @assert sum(occursin(">", line) for line in eachline(fasta)) > 0 "FASTA is empty or corrupted and thus cannot be filtered."
+
     @pipe replace_gaps(fasta) |>
     filter_by_n(_, max_ambiguity, ref_path)
 
