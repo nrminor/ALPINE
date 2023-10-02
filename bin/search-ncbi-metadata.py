@@ -50,7 +50,7 @@ def add_designation_date(lineage: str, dates: pandas.DataFrame) -> Optional[nump
     Union[numpy.datetime64, None] of the designation date
     """
 
-    date_values = dates.loc[dates['lineage'] == lineage, 'designation_date'].values
+    date_values = numpy.array(dates.loc[dates['lineage'] == lineage, 'designation_date'].values)
     return date_values[0] if date_values.size > 0 else None
 # end add_designation_date()
 
