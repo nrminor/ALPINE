@@ -1027,8 +1027,10 @@ process SEARCH_NCBI_METADATA {
 	script:
 	"""
 	search-ncbi-metadata.py ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus} && \
-	cut -f 1 anachronistic_metadata_only_candidates.tsv > anachronistic_accessions.txt && \
-	seqkit grep -j ${task.cpus} -f anachronistic_accessions.txt ${fasta} -o anachronistic_metadata_only_candidates.fasta
+	cut -f 1 anachronistic_metadata_only_candidates.tsv \
+	| tail -n +2 > anachronistic_accessions.txt && \
+	seqkit grep -j ${task.cpus} -nri -f anachronistic_accessions.txt ${fasta} \
+	-o anachronistic_metadata_only_candidates.fasta
 	"""
 
 }

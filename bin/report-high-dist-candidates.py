@@ -74,7 +74,7 @@ def quantify_stringency(stringency: str) -> int:
 
     return strict_quant
 
-def visualize_distance_scores(metadata: polars.DataFrame, threshold: float):
+def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> None:
     """
     This function uses Matplotlib and Seaborn to visualize the distribution
     of distance scores in the provided metadata. It also plots the retention
@@ -92,19 +92,26 @@ def visualize_distance_scores(metadata: polars.DataFrame, threshold: float):
     # retrieve the distance scores from the metadata dateframe
     metadata_pd = metadata.to_pandas()
 
+    # Check for unique values in "Distance Score"
+    unique_values = metadata_pd['Distance Score'].nunique()
+
     # Set the style and size of the plot
     pyplot.figure(figsize=(7, 5.5))
     seaborn.set_style("whitegrid")
 
-    # Plot the histogram
+    # handle a couple of edge cases that could otherwise cause errors
     assert "Distance Score" in metadata_pd.columns
-    seaborn.histplot(metadata_pd["Distance Score"], kde=True, color="lightblue", element="step")
-
+    if unique_values > 1:
+        seaborn.barplot(x=['Distance Score'], y=[metadata_pd['Distance Score'].iloc[0]])
+        max_count = 1
+    else:
+        seaborn.histplot(metadata_pd["Distance Score"], kde=True, color="lightblue", element="step")
+        max_count = max(pyplot.hist(metadata_pd['Distance_Score'], bins=10, alpha=0)[0])
+    
     # Add a vertical line at the retention threshold
     pyplot.axvline(x=threshold, color="red", lw=3)
 
     # Add a text label for the retention threshold
-    max_count = max(pyplot.hist(metadata_pd['Distance_Score'], bins=10, alpha=0)[0])
     pyplot.text(threshold + 20, max_count / 2, f"Retention Threshold:\n{threshold}")
 
     # Add labels
