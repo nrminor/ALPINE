@@ -295,7 +295,7 @@ def collate_metadata(metadata: polars.DataFrame,
 
     # And finally, filter down to distances above the retention threshold while
     # also visualizing the distance score distribution
-    retention_threshold = numpy.quantile(high_dist_meta['Distance Score'], (stringency / 1000))
+    retention_threshold = float(numpy.quantile(high_dist_meta['Distance Score'], (stringency / 1000)))
     try:
         visualize_distance_scores(high_dist_meta, retention_threshold)
     except Exception as e:
