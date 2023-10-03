@@ -1,7 +1,7 @@
 module ALPINE
 
 # load dependencies
-using DelimitedFiles, DataFrames, CSV, Arrow, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib, FLoops, Missings, RCall, Scratch
+using DelimitedFiles, DataFrames, CSV, Arrow, FASTX, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib, FLoops, Missings, RCall, Scratch, Statistics
 import Base.Threads
 
 export filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, date_pango_calls, create_rarity_lookup, assign_anachron, find_anachron_seqs, find_double_candidates, estimate_prevalence
@@ -448,10 +448,10 @@ function date_pango_calls(report_path::String, metadata::DataFrame)
     @assert "taxon" in names(pango_report)
     @assert "Accession" in names(metadata)
 
-    pango_with_dates = @pipe pango_report |>
-        leftjoin(metadata, _, on = :taxon => :Accession) |>
-        select(-:Accession) |>
-        sort(:taxon)
+    pango_with_dates = @pipe metadata |>
+        select(_, [:Accession, Symbol("Isolate Collection date")]) |>
+        leftjoin(pango_report, _, on = :taxon => :Accession ) |>
+        sort(_, :taxon)
     
     return pango_with_dates
 
@@ -471,20 +471,17 @@ function create_rarity_lookup(pango_report::DataFrame)
     # create vector of unique lineages to iterate through
     lineages = unique(pango_report[:,"lineage"])
 
-    # load R outbreakinfo package
-    @rlibrary outbreakinfo
-
     # create empty rare dates vector
-    rarity_lookup = Dict{String, Int}()
+    rarity_lookup = Dict{String, Date}()
 
     # create rarity lookup vector
     for lineage in lineages
 
         # convert lineage into R object
-        rlineage = robject(lineage)
+        @rput lineage
 
         # call the outbreak.info API for prevalence estimates
-        prevalence_table = rcopy(R"getPrevalence(pangolin_lineage = rlineage, location = 'United States')")
+        prevalence_table = rcopy(R"outbreakinfo::getPrevalence(pangolin_lineage = lineage, location = 'United States')")
 
         @assert "proportion" in names(prevalence_table)
         @assert "date" in names(prevalence_table)
@@ -498,9 +495,13 @@ function create_rarity_lookup(pango_report::DataFrame)
         # deal with potential empty tables
         if nrow(prevalence_table) == 0
             rare_date = passmissing(Dates.Date(missing))
-            my_dict[lineage] = rare_date
-            break
+            rarity_lookup[lineage] = rare_date
+            continue
         end
+
+        # define crest date
+        max_prop = maximum(prevalence_table.proportion)
+        crest_date = filter(:proportion => prop -> prop == max_prop, prevalence_table).date[1]
 
         # define a rarity level and then find the date when that level is reached
         rare_date = @pipe quantile(prevalence_table.proportion, 0.05) |>
@@ -509,29 +510,30 @@ function create_rarity_lookup(pango_report::DataFrame)
 
         # make sure we are using a rarity date that is after the crest
         if rare_date <= crest_date
-            @pipe prevalence_table |>
-                filter!(:date => date -> date > crest_date, _)
-            rare_date = @pipe post_crest.proportion[argmin(abs.(post_crest.proportion .- q))] |>
+            post_crest = @pipe prevalence_table |>
+                filter(:date => date -> date > crest_date, _)
+            rare_date = @pipe quantile(prevalence_table.proportion, 0.05) |>
+                post_crest.proportion[argmin(abs.(post_crest.proportion .- _))] |>
                 maximum(post_crest[post_crest.proportion .== _, :date])
         end
 
         # make sure a lineage isn't too recent
-        if (Dates.today() - crest_date) <= 30
+        if (Dates.today() - crest_date).value <= 30
             rare_date = passmissing(Dates.Date(missing))
-            my_dict[lineage] = rare_date
-            break
+            rarity_lookup[lineage] = rare_date
+            continue
         end
 
         # if the lineage has not yet crested, by definition it cannot be
         # anachronistic
-        if nrow(filter(:date => dates -> date > crest_date, prevalence_table)) == 0
+        if nrow(filter(:date => date -> date > crest_date, prevalence_table)) == 0
             rare_date = passmissing(Dates.Date(missing))
-            my_dict[lineage] = rare_date
+            rarity_lookup[lineage] = rare_date
             break
         end
 
         # push any rarity dates that passed the above conditions
-        my_dict[lineage] = rare_date
+        rarity_lookup[lineage] = rare_date
 
     end
 
@@ -549,7 +551,15 @@ can be considered rare.
 function assign_anachron(metadata_path::String, report_path::String)
 
     # read in the metadata and sort by accession
-    metadata = Arrow.Table(metadata_path) |> DataFrame
+    if endswith(metadata_path, ".arrow")
+        metadata = Arrow.Table(metadata_path) |> DataFrame
+    end
+    if endswith(metadata_path, ".csv")
+        metadata = CSV.read(metadata_path, DataFrame)
+    end
+    if endswith(metadata_path, ".tsv")
+        metadata = CSV.read(metadata_path, DataFrame, delim='\t')
+    end
     @assert "Accession" in metadata.columns
     new_metadata = sort(metadata, :Accession)
 
@@ -558,7 +568,6 @@ function assign_anachron(metadata_path::String, report_path::String)
 
     # make sure the accessions are the same and in the sample
     # order between the metadata and the pango report
-    @assert new_metadata.Accession == pango_report.taxon
     @assert "Isolate Collection date" in names(pango_report)
 
     # create rare-date lookup with the outbreak.info API
@@ -572,8 +581,8 @@ function assign_anachron(metadata_path::String, report_path::String)
         anachronicity = (date - get(rarity_lookup, lineage, Dates.today())).value
 
         # make sure anachronicity isn't missing
-        if ismissing(anachronicity) 
-            return 0
+        if ismissing(anachronicity) || anachronicity < 0
+            anachronicity = 0
         end
 
         # append in place to the list anachronicities
@@ -602,18 +611,21 @@ which a SARS-CoV-2 lineage can be considered rare.
 """
 function find_anachron_seqs(metadata::DataFrame, fasta_path::String)
 
+    # Assert that the FASTA is zst-compressed, as expected
+    @assert endswith(fasta_path, ".zst") || endswith(fasta_path, ".zstd") "FASTA is not zstd-compressed, as is required by this script."
+
     # separate out accessions into a list
     accessions = metadata.Accession
 
     # iterate through the input fasta and write anachronistics
     # to the output
     output_handle = "anachronistic_seq_candidates.fasta"
-    touch(output_handle)
-    FastaWriter(output_handle , "a") do fasta_append
-        FastaReader(fasta_path) do fasta_read
-            for (name, seq) in fasta_read
-                if split(name, " ")[1] in accessions
-                    writeentry(fasta_append, name, seq)
+    open(FASTX.FASTA.Writer, output_handle) do writer
+        FASTX.FASTA.Reader(ZstdDecompressorStream(open(fasta_path))) do reader
+            for record in reader
+                id = FASTX.FASTA.identifier(record)
+                if split(id, " ")[1] in accessions
+                    write(writer, record)
                 end
             end
         end

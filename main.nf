@@ -982,12 +982,10 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	script:
 	"""
-	zstd -d `realpath ${fasta}` -o ./decompressed_genbank.fasta && \
-	compare-lineage-prevalences.R \
+	compare-lineage-prevalences.jl \
 	${lineages} \
-	decompressed_genbank.fasta \
-	${metadata} && \
-	rm -f decompressed_genbank.fasta
+	${fasta} \
+	${metadata}
 	"""
 }
 

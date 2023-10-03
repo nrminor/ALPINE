@@ -9,7 +9,7 @@ const FASTA_PATH::String = islink(ARGS[3]) ? readlink(ARGS[3]) : ARGS[3]
 
 function main(report_path::String, metadata_path::String, fasta_path::String)
 
-    # printing GISAID Disclaimer; authenticate with R"authenticateUser()"
+    # printing GISAID Disclaimer; authenticate with R"outbreakinfo::authenticateUser()"
     println("This data was obtained from GISAID via the outbreak.info API.")
 
     # filter the metadata
@@ -24,6 +24,6 @@ function main(report_path::String, metadata_path::String, fasta_path::String)
     find_anachron_seqs(new_metadata, fasta_path)
 
 end
-precompile(main, (String,String,String))
+precompile(main, (String,String,String,))
 
 main(REPORT_PATH, METADATA_PATH, FASTA_PATH)
