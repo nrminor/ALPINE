@@ -551,16 +551,8 @@ can be considered rare.
 function assign_anachron(metadata_path::String, report_path::String)
 
     # read in the metadata and sort by accession
-    if endswith(metadata_path, ".arrow")
-        metadata = Arrow.Table(metadata_path) |> DataFrame
-    end
-    if endswith(metadata_path, ".csv")
-        metadata = CSV.read(metadata_path, DataFrame)
-    end
-    if endswith(metadata_path, ".tsv")
-        metadata = CSV.read(metadata_path, DataFrame, delim='\t')
-    end
-    @assert "Accession" in metadata.columns
+    metadata = Arrow.Table(metadata_path) |> DataFrame
+    @assert "Accession" in names(metadata)
     new_metadata = sort(metadata, :Accession)
 
     # date pango date_pango_calls

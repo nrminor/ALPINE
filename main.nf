@@ -609,6 +609,9 @@ process FILTER_BY_MASKED_BASES {
 	output:
 	path "filtered-by-n.fasta.gz"
 
+	when:
+	params.make_distance_matrix == true
+
 	script:
 	"""
 	filter-by-n-count.jl ${fasta} ${params.max_ambiguity} ${reference}
@@ -966,7 +969,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	label "alpine_container"
 	publishDir params.anachronistic_candidates, mode: 'copy'
 	
-	errorStrategy { task.attempt < 3 ? {sleep(Math.pow(2, task.attempt) * 2000 as long); return 'retry'} : errorMode }
+	errorStrategy { task.attempt < 3 ? 'retry' : errorMode }
 	maxRetries 2
 
 	input:
