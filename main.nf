@@ -987,8 +987,8 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	"""
 	compare-lineage-prevalences.jl \
 	${lineages} \
-	${fasta} \
-	${metadata}
+	${metadata} \
+	${fasta}
 	"""
 }
 
