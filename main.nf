@@ -177,6 +177,17 @@ workflow {
 				).collect()
 		)
 
+		LATE_STATS (
+			FIND_DOUBLE_CANDIDATES.out.fasta
+		)
+
+		COMPUTE_PREVALENCE_ESTIMATE (
+			EARLY_STATS.out,
+			LATE_STATS.out
+		)
+
+		COMPUTE_PREVALENCE_ESTIMATE.out.view()
+
 	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
@@ -189,6 +200,17 @@ workflow {
 						.map { fasta, count -> fasta }
 				).collect()
 		)
+
+		LATE_STATS (
+			FIND_DOUBLE_CANDIDATES.out.fasta
+		)
+
+		COMPUTE_PREVALENCE_ESTIMATE (
+			EARLY_STATS.out,
+			LATE_STATS.out
+		)
+
+		COMPUTE_PREVALENCE_ESTIMATE.out.view()
 
 	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
@@ -204,6 +226,17 @@ workflow {
 				).collect()
 		)
 
+		LATE_STATS (
+			FIND_DOUBLE_CANDIDATES.out.fasta
+		)
+
+		COMPUTE_PREVALENCE_ESTIMATE (
+			EARLY_STATS.out,
+			LATE_STATS.out
+		)
+
+		COMPUTE_PREVALENCE_ESTIMATE.out.view()
+
 	} else if ( params.make_distance_matrix == false && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
@@ -216,18 +249,18 @@ workflow {
 				).collect()
 		)
 
+		LATE_STATS (
+			FIND_DOUBLE_CANDIDATES.out.fasta
+		)
+
+		COMPUTE_PREVALENCE_ESTIMATE (
+			EARLY_STATS.out,
+			LATE_STATS.out
+		)
+
+		COMPUTE_PREVALENCE_ESTIMATE.out.view()
+
 	}
-
-	LATE_STATS (
-		FIND_DOUBLE_CANDIDATES.out.fasta
-	)
-
-	COMPUTE_PREVALENCE_ESTIMATE (
-		EARLY_STATS.out,
-		LATE_STATS.out
-	)
-
-	COMPUTE_PREVALENCE_ESTIMATE.out.view()
 
 }
 // --------------------------------------------------------------- //
@@ -987,8 +1020,8 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	"""
 	compare-lineage-prevalences.jl \
 	${lineages} \
-	${fasta} \
-	${metadata}
+	${metadata} \
+	${fasta}
 	"""
 }
 
