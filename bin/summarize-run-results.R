@@ -1,5 +1,8 @@
 #!/usr/bin/env Rscript
 
+# retrieve positional command line arguments
+args <- commandArgs(TRUE)
+
 options(warn = 1)
 suppressPackageStartupMessages({
 
@@ -11,16 +14,6 @@ suppressPackageStartupMessages({
   require(ggplot2)
   require(readr)
 
-})
-
-parse_args <- compiler::cmpfun(function() {
-  parser <- ArgumentParser(description = "R script that generates a table of \
-                           ALPINE summary statistics.")
-  parser$add_argument("--results", default = "./results",
-                      help = "Parent directory for results.")
-  args <- parser$parse_args()
-
-  return(args)
 })
 
 construct_file_paths <- compiler::cmpfun(function(search_dir) {
@@ -190,7 +183,7 @@ summarize_highdist <- compiler::cmpfun(function(template_df, search_tree) {
 main <- compiler::cmpfun(function() {
 
   # determine the file tree to be traversed in search of results
-  paths <- construct_file_paths(parse_args()$results)
+  paths <- construct_file_paths(args[1])
 
   # search the tree and construct a nested named list (like an R version of a
   # dictionary of dictionaries) that will guide downstream steps
