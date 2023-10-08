@@ -85,7 +85,6 @@ RUN mamba install -y -n base -c conda-forge -c r -c bioconda r-base \
     r-units \
     r-sf \
     r-arrow \
-    bioconductor-biostrings \
     r-argparser
 
 # Install outbreak.info and cdc R packages
