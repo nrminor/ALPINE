@@ -212,6 +212,10 @@ workflow {
 
 		COMPUTE_PREVALENCE_ESTIMATE.out.view()
 
+		SUMMARIZE_RUN_RESULTS (
+			LATE_STATS.out
+		)
+
 	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
@@ -237,6 +241,10 @@ workflow {
 
 		COMPUTE_PREVALENCE_ESTIMATE.out.view()
 
+		SUMMARIZE_RUN_RESULTS (
+			LATE_STATS.out
+		)
+
 	} else if ( params.make_distance_matrix == false && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
@@ -259,6 +267,10 @@ workflow {
 		)
 
 		COMPUTE_PREVALENCE_ESTIMATE.out.view()
+
+		SUMMARIZE_RUN_RESULTS (
+			LATE_STATS.out
+		)
 
 	}
 
@@ -1181,11 +1193,10 @@ process SUMMARIZE_RUN_RESULTS {
 	cpus 1
 
 	input:
-	path early_stats
-	path late_stats
+	path tsv
 
 	output:
-	stdout
+	path "*.tsv"
 
 	script:
 	"""
