@@ -129,7 +129,7 @@ workflow {
 			.map { fasta, count -> fasta }
 	)
 
-	SUMMARIZE_CANDIDATES (
+	REPORT_HIGHDIST_CANDIDATES (
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
 		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
 		COMPUTE_DISTANCE_MATRIX.out.collect(),
@@ -137,13 +137,13 @@ workflow {
 	)
 
 	RUN_META_CLUSTER (
-		SUMMARIZE_CANDIDATES.out.high_dist_seqs
+		REPORT_HIGHDIST_CANDIDATES.out.high_dist_seqs
 	)
 
 	META_CLUSTER_REPORT (
 		RUN_META_CLUSTER.out.cluster_table,
 		RUN_META_CLUSTER.out.cluster_fastas,
-		SUMMARIZE_CANDIDATES.out.metadata,
+		REPORT_HIGHDIST_CANDIDATES.out.metadata,
 		RUN_META_CLUSTER.out.whether_repeats
 	)
 	
@@ -170,9 +170,9 @@ workflow {
 	if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == false ){
 
 		FIND_DOUBLE_CANDIDATES (
-			SUMMARIZE_CANDIDATES.out.metadata
+			REPORT_HIGHDIST_CANDIDATES.out.metadata
 				.mix(
-					SUMMARIZE_CANDIDATES.out.high_dist_seqs,
+					REPORT_HIGHDIST_CANDIDATES.out.high_dist_seqs,
 					SEARCH_NCBI_METADATA.out.metadata
 				).collect()
 		)
@@ -191,9 +191,9 @@ workflow {
 	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
-			SUMMARIZE_CANDIDATES.out.metadata
+			REPORT_HIGHDIST_CANDIDATES.out.metadata
 				.mix(
-					SUMMARIZE_CANDIDATES.out.high_dist_seqs,
+					REPORT_HIGHDIST_CANDIDATES.out.high_dist_seqs,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
 						.filter { it[1].toInteger() > 2 }
@@ -215,9 +215,9 @@ workflow {
 	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
-			SUMMARIZE_CANDIDATES.out.metadata
+			REPORT_HIGHDIST_CANDIDATES.out.metadata
 				.mix(
-					SUMMARIZE_CANDIDATES.out.high_dist_seqs,
+					REPORT_HIGHDIST_CANDIDATES.out.high_dist_seqs,
 					SEARCH_NCBI_METADATA.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
@@ -827,7 +827,7 @@ process MULTIDIMENSIONAL_SCALING {
 
 }
 
-process SUMMARIZE_CANDIDATES {
+process REPORT_HIGHDIST_CANDIDATES {
 
 	/*
 	In this process, the clustering results are combined with metadata
@@ -1135,7 +1135,7 @@ process LATE_STATS {
 process COMPUTE_PREVALENCE_ESTIMATE {
 
 	/*
-	As a final step, the workflow compares the sequence statistics
+	Here the workflow compares the sequence statistics
 	from above to estimate and print out a prevalence estimate for
 	the double-candidates identified above.
 	*/
@@ -1159,6 +1159,37 @@ process COMPUTE_PREVALENCE_ESTIMATE {
 	script:
 	"""
 	estimate-prevalence.jl ${early_stats} ${late_stats}
+	"""
+
+}
+
+process SUMMARIZE_RUN_RESULTS {
+
+	/*
+	As a final step, the workflow walks through the geographies
+	searched on this run-date and summarizes their findings in
+	a readable spreadsheet.
+	*/
+	
+	tag "${params.pathogen}, ${params.date}"
+	label "alpine_container"
+	publishDir params.dated_results, mode: 'copy'
+
+	errorStrategy { task.attempt < 1 ? 'retry' : errorMode }
+	maxRetries 1
+
+	cpus 1
+
+	input:
+	path early_stats
+	path late_stats
+
+	output:
+	stdout
+
+	script:
+	"""
+	summarize-run-results.R ${params.dated_results}
 	"""
 
 }
