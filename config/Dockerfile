@@ -84,8 +84,7 @@ RUN mamba install -y -n base -c conda-forge -c r -c bioconda r-base \
     r-devtools \
     r-units \
     r-sf \
-    r-arrow \
-    r-argparser
+    r-arrow
 
 # Install outbreak.info and cdc R packages
 RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library', clean = TRUE)"
