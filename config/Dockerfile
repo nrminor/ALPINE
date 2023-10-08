@@ -124,6 +124,7 @@ ENV PATH=$PATH:/opt/julia-1.9.0/bin:/scratch/.julia/compiled/v1.9
 RUN chmod +x /usr/local/bin/* && \
     chmod +rwx /usr/local/bin/nextflow && \
     chmod +x /opt/julia-1.9.0/bin/* && \
+    rm /opt/conda/bin/cpp && \
     chmod +x /opt/conda/bin/* && \
     chmod +rw /root/ && \
     chmod -R +rwx /root/ && \
