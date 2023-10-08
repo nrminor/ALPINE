@@ -7,7 +7,6 @@ options(warn = 1)
 suppressPackageStartupMessages({
 
   require(compiler)
-  require(argparse)
   require(tidyr)
   require(stringr)
   require(dplyr)
