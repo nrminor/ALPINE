@@ -69,7 +69,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=/opt/conda/bin:$PATH
 
 # Install mamba
-RUN conda install -y -n base -c conda-forge mamba
+RUN conda install -y -n base -c conda-forge mamba=1.5.1
 
 # Install python libraries
 RUN mamba install -y -n base -c anaconda -c conda-forge biopython pandas polars numpy pyarrow matplotlib seaborn
@@ -80,7 +80,6 @@ RUN mamba install -y -n base -c conda-forge -c r -c bioconda r-base \
     r-tidyverse \
     r-ape \
     r-plotly \
-    r-fst \
     r-devtools \
     r-units \
     r-sf
@@ -95,8 +94,10 @@ RUN mamba install -y -n base -c defaults -c bioconda -c conda-forge \
     ncbi-datasets-cli=14.2.2 \
     seqkit \
     pangolin \ 
-    clustalo \
-    nextflow
+    clustalo
+
+# Install Nextstrain CLI
+# RUN curl -fsSL --proto '=https' https://nextstrain.org/cli/installer/linux | bash
 
 # Install Julia
 RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
@@ -124,7 +125,6 @@ ENV PATH=$PATH:/opt/julia-1.9.0/bin:/scratch/.julia/compiled/v1.9
 RUN chmod +x /usr/local/bin/* && \
     chmod +rwx /usr/local/bin/nextflow && \
     chmod +x /opt/julia-1.9.0/bin/* && \
-    rm /opt/conda/bin/cpp && \
     chmod +x /opt/conda/bin/* && \
     chmod +rw /root/ && \
     chmod -R +rwx /root/ && \
