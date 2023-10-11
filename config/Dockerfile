@@ -56,12 +56,6 @@ RUN apt-get update && \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install nextflow and make sure it is configured
-RUN wget -qO- https://get.nextflow.io | bash && \
-    chmod +x nextflow && \
-    mv nextflow /usr/local/bin
-ENV NXF_HOME=/scratch/.nextflow
-
 # Install miniconda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
@@ -94,7 +88,9 @@ RUN mamba install -y -n base -c defaults -c bioconda -c conda-forge \
     ncbi-datasets-cli=14.2.2 \
     seqkit \
     pangolin \ 
-    clustalo
+    clustalo \
+    nextflow
+ENV NXF_HOME=/scratch/.nextflow
 
 # Install Nextstrain CLI
 # RUN curl -fsSL --proto '=https' https://nextstrain.org/cli/installer/linux | bash
@@ -123,7 +119,6 @@ ENV PATH=$PATH:/opt/julia-1.9.0/bin:/scratch/.julia/compiled/v1.9
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \
-    chmod +rwx /usr/local/bin/nextflow && \
     chmod +x /opt/julia-1.9.0/bin/* && \
     rm -f /opt/conda/bin/cpp && \
     chmod +x /opt/conda/bin/* && \
