@@ -6,7 +6,7 @@ resources/
 sandbox/
 results/pipeline_run_info/
 deprecated/
-config/subseq_rs/target
+config/test/
 
 results/report.html*
 results/
