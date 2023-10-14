@@ -1,10 +1,43 @@
 module ALPINE
 
 # load dependencies
-using DelimitedFiles, DataFrames, CSV, Arrow, FASTX, FastaIO, FileIO, Dates, BioSequences, Distances, Statistics, Pipe, CodecZstd, CodecZlib, FLoops, Missings, RCall, Scratch, Statistics
+using DelimitedFiles,
+    DataFrames,
+    CSV,
+    Arrow,
+    FASTX,
+    FastaIO,
+    FileIO,
+    Dates,
+    BioSequences,
+    Distances,
+    Statistics,
+    Pipe,
+    CodecZstd,
+    CodecZlib,
+    FLoops,
+    Missings,
+    RCall,
+    Scratch,
+    Statistics
 import Base.Threads
 
-export filter_metadata_by_geo, filter_by_geo, replace_gaps, filter_by_n, date_accessions, lookup_date, separate_by_month, distance_matrix, set_to_uppercase, weight_by_cluster_size, date_pango_calls, create_rarity_lookup, assign_anachron, find_anachron_seqs, find_double_candidates, estimate_prevalence
+export filter_metadata_by_geo,
+    filter_by_geo,
+    replace_gaps,
+    filter_by_n,
+    date_accessions,
+    lookup_date,
+    separate_by_month,
+    distance_matrix,
+    set_to_uppercase,
+    weight_by_cluster_size,
+    date_pango_calls,
+    create_rarity_lookup,
+    assign_anachron,
+    find_anachron_seqs,
+    find_double_candidates,
+    estimate_prevalence
 
 ### FUNCTION(S) TO FILTER GENBANK METADATA TO A PARTICULAR GEOGRAPHY STRING ###
 ### ----------------------------------------------------------------------- ###
@@ -27,18 +60,20 @@ function filter_metadata_by_geo(input_table::String, geography::String)
     @assert "Accession" in names(metadata_df)
 
     # filter metadata based on desired geography
-    filtered = @pipe metadata_df |>
-    filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
+    filtered = @pipe metadata_df |> filter(
+        Symbol("Geographic Location") => value -> contains(string(value), geography),
+        _,
+    )
 
     # Writing filtered metadata
     Arrow.write("filtered-to-geography.arrow", filtered)
 
     # separating out accessions
-    accessions = filtered[!,"Accession"]
+    accessions = filtered[!, "Accession"]
 
     # Writing accessions to a text file for use by seqtk subseq or seqkit grep
     writedlm("accessions.txt", accessions, "\n")
-    
+
 end
 
 """
@@ -60,22 +95,26 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
     @assert "Accession" in names(metadata_df)
 
     # filter metadata based on desired geography
-    filtered = @pipe metadata_df |>
-    filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
+    filtered = @pipe metadata_df |> filter(
+        Symbol("Geographic Location") => value -> contains(string(value), geography),
+        _,
+    )
 
     # filter metadata to desired minimum range
-    @pipe filtered |>
-    filter!(Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),_)
+    @pipe filtered |> filter!(
+        Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),
+        _,
+    )
 
     # Writing filtered metadata
     Arrow.write("filtered-to-geography.arrow", filtered)
 
     # separating out accessions
-    accessions = filtered[!,"Accession"]
+    accessions = filtered[!, "Accession"]
 
     # Writing accessions to a text file for use by seqtk subseq or seqkit grep
     writedlm("accessions.txt", accessions, "\n")
-    
+
 end
 
 """
@@ -85,7 +124,12 @@ Filter the Apache Arrow representation of the metadata, supplied by the argument
 and before `max_date::String`. Then, write the output to a new filtered arrow IPC
 file as well as a text file listing one filter-passing accession per line.
 """
-function filter_metadata_by_geo(input_table::String, geography::String, min_date::String, max_date::String)
+function filter_metadata_by_geo(
+    input_table::String,
+    geography::String,
+    min_date::String,
+    max_date::String,
+)
 
     # Read in the metadata file as a dataframe
     metadata_df = DataFrame(Arrow.Table(input_table))
@@ -97,23 +141,31 @@ function filter_metadata_by_geo(input_table::String, geography::String, min_date
     @assert "Accession" in names(metadata_df)
 
     # filter metadata based on desired geography
-    filtered = @pipe metadata_df |>
-    filter(Symbol("Geographic Location") => value -> contains(string(value), geography),_)
+    filtered = @pipe metadata_df |> filter(
+        Symbol("Geographic Location") => value -> contains(string(value), geography),
+        _,
+    )
 
     # filter metadata to desired date range
     @pipe filtered |>
-    filter!(Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),_) |>
-    filter!(Symbol("Isolate Collection date") => date -> date < Dates.Date(max_date),_)
+          filter!(
+              Symbol("Isolate Collection date") => date -> date > Dates.Date(min_date),
+              _,
+          ) |>
+          filter!(
+              Symbol("Isolate Collection date") => date -> date < Dates.Date(max_date),
+              _,
+          )
 
     # Writing filtered metadata
     Arrow.write("filtered-to-geography.arrow", filtered)
 
     # separating out accessions
-    accessions = filtered[!,"Accession"]
+    accessions = filtered[!, "Accession"]
 
     # Writing accessions to a text file for use by seqtk subseq or seqkit grep
     writedlm("accessions.txt", accessions, "\n")
-    
+
 end
 
 ### ----------------------------------------------------------------------- ###
@@ -151,7 +203,7 @@ function replace_gaps(fasta_path::String)
                 end
             end
         end
-        return(output_filename)
+        return (output_filename)
     end
     if endswith(fasta_path, ".zst") || endswith(fasta_path, ".zstd")
         touch(output_filename)
@@ -169,7 +221,7 @@ function replace_gaps(fasta_path::String)
                 end
             end
         end
-        return(output_filename)
+        return (output_filename)
     end
     if endswith(fasta_path, ".fasta") || endswith(fasta_path, ".fa")
         touch(output_filename)
@@ -187,7 +239,7 @@ function replace_gaps(fasta_path::String)
                 end
             end
         end
-        return(output_filename)
+        return (output_filename)
     end
 end
 
@@ -222,7 +274,7 @@ function filter_by_n(input_fasta_path::String, max_ambiguity::Float64, ref_path:
     # any sequences that have less than the minimum N count
     output_filename = "filtered-by-n.fasta.gz"
     touch(output_filename)
-    FastaWriter(output_filename , "a") do fa
+    FastaWriter(output_filename, "a") do fa
         FastaReader(input_fasta_path) do fr
             for (name, seq) in fr
                 length_diff = ref_length - length(seq)
@@ -258,9 +310,10 @@ function date_accessions(input_path::String)
     # create lookup of dates and accessions
     @assert "Accession" in names(metadata_df)
     @assert "Isolate Collection date" in names(metadata_df)
-    accession_to_date = Dict(zip(metadata_df[!,"Accession"], metadata_df[!,"Isolate Collection date"]))
+    accession_to_date =
+        Dict(zip(metadata_df[!, "Accession"], metadata_df[!, "Isolate Collection date"]))
 
-    return(accession_to_date)
+    return (accession_to_date)
 
 end
 
@@ -290,7 +343,7 @@ FASTA per month present in the provided dataset.
 function separate_by_month(input_fasta::String, accession_to_date::Dict)
 
     # creating a dictionary of FastaWriters for each year_month
-    open_writers = Dict{String, FastaWriter}()
+    open_writers = Dict{String,FastaWriter}()
 
     # create a finalizer to close all writers when script ends
     atexit(() -> foreach(close, values(open_writers)))
@@ -298,7 +351,7 @@ function separate_by_month(input_fasta::String, accession_to_date::Dict)
     # process each sequence in the input FASTA file
     FastaReader(input_fasta) do fr
         for (name, seq) in fr
-            record_date = lookup_date(name,accession_to_date)
+            record_date = lookup_date(name, accession_to_date)
 
             if record_date === nothing
                 @warn "Skipping record with missing or unparseable date:" name
@@ -358,28 +411,35 @@ use the size of that sequence's cluster to "weight" its distances from other clu
 weight, adjusted by `stringency::String`, will penalize large clusters and advantage small
 clusters
 """
-function weight_by_cluster_size(seq_name::String, stringency::String, dist_df::DataFrame, cluster_table::DataFrame)
+function weight_by_cluster_size(
+    seq_name::String,
+    stringency::String,
+    dist_df::DataFrame,
+    cluster_table::DataFrame,
+)
 
     # filter down to centroid rows only
     centroids = filter(:1 => x -> x == "C", cluster_table)
 
     # make sure centroids are in the same order as the distance matrix
-    centroids = centroids[indexin(names(dist_df), centroids.Column9),:]
-    @assert centroids[:,9] == names(dist_df)
+    centroids = centroids[indexin(names(dist_df), centroids.Column9), :]
+    @assert centroids[:, 9] == names(dist_df)
 
     # extract a vector of cluster sizes that are in the same order as the 
     # sequences in the distance matrix
-    all_sizes = centroids[:,3]
+    all_sizes = centroids[:, 3]
 
     # filter down to hits only
     hits = filter(:1 => x -> x != "C", cluster_table)
     month_total = nrow(hits) == 0 ? 1 : nrow(hits)
 
     # find the number of sequences for the accession in question
-    cluster_freq = filter(:9 => x -> x == seq_name, centroids)[:,3][1] / month_total
+    cluster_freq = filter(:9 => x -> x == seq_name, centroids)[:, 3][1] / month_total
 
     # return the weight for this centroid's distance
-    weights = stringency == "strict" ? ((all_sizes .* -log(cluster_freq)) ./ month_total) : ((all_sizes .* (1 - cluster_freq)) ./ month_total)
+    weights =
+        stringency == "strict" ? ((all_sizes .* -log(cluster_freq)) ./ month_total) :
+        ((all_sizes .* (1 - cluster_freq)) ./ month_total)
     @assert length(weights) == nrow(dist_df)
     return weights
 
@@ -393,7 +453,12 @@ by argument `temp_filename::String`. Use the information in argument `cluster_ta
 and `stringency::String` to weight the distances by sequence ID, and use arguments `count::Int`,
 `majority_centroid::String`, and `yearmonth::String` to structure and name output CSV files.
 """
-function distance_matrix(temp_filename::String, cluster_table::DataFrame, yearmonth::String, stringency::String)
+function distance_matrix(
+    temp_filename::String,
+    cluster_table::DataFrame,
+    yearmonth::String,
+    stringency::String,
+)
 
     # Collect both names and sequences
     seqs = [seq for (_, seq) in FastaReader(temp_filename)]
@@ -449,10 +514,10 @@ function date_pango_calls(report_path::String, metadata::DataFrame)
     @assert "Accession" in names(metadata)
 
     pango_with_dates = @pipe metadata |>
-        select(_, [:Accession, Symbol("Isolate Collection date")]) |>
-        leftjoin(pango_report, _, on = :taxon => :Accession ) |>
-        sort(_, :taxon)
-    
+          select(_, [:Accession, Symbol("Isolate Collection date")]) |>
+          leftjoin(pango_report, _, on = :taxon => :Accession) |>
+          sort(_, :taxon)
+
     return pango_with_dates
 
 end
@@ -469,10 +534,10 @@ anachronistic, and therefore likely stem from prolonged infections or animal spi
 function create_rarity_lookup(pango_report::DataFrame)
 
     # create vector of unique lineages to iterate through
-    lineages = unique(pango_report[:,"lineage"])
+    lineages = unique(pango_report[:, "lineage"])
 
     # create empty rare dates vector
-    rarity_lookup = Dict{String, Date}()
+    rarity_lookup = Dict{String,Date}()
 
     # create rarity lookup vector
     for lineage in lineages
@@ -481,7 +546,9 @@ function create_rarity_lookup(pango_report::DataFrame)
         @rput lineage
 
         # call the outbreak.info API for prevalence estimates
-        prevalence_table = rcopy(R"outbreakinfo::getPrevalence(pangolin_lineage = lineage, location = 'United States')")
+        prevalence_table = rcopy(
+            R"outbreakinfo::getPrevalence(pangolin_lineage = lineage, location = 'United States')",
+        )
 
         @assert "proportion" in names(prevalence_table)
         @assert "date" in names(prevalence_table)
@@ -489,9 +556,9 @@ function create_rarity_lookup(pango_report::DataFrame)
         # get rid of zeroes, which will skew our methods below. We also get
         # rid of 1.0's, which are likely erroneous.
         @pipe prevalence_table |>
-            filter!(:proportion => prop -> prop > 0.0, _) |>
-            filter!(:proportion => prop -> prop < 1.0, _)
-        
+              filter!(:proportion => prop -> prop > 0.0, _) |>
+              filter!(:proportion => prop -> prop < 1.0, _)
+
         # deal with potential empty tables
         if nrow(prevalence_table) == 0
             rare_date = passmissing(Dates.Date(missing))
@@ -501,20 +568,21 @@ function create_rarity_lookup(pango_report::DataFrame)
 
         # define crest date
         max_prop = maximum(prevalence_table.proportion)
-        crest_date = filter(:proportion => prop -> prop == max_prop, prevalence_table).date[1]
+        crest_date =
+            filter(:proportion => prop -> prop == max_prop, prevalence_table).date[1]
 
         # define a rarity level and then find the date when that level is reached
         rare_date = @pipe quantile(prevalence_table.proportion, 0.05) |>
-            prevalence_table.proportion[argmin(abs.(prevalence_table.proportion .- _))] |>
-            maximum(prevalence_table[prevalence_table.proportion .== _, :date])
+              prevalence_table.proportion[argmin(abs.(prevalence_table.proportion .- _))] |>
+              maximum(prevalence_table[prevalence_table.proportion.==_, :date])
 
         # make sure we are using a rarity date that is after the crest
         if rare_date <= crest_date
-            post_crest = @pipe prevalence_table |>
-                filter(:date => date -> date > crest_date, _)
+            post_crest =
+                @pipe prevalence_table |> filter(:date => date -> date > crest_date, _)
             rare_date = @pipe quantile(prevalence_table.proportion, 0.05) |>
-                post_crest.proportion[argmin(abs.(post_crest.proportion .- _))] |>
-                maximum(post_crest[post_crest.proportion .== _, :date])
+                  post_crest.proportion[argmin(abs.(post_crest.proportion .- _))] |>
+                  maximum(post_crest[post_crest.proportion.==_, :date])
         end
 
         # make sure a lineage isn't too recent
@@ -579,7 +647,7 @@ function assign_anachron(metadata_path::String, report_path::String)
 
         # append in place to the list anachronicities
         push!(anachronicities, anachronicity)
-        
+
     end
 
     # make sure enough anachronicities were computed
@@ -659,14 +727,14 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
     # Sort both dataframes by Accession
     sort!(metadata1_filtered, :Accession)
     sort!(metadata2_filtered, :Accession)
-    
+
     if occursin("Anachronicity", names(metadata2_filtered)[end])
 
         # Add the last column from metadata2 to metadata1
         metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
 
         # Write the combined metadata to a TSV file
-        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim = '\t')
 
     else
 
@@ -674,7 +742,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
         metadata2_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
 
         # Write the combined metadata to a TSV file
-        CSV.write("double_candidate_metadata.tsv", metadata2_filtered, delim='\t')
+        CSV.write("double_candidate_metadata.tsv", metadata2_filtered, delim = '\t')
 
     end
 
@@ -687,7 +755,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, seqs
                 end
             end
         end
-        
+
     end
 
 end
@@ -700,7 +768,12 @@ This method looks for double candidates among a single highly evolved sequence
 detector and two anachronistic sequence detectors, and then filters a FASTA to any
 identifiable double candidates.
 """
-function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, metadata3::DataFrame, seqs::String)
+function find_double_candidates(
+    metadata1::DataFrame,
+    metadata2::DataFrame,
+    metadata3::DataFrame,
+    seqs::String,
+)
 
     # use assertions to catch runtime errors more informatively and make
     # assumptions about the data explicit
@@ -735,7 +808,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
         metadata1_filtered[!, :Anachronicity] = metadata_joined_filtered[!, end]
 
         # Write the combined metadata to a TSV file
-        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim = '\t')
 
     else
 
@@ -743,7 +816,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
         metadata_joined_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
 
         # Write the combined metadata to a TSV file
-        CSV.write("double_candidate_metadata.tsv", metadata_joined_filtered, delim='\t')
+        CSV.write("double_candidate_metadata.tsv", metadata_joined_filtered, delim = '\t')
 
     end
 
@@ -756,7 +829,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
                 end
             end
         end
-        
+
     end
 
 end
@@ -767,7 +840,11 @@ with a large number of nucleotide substitutions relative to co-occurring sequenc
 and are anachronistic, occurring long after a lineage is circulating and prevalent.
 This method looks for double candidates from three anachronistic sequence detectors.
 """
-function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, metadata3::DataFrame)
+function find_double_candidates(
+    metadata1::DataFrame,
+    metadata2::DataFrame,
+    metadata3::DataFrame,
+)
 
     # use assertions to catch runtime errors more informatively and make
     # assumptions about the data explicit
@@ -802,7 +879,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
         metadata1_filtered[!, :Anachronicity] = metadata_joined_filtered[!, end]
 
         # Write the combined metadata to a TSV file
-        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim = '\t')
 
     else
 
@@ -810,7 +887,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame, meta
         metadata_joined_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
 
         # Write the combined metadata to a TSV file
-        CSV.write("double_candidate_metadata.tsv", metadata_joined_filtered, delim='\t')
+        CSV.write("double_candidate_metadata.tsv", metadata_joined_filtered, delim = '\t')
 
     end
 
@@ -849,7 +926,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
         metadata1_filtered[!, :Anachronicity] = metadata2_filtered[!, end]
 
         # Write the combined metadata to a TSV file
-        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim='\t')
+        CSV.write("double_candidate_metadata.tsv", metadata1_filtered, delim = '\t')
 
     else
 
@@ -857,7 +934,7 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
         metadata2_filtered[!, :Anachronicity] = metadata1_filtered[!, end]
 
         # Write the combined metadata to a TSV file
-        CSV.write("double_candidate_metadata.tsv", metadata2_filtered, delim='\t')
+        CSV.write("double_candidate_metadata.tsv", metadata2_filtered, delim = '\t')
 
     end
 
