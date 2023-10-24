@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TZ America/New_York
 
 # Install dependencies
-COPY ./apt-get-packages.txt /tmp/package_list.txt
+COPY ./apt-get.lock /tmp/package_list.txt
 RUN apt-get update && \
     awk '/^ii/ { printf("apt-get install -y %s=%s\n", $2, $3) }' /tmp/package_list.txt > /tmp/install_packages.sh && \
     chmod +x /tmp/install_packages.sh && \
