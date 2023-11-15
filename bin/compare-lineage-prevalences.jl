@@ -1,4 +1,4 @@
-#!/usr/bin/env julia
+#!/usr/bin/env -S julia -t auto --sysimage alpine.so
 
 using ALPINE, RCall, CSV, DataFrames
 

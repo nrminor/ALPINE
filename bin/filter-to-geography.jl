@@ -1,4 +1,4 @@
-#!/usr/bin/env -S julia -t auto
+#!/usr/bin/env -S julia -t auto --sysimage alpine.so
 
 # loading packages
 using ALPINE, DelimitedFiles, DataFrames, CSV, Dates, Pipe
