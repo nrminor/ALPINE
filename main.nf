@@ -564,6 +564,7 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	script:
 	"""
+	ln -s /opt/.julia/alpine.so alpine.so
 	export JULIA_SCRATCH_TRACK_ACCESS=0 && \
 	filter-to-geography.jl ${metadata} ${params.max_date} ${params.min_date} ${params.geography}
 	"""
@@ -663,6 +664,7 @@ process FILTER_BY_MASKED_BASES {
 
 	script:
 	"""
+	ln -s /opt/.julia/alpine.so alpine.so
 	filter-by-n-count.jl ${fasta} ${params.max_ambiguity} ${reference}
 	"""
 
@@ -693,6 +695,7 @@ process SEPARATE_BY_MONTH {
 
 	script:
 	"""
+	ln -s /opt/.julia/alpine.so alpine.so
 	separate-by-yearmonth.jl ${fasta} ${metadata}
 	"""
 
@@ -803,6 +806,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
 	"""
+	ln -s /opt/.julia/alpine.so alpine.so
 	compute-distance-matrix.jl ${fasta} ${cluster_table} ${yearmonth} ${params.strictness_mode}
 	"""
 
@@ -1034,6 +1038,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	script:
 	"""
+	ln -s /opt/.julia/alpine.so alpine.so
 	compare-lineage-prevalences.jl \
 	${lineages} \
 	${metadata} \
@@ -1113,6 +1118,7 @@ process FIND_DOUBLE_CANDIDATES {
 
 	script:
 	"""
+	ln -s /opt/.julia/alpine.so alpine.so
 	find-double-candidates.jl
 	"""
 
@@ -1174,6 +1180,7 @@ process COMPUTE_PREVALENCE_ESTIMATE {
 
 	script:
 	"""
+	ln -s /opt/.julia/alpine.so alpine.so
 	estimate-prevalence.jl ${early_stats} ${late_stats}
 	"""
 
