@@ -8,60 +8,15 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV TZ America/New_York
 
 # Install dependencies
-# COPY ./apt-get.lock /tmp/package_list.txt
-# RUN apt-get update && \
-#     awk '/^ii/ { printf("apt-get install -y %s=%s\n", $2, $3) }' /tmp/package_list.txt > /tmp/install_packages.sh && \
-#     chmod +x /tmp/install_packages.sh && \
-#     /tmp/install_packages.sh && \
-#     rm /tmp/install_packages.sh && \
-#     apt-get clean && \
-#     rm -rf /var/lib/apt/lists/*
+# Use `dpkg -l > apt-get.lock` inside a container to print package versions after a successful build
+COPY ./apt-get.lock /tmp/apt-get.lock
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    curl \
-    wget \
-    unzip \
-    gzip \
-    make \
-    zstd \
-    gnupg \
-    libz-dev \
-    libbz2-dev \
-    liblzma-dev \
-    libssl-dev \
-    zlib1g-dev \
-    libncurses5-dev \
-    libgdbm-dev \
-    libnss3-dev \
-    libreadline-dev \
-    libffi-dev \
-    libsqlite3-dev \
-    libbz2-dev \
-    liblzma-dev \
-    libxml2-dev \
-    libxslt-dev \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libpng-dev \
-    libxt-dev \
-    libxaw7-dev \
-    libglu1-mesa-dev \
-    libglfw3-dev \
-    libarchive-dev \
-    libzip-dev \
-    xvfb \
-    muscle \
-    python3-pip \
-    git \
-    libssl-dev \
-    libcurl4-openssl-dev \
-    openjdk-16-jre-headless \
-    libnss-sss \
-    procps \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    awk '/^ii/ { printf("apt-get install -y %s=%s\n", $2, $3) }' /tmp/apt-get.lock > /tmp/install_packages.sh && \
+    chmod +x /tmp/install_packages.sh && \
+    /tmp/install_packages.sh && \
+    rm /tmp/install_packages.sh && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install miniconda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py311_23.5.2-0-Linux-x86_64.sh -O ~/miniconda.sh && \
@@ -103,9 +58,7 @@ RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
             Pkg.instantiate(); \
             using PackageCompiler; \
-            create_sysimage(:ALPINE, sysimage_path="alpine.so")' && \
-            cp alpine.so /scratch/alpine.so && \
-            mv alpine.so /opt/alpine.so
+            create_sysimage(:ALPINE, sysimage_path="/opt/.julia/alpine.so")'
 
 # Make sure nothing is amiss and that julia is still in the path
 ENV NXF_HOME=/scratch/.nextflow
