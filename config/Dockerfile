@@ -70,7 +70,13 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py311_23.5.2-0-L
 ENV PATH=/opt/conda/bin:$PATH
 
 # Install mamba
-RUN conda install -y -n base -c conda-forge mamba=1.2.0=py311h51e3938_0
+RUN conda config --add channels conda-forge && \
+    conda update -n base --all && \
+    conda install -y -n base \
+    mamba=1.2.0=py311h51e3938_0 \
+    libmamba=1.2.0=habaa8ee_0 \
+    libmambapy=1.2.0=py311h2b46443_0 \
+    conda-libmamba-solver=23.1.0=pyhd8ed1ab_0
 
 # Install all other dependencies, save for the two R packages below and the julia packages
 COPY ./conda_env.yaml /tmp/conda_env.yaml
