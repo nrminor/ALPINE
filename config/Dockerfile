@@ -13,23 +13,24 @@ RUN apt-get update && \
     awk '/^ii/ { printf("apt-get install -y %s=%s\n", $2, $3) }' /tmp/package_list.txt > /tmp/install_packages.sh && \
     chmod +x /tmp/install_packages.sh && \
     /tmp/install_packages.sh && \
-    rm -rf /tmp && \
+    rm /tmp/install_packages.sh && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
 # Install miniconda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py311_23.5.2-0-Linux-x86_64.sh -O ~/miniconda.sh && \
     /bin/bash ~/miniconda.sh -b -p /opt/conda && \
     rm ~/miniconda.sh
 ENV PATH=/opt/conda/bin:$PATH
 
 # Install mamba
-RUN conda install -y -n base -c conda-forge mamba=1.5.1
+RUN conda install -y -n base -c conda-forge mamba=1.2.0=py311h51e3938_0
 
 # Install all other dependencies, save for the two R packages below and the julia packages
 COPY ./conda_env.yaml /tmp/conda_env.yaml
 RUN mamba env update --file /tmp/conda_env.yaml && \
-    mamba clean --all
+    mamba clean --all && \
+    rm /tmp/conda_env.yaml
 ENV NXF_HOME=/scratch/.nextflow
 
 # Install outbreak.info and cdc R packages
