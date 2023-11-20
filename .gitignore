@@ -18,3 +18,4 @@ results/pango_consensus_sequences.fasta
 .Rhistory
 *token
 *.so
+.mypy_cache
