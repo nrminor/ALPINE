@@ -470,7 +470,7 @@ function distance_matrix(
     seq_vectors = [LongSequence{DNAAlphabet{4}}(seq) for seq in filtered_seqs]
 
     # Compute the Hamming distance matrix
-    dist_matrix = pairwise(Levenshtein(), seq_vectors, seq_vectors)
+    dist_matrix = pairwise(DamerauLevenshtein(), seq_vectors, seq_vectors)
 
     # Convert the distance matrix to a DataFrame
     dist_df = DataFrame(dist_matrix, :auto)
