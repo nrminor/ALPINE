@@ -110,16 +110,16 @@ workflow {
 		SEPARATE_BY_MONTH.out.flatten()
 	)
 
-	// PREP_CENTROID_FASTAS (
-	// 	CLUSTER_BY_IDENTITY.out.centroid_fasta
-	// 		.filter { it[2].toInteger() > 1 }
-	// )
+	PREP_CENTROID_FASTAS (
+		CLUSTER_BY_IDENTITY.out.centroid_fasta
+			.filter { it[2].toInteger() > 1 }
+	)
 
 	COMPUTE_DISTANCE_MATRIX (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
-		CLUSTER_BY_IDENTITY.out
-			.filter { it[1].toInteger() > 2 }
-			.map { fasta, count -> fasta }
+		CLUSTER_BY_IDENTITY.out.centroid_fasta
+			.filter { it[2].toInteger() > 2 }
+			.map { fasta, yearmonth, count -> tuple( file(fasta), yearmonth ) }
 	)
 
 	MULTIDIMENSIONAL_SCALING (
@@ -288,9 +288,9 @@ workflow {
 
 // Using debugmode setting to decide how to handle errors
 if ( params.debugmode == true ){
-	errorMode = 'terminate'
+	params.errorMode = 'terminate'
 } else {
-	errorMode = 'ignore'
+	params.errorMode = 'ignore'
 }
 
 // Defining number of cpus to use based on execution environment
@@ -424,7 +424,7 @@ process UNZIP_NCBI_METADATA {
 
 	publishDir params.results_subdir, pattern: "*.tsv", mode: 'copy'
 
-	errorStrategy { task.attempt < 3 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 3 ? 'retry' : params.errorMode }
 	maxRetries 2
 
 	cpus 3
@@ -455,7 +455,7 @@ process EXTRACT_NCBI_FASTA {
 	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
 
-	errorStrategy { task.attempt < 3 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 3 ? 'retry' : params.errorMode }
 	maxRetries 2
 
 	cpus 3
@@ -486,7 +486,7 @@ process VALIDATE_METADATA {
 
 	label "alpine_container"
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	input:
@@ -518,7 +518,7 @@ process VALIDATE_SEQUENCES {
 
 	label "alpine_container"
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus params.max_cpus
@@ -552,7 +552,7 @@ process FILTER_META_TO_GEOGRAPHY {
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	input:
@@ -584,7 +584,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus params.max_cpus
@@ -620,7 +620,7 @@ process EARLY_STATS {
 	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
 
-	errorStrategy { task.attempt < 1 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 1 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus params.max_cpus
@@ -649,7 +649,7 @@ process FILTER_BY_MASKED_BASES {
 	label "alpine_container"
 
 	tag "${params.pathogen}, ${params.geography}"
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	input:
@@ -683,7 +683,7 @@ process SEPARATE_BY_MONTH {
 	label "alpine_container"
 
 	tag "${params.pathogen}, ${params.geography}"
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	input:
@@ -715,7 +715,7 @@ process CLUSTER_BY_IDENTITY {
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*.uc"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*-cluster-seqs*"
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus params.max_cpus
@@ -757,7 +757,7 @@ process PREP_CENTROID_FASTAS {
 	label "alpine_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus params.max_cpus
@@ -788,7 +788,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	label "alpine_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus 1
@@ -826,7 +826,7 @@ process MULTIDIMENSIONAL_SCALING {
 	label "alpine_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	input:
@@ -860,7 +860,7 @@ process REPORT_HIGHDIST_CANDIDATES {
 	label "alpine_container"
 	publishDir params.high_distance_candidates, mode: 'copy'
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	input:
@@ -894,7 +894,7 @@ process RUN_META_CLUSTER {
 
 	label "alpine_container"
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus params.max_cpus
@@ -937,7 +937,7 @@ process META_CLUSTER_REPORT {
 
 	label "alpine_container"
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	publishDir params.repeat_lineages, mode: 'copy'
@@ -974,7 +974,7 @@ process RECLASSIFY_SC2_WITH_PANGOLIN {
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
 
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus params.max_cpus
@@ -1022,7 +1022,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	label "alpine_container"
 	publishDir params.anachronistic_candidates, mode: 'copy'
 	
-	errorStrategy { task.attempt < 3 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 3 ? 'retry' : params.errorMode }
 	maxRetries 2
 
 	input:
@@ -1062,7 +1062,7 @@ process SEARCH_NCBI_METADATA {
 	label "alpine_container"
 	publishDir params.metadata_candidates, mode: 'copy'
 	
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus params.max_cpus
@@ -1103,7 +1103,7 @@ process FIND_DOUBLE_CANDIDATES {
 	label "alpine_container"
 	publishDir params.double_candidates, mode: 'copy'
 	
-	errorStrategy { task.attempt < 2 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	input:
@@ -1136,7 +1136,7 @@ process LATE_STATS {
 	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
 
-	errorStrategy { task.attempt < 1 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 1 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus params.max_cpus
@@ -1166,7 +1166,7 @@ process COMPUTE_PREVALENCE_ESTIMATE {
 	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
 
-	errorStrategy { task.attempt < 1 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 1 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus 1
@@ -1198,7 +1198,7 @@ process SUMMARIZE_RUN_RESULTS {
 	label "alpine_container"
 	publishDir params.dated_results, mode: 'copy'
 
-	errorStrategy { task.attempt < 1 ? 'retry' : errorMode }
+	errorStrategy { task.attempt < 1 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus 1
