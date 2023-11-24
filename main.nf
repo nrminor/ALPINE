@@ -119,7 +119,7 @@ workflow {
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		CLUSTER_BY_IDENTITY.out.centroid_fasta
 			.filter { it[2].toInteger() > 2 }
-			.map { fasta, yearmonth, count -> tuple( file(fasta), yearmonth ) }
+			.map { fasta, yearmonth, count -> file(fasta) }
 	)
 
 	// MULTIDIMENSIONAL_SCALING (
