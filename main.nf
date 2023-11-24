@@ -110,10 +110,10 @@ workflow {
 		SEPARATE_BY_MONTH.out.flatten()
 	)
 
-	PREP_CENTROID_FASTAS (
-		CLUSTER_BY_IDENTITY.out.centroid_fasta
-			.filter { it[2].toInteger() > 1 }
-	)
+	// PREP_CENTROID_FASTAS (
+	// 	CLUSTER_BY_IDENTITY.out.centroid_fasta
+	// 		.filter { it[2].toInteger() > 1 }
+	// )
 
 	COMPUTE_DISTANCE_MATRIX (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
@@ -122,12 +122,12 @@ workflow {
 			.map { fasta, yearmonth, count -> tuple( file(fasta), yearmonth ) }
 	)
 
-	MULTIDIMENSIONAL_SCALING (
-		CLUSTER_BY_IDENTITY.out.cluster_table,
-		PREP_CENTROID_FASTAS.out
-			.filter { it[1].toInteger() > 2 }
-			.map { fasta, count -> fasta }
-	)
+	// MULTIDIMENSIONAL_SCALING (
+	// 	CLUSTER_BY_IDENTITY.out.cluster_table,
+	// 	PREP_CENTROID_FASTAS.out
+	// 		.filter { it[1].toInteger() > 2 }
+	// 		.map { fasta, count -> fasta }
+	// )
 
 	REPORT_HIGHDIST_CANDIDATES (
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
