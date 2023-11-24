@@ -788,7 +788,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	label "alpine_container"
 	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
 
-	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
+	errorStrategy 'retry' // { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
 	cpus 1
