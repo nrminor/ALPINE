@@ -353,7 +353,7 @@ process DOWNLOAD_REFSEQ {
 	maxRetries 5
 
 	output:
-	path "*.fasta", emit: ref_fasta
+	path "${params.pathogen}_refseq.fasta", emit: ref_fasta
 
 	script:
 	"""
@@ -376,7 +376,7 @@ process GET_DESIGNATION_DATES {
 	publishDir params.resources, mode: 'copy', overwrite: true
 	
 	output:
-	path "*.csv"
+	path "lineage_designation_dates.csv"
 
 	when:
 	params.pathogen == "SARS-CoV-2"
@@ -404,7 +404,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	maxRetries 3
 
 	output:
-	path "*.zip", emit: zip_archive
+	path "ncbi_dataset.zip", emit: zip_archive
 
 	script:
 	"""
@@ -433,7 +433,7 @@ process UNZIP_NCBI_METADATA {
 	path zip
 
 	output:
-	path "*.tsv"
+	path "genbank_metadata.tsv"
 
 	script:
 	"""
@@ -464,7 +464,7 @@ process EXTRACT_NCBI_FASTA {
 	path zip
 
 	output:
-	path "*.fasta.zst"
+	path "genbank_sequences.fasta.zst"
 
 	script:
 	"""
@@ -527,7 +527,7 @@ process VALIDATE_SEQUENCES {
 	path fasta
 
 	output:
-	path "*.fasta.zst"
+	path "validated.fasta.zst"
 
 	when:
 	params.download_only == false
@@ -559,8 +559,8 @@ process FILTER_META_TO_GEOGRAPHY {
 	path metadata
 
 	output:
-	path "*.arrow", emit: metadata
-	path "*.txt", emit: accessions
+	path "filtered-to-geography.arrow", emit: metadata
+	path "accessions.txt", emit: accessions
 
 	script:
 	"""
@@ -594,7 +594,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	path accessions
 
 	output:
-	path "*.fasta.zst", emit: fasta
+	path "filtered-to-geography.fasta.zst", emit: fasta
 
 	script:
 	"""
@@ -629,7 +629,7 @@ process EARLY_STATS {
 	path fasta
 
 	output:
-	path "*.tsv"
+	path "early_stats.tsv"
 
 	script:
 	"""
@@ -724,9 +724,9 @@ process CLUSTER_BY_IDENTITY {
 	path fasta
 
 	output:
-	path "*.uc", emit: cluster_table
-	tuple path("*centroids.fasta"), val(yearmonth), env(count), emit: centroid_fasta
-	path "*-cluster-seqs*", emit: cluster_fastas
+	path "${yearmonth}-clusters.uc", emit: cluster_table
+	tuple path("${yearmonth}-centroids.fasta"), val(yearmonth), env(count), emit: centroid_fasta
+	path "${yearmonth}-cluster-seqs*", emit: cluster_fastas
 	
 	script:
 	yearmonth = fasta.getSimpleName()
@@ -736,7 +736,6 @@ process CLUSTER_BY_IDENTITY {
 	--centroids ${yearmonth}-centroids.fasta \
 	--uc ${yearmonth}-clusters.uc \
 	--clusters ${yearmonth}-cluster-seqs \
-	--msaout ${yearmonth}-centroids-msa.fasta \
 	--threads ${task.cpus} && \
 	count=\$(grep -c "^>" ${yearmonth}-centroids.fasta)
 	"""
@@ -766,7 +765,7 @@ process PREP_CENTROID_FASTAS {
 	tuple path(fasta), val(yearmonth), val(count)
 
 	output:
-	tuple path("*-centroids.fasta"), val(count)
+	tuple path("${yearmonth}-aligned-centroids.fasta.fasta"), val(count)
 
 	script:
 	"""
@@ -798,7 +797,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	path fasta
 
 	output:
-	path "*-dist-matrix.csv"
+	path "${yearmonth}-dist-matrix.csv"
 
 	when:
 	file(fasta.toString()).getSimpleName().contains(file(cluster_table.toString()).getSimpleName().replace("-clusters", ""))
@@ -870,8 +869,8 @@ process REPORT_HIGHDIST_CANDIDATES {
 	path metadata
 
 	output:
-	path "*.tsv", emit: metadata
-	path "*.fasta", emit: high_dist_seqs
+	path "high_distance_candidates.tsv", emit: metadata
+	path "high_distance_candidates.fasta", emit: high_dist_seqs
 	// path "*.pdf", emit: plots
 
 	script:
@@ -1073,8 +1072,8 @@ process SEARCH_NCBI_METADATA {
 	path lineage_dates
 
 	output:
-	path "*.tsv", emit: metadata
-	path "*.fasta", emit: fasta
+	path "anachronistic_metadata_only_candidates.tsv", emit: metadata
+	path "anachronistic_metadata_only_candidates.fasta", emit: fasta
 
 	when:
 	params.search_metadata_dates == true && params.pathogen == "SARS-CoV-2"
@@ -1145,7 +1144,7 @@ process LATE_STATS {
 	path fasta
 
 	output:
-	path "*.tsv"
+	path "late_stats.tsv"
 
 	script:
 	"""
