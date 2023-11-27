@@ -56,6 +56,7 @@ dependencies:
   - contourpy=1.0.5=py311hdb19cb5_0
   - coreutils=8.32=h7b6447c_0
   - cryptography=39.0.0=py311h211fabd_0
+  - csvtk=0.29.0=h527b516_0
   - curl=7.88.1=h37d81fd_2
   - cycler=0.11.0=pyhd3eb1b0_0
   - cyrus-sasl=2.1.27=h957375c_6
