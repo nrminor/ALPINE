@@ -449,7 +449,7 @@ end
 # compute cluster-size-weighted weighted distance matrices
 
 """
-Compute a pairwise Hamming distance matrix between all the sequences in the FASTA provided
+Compute a pairwise Jaccard distance matrix between all the sequences in the FASTA provided
 by argument `temp_filename::String`. Use the information in argument `cluster_table::DataFrame`
 and `stringency::String` to weight the distances by sequence ID, and use arguments `count::Int`,
 `majority_centroid::String`, and `yearmonth::String` to structure and name output CSV files.
@@ -470,7 +470,7 @@ function distance_matrix(
     seq_vectors = [LongSequence{DNAAlphabet{4}}(seq) for seq in filtered_seqs]
 
     # Compute the Hamming distance matrix
-    dist_matrix = pairwise(DamerauLevenshtein(), seq_vectors, seq_vectors)
+    dist_matrix = pairwise(Jaccard(51), seq_vectors, seq_vectors)
 
     # Convert the distance matrix to a DataFrame
     dist_df = DataFrame(dist_matrix, :auto)
