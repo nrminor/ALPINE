@@ -3,6 +3,57 @@
 nextflow.enable.dsl = 2
 
 
+// prints to the screen and to the log
+log.info	"""
+
+			_____/\\\\\\\\\_____/\\\______________/\\\\\\\\\\\\\____/\\\\\\\\\\\__/\\\\\_____/\\\__/\\\\\\\\\\\\\\\_        
+			 ___/\\\\\\\\\\\\\__\/\\\_____________\/\\\/////////\\\_\/////\\\///__\/\\\\\\___\/\\\_\/\\\///////////__       
+			  __/\\\/////////\\\_\/\\\_____________\/\\\_______\/\\\_____\/\\\_____\/\\\/\\\__\/\\\_\/\\\_____________      
+			   _\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\/______\/\\\_____\/\\\//\\\_\/\\\_\/\\\\\\\\\\\_____     
+			    _\/\\\\\\\\\\\\\\\_\/\\\_____________\/\\\/////////________\/\\\_____\/\\\\//\\\\/\\\_\/\\\///////______    
+			     _\/\\\/////////\\\_\/\\\_____________\/\\\_________________\/\\\_____\/\\\_\//\\\/\\\_\/\\\_____________   
+			      _\/\\\_______\/\\\_\/\\\_____________\/\\\_________________\/\\\_____\/\\\__\//\\\\\\_\/\\\_____________  
+			       _\/\\\_______\/\\\_\/\\\\\\\\\\\\\\\_\/\\\______________/\\\\\\\\\\\_\/\\\___\//\\\\\_\/\\\\\\\\\\\\\\\_ 
+				    _\///________\///__\///////////////__\///______________\///////////__\///_____\/////__\///////////////__
+
+			ALPINE: Anachronistic Lineage and Persistent INfection Explorer
+			(version v0.2.0-alpha)
+			===============================================================
+			fastq dir          : ${params.fasta_path}
+			metadata dir       : ${params.metadata_path}
+			results dir        : ${params.results}
+			query_fasta        : ${params.query_fasta}
+
+			Filtering parameters:
+			-----------------------------------
+			Minimum date       : ${params.min_date}
+			Maximum date       : ${params.max_date}
+			Geography          : ${params.geography}
+			Pathogen           : ${params.pathogen}
+			ID threshold       : ${params.id_threshold}
+			Ambiguity limit    : ${params.max_ambiguity}
+			Stringency         : ${params.strictness_mode}
+			Infection duration : ${params.days_of_infection}
+
+			Run settings:
+			-----------------------------------
+			Download only?     : ${params.download_only}
+			Search metadata    : ${params.search_metadata_dates}
+			Pango-reclassify   : ${params.reclassify_sc2_lineages}
+			Distance matrix    : ${params.make_distance_matrix}
+			Debug mode         : ${params.debugmode}
+			Cleanup mode       : ${params.cleanup}
+			Workflow profile   : ${workflow.profile}
+			Run date           : ${params.date}
+
+			Available resources:
+			-----------------------------------
+			Available CPUs     : ${params.available_cpus}
+			Max shared CPUs    : ${params.max_shared_cpus}
+			
+			"""
+			.stripIndent()
+
 
 // WORKFLOW SPECIFICATION
 // --------------------------------------------------------------- //
