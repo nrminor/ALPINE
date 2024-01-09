@@ -14,30 +14,33 @@ involve running Pangolin or clustering.
 
 # make necessary modules available
 import argparse
-from typing import Optional
 import multiprocessing
-import pandas
+from typing import Optional
+
 import numpy
+import pandas
 import pyarrow
+
 
 def parse_command_line_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("metadata_path",
-                        help="The path to the metadata file.")
-    parser.add_argument("dates_path",
-                        help="The path to the pango lineage dates file.")
-    parser.add_argument("infection_cutoff",
-                        type=int,
-                        help="The minimum infection duration in days.")
-    parser.add_argument("cores",
-                        type=int,
-                        help="The number of cores to use for parallel processing.")
+    parser.add_argument("metadata_path", help="The path to the metadata file.")
+    parser.add_argument("dates_path", help="The path to the pango lineage dates file.")
+    parser.add_argument(
+        "infection_cutoff", type=int, help="The minimum infection duration in days."
+    )
+    parser.add_argument(
+        "cores", type=int, help="The number of cores to use for parallel processing."
+    )
     args = parser.parse_args()
     return args.metadata_path, args.dates_path, args.infection_cutoff, args.cores
 
+
 # Defining functions for multiprocessing
-def add_designation_date(lineage: str, dates: pandas.DataFrame) -> Optional[numpy.datetime64]:
+def add_designation_date(
+    lineage: str, dates: pandas.DataFrame
+) -> Optional[numpy.datetime64]:
     """
     This function collects a pangolin lineage and returns the date
     it was designated in pangolin.
@@ -50,11 +53,18 @@ def add_designation_date(lineage: str, dates: pandas.DataFrame) -> Optional[nump
     Union[numpy.datetime64, None] of the designation date
     """
 
-    date_values = numpy.array(dates.loc[dates['lineage'] == lineage, 'designation_date'].values)
+    date_values = numpy.array(
+        dates.loc[dates["lineage"] == lineage, "designation_date"].values
+    )
     return date_values[0] if date_values.size > 0 else None
+
+
 # end add_designation_date()
 
-def add_infection_duration(i: int, ncbi_dates: list, desig_dates: list) -> Optional[int]:
+
+def add_infection_duration(
+    i: int, ncbi_dates: list, desig_dates: list
+) -> Optional[int]:
     """
     This function takes the difference of the collection date
     and associated lineage designation date to identify whether
@@ -72,7 +82,10 @@ def add_infection_duration(i: int, ncbi_dates: list, desig_dates: list) -> Optio
 
     anachronicity = (ncbi_dates[i] - desig_dates[i]).days
     return anachronicity
+
+
 # end add_infection_duration()
+
 
 # define main function
 def main():
@@ -89,48 +102,58 @@ def main():
     Returns:
     None
     """
-    
+
     # parse command line arguments
     metadata_path, dates_path, infection_cutoff, cores = parse_command_line_args()
 
     # Memory-map arrow IPC-formatted metadata
-    with pyarrow.memory_map(metadata_path, 'r') as source:
+    with pyarrow.memory_map(metadata_path, "r") as source:
         metadata_arrays = pyarrow.ipc.open_file(source).read_all()
         metadata = metadata_arrays.to_pandas()
 
         # read in dates
-        dates = pandas.read_csv(dates_path,
-                            na_values=["", "NA"])
+        dates = pandas.read_csv(dates_path, na_values=["", "NA"])
 
         # make sure the expected columns are present
         assert "Isolate Collection date" in metadata.columns
 
         # Ensure dates are properly formatted
-        metadata["Isolate Collection date"] = pandas.to_datetime(metadata["Isolate Collection date"], errors='coerce')
-        dates.designation_date = pandas.to_datetime(dates.designation_date, errors="ignore", format="%Y-%m-%d").fillna("2021-02-18")
+        metadata["Isolate Collection date"] = pandas.to_datetime(
+            metadata["Isolate Collection date"], errors="coerce"
+        )
+        dates.designation_date = pandas.to_datetime(
+            dates.designation_date, errors="ignore", format="%Y-%m-%d"
+        ).fillna("2021-02-18")
 
         # Parallelize looping through filtered metadata to merge designation dates
         metadata["lineage_designation"] = numpy.NAN
         metadata["infection_duration"] = 0
 
         # prepare the arguments as a list of tuples
-        args1 = [(lineage, dates) for lineage in metadata['Virus Pangolin Classification']]
+        args1 = [
+            (lineage, dates) for lineage in metadata["Virus Pangolin Classification"]
+        ]
 
         # iterate through rows in parallel
         with multiprocessing.Pool(cores) as p:
-            metadata['lineage_designation'] = p.starmap(add_designation_date, args1)
-            ncbi_dates = metadata['Isolate Collection date']
-            desig_dates = metadata['lineage_designation']
+            metadata["lineage_designation"] = p.starmap(add_designation_date, args1)
+            ncbi_dates = metadata["Isolate Collection date"]
+            desig_dates = metadata["lineage_designation"]
             args2 = [(i, ncbi_dates, desig_dates) for i in range(len(ncbi_dates))]
-            metadata['infection_duration'] = p.starmap(add_infection_duration, args2)
+            metadata["infection_duration"] = p.starmap(add_infection_duration, args2)
 
         # Filter down to long infection candidates
-        long_infections = metadata.loc[(metadata["infection_duration"] >= infection_cutoff) & ~metadata["Accession"].isna()].sort_values("infection_duration", ascending=False)
+        long_infections = metadata.loc[
+            (metadata["infection_duration"] >= infection_cutoff)
+            & ~metadata["Accession"].isna()
+        ].sort_values("infection_duration", ascending=False)
 
         # Write anachronistic candidates to TSV
-        long_infections.to_csv("anachronistic_metadata_only_candidates.tsv",
-                            index=False,
-                            sep="\t")
+        long_infections.to_csv(
+            "anachronistic_metadata_only_candidates.tsv", index=False, sep="\t"
+        )
+
+
 # end main function def
 
 # run the script if not imported as a module

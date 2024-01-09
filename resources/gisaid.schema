@@ -1,0 +1,7 @@
+@separator: TAB
+@na_values NA unknown Unknown
+Virus name: is_string() && contains("hCoV-19") && !is_empty() && !is_na()
+Accession ID: is_string() && !is_empty() && !is_na()
+Collection date: !is_empty() && !is_na() && is_date_format("[2020-02-10]")
+Location: is_string() && !is_empty()
+Pango lineage: is_string()

@@ -17,6 +17,7 @@ for future scripts.
 """
 
 import argparse
+
 import polars
 
 
@@ -27,15 +28,16 @@ def parse_command_line_args():
     args = parser.parse_args()
     return args.metadata_path
 
+
 def main():
     """
-    This script uses Polars to read a very large TSV file 
-    using Apache Arrow in memory-representation. It saves 
-    additional memory and CPU effort by reading it as a 
-    LazyFrame instead of a DataFrame. It renames some of the 
-    columns to conform with scripts that expect Genbank metadata 
-    downstream. It also ensures that the column of dates is typed 
-    and stored as date objects. Finally, it writes the validated 
+    This script uses Polars to read a very large TSV file
+    using Apache Arrow in memory-representation. It saves
+    additional memory and CPU effort by reading it as a
+    LazyFrame instead of a DataFrame. It renames some of the
+    columns to conform with scripts that expect Genbank metadata
+    downstream. It also ensures that the column of dates is typed
+    and stored as date objects. Finally, it writes the validated
     metadata to Apache Arrow IPC format on disk for downstream usage.
 
     Args (parsed from the command line):
@@ -53,7 +55,6 @@ def main():
 
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
-
         # double check that the expected column names are present
         assert "Virus name" in metadata.columns
         assert "Accession ID" in metadata.columns
@@ -62,13 +63,15 @@ def main():
         assert "Pango lineage" in metadata.columns
 
         # rename "Accession ID", "Collection date", "Location", and "Pango lineage"
-        metadata = metadata.rename({
-            "Virus name": "Accession",
-            "Accession ID": "EPI_ISL",
-            "Collection date": "Isolate Collection date",
-            "Location": "Geographic Location",
-            "Pango lineage": "Virus Pangolin Classification"
-        })
+        metadata = metadata.rename(
+            {
+                "Virus name": "Accession",
+                "Accession ID": "EPI_ISL",
+                "Collection date": "Isolate Collection date",
+                "Location": "Geographic Location",
+                "Pango lineage": "Virus Pangolin Classification",
+            }
+        )
 
     # Double check the column name for geographic locations
     if "Geographic location" in metadata.columns:
@@ -77,13 +80,15 @@ def main():
     # Correct date typing
     assert "Isolate Collection date" in metadata.columns
     metadata = metadata.with_columns(
-        polars.col("Isolate Collection date").str.strptime(
-        polars.Date, format="%Y-%m-%d", strict=False
-        ).alias("Isolate Collection date")
+        polars.col("Isolate Collection date")
+        .str.strptime(polars.Date, format="%Y-%m-%d", strict=False)
+        .alias("Isolate Collection date")
     ).filter(polars.col("Isolate Collection date").is_not_null())
 
     # evaluate and sink into compressed Arrow file in batches
     metadata.sink_ipc("validated-metadata.arrow", compression="zstd")
+
+
 # end main def
 
 if __name__ == "__main__":

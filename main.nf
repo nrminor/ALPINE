@@ -57,6 +57,9 @@ workflow {
 
 	ch_gisaid_token = Channel
 		.fromPath ( params.gisaid_token )
+	
+	ch_still_schemas = Channel
+		.fromPath( "${params.resources}/*.schema" )
 
 	// Data setup steps
 	GET_DESIGNATION_DATES ( )
@@ -102,7 +105,12 @@ workflow {
 			.fromPath( params.metadata_path )
 
 		VALIDATE_METADATA (
-			ch_local_metadata
+			ch_local_metadata,
+			ch_still_schemas
+		)
+
+		CHECK_COLUMN_NAMES (
+			VALIDATE_METADATA.out
 		)
 
 		VALIDATE_SEQUENCES (
@@ -110,7 +118,7 @@ workflow {
 		)
 
 		FILTER_META_TO_GEOGRAPHY (
-			VALIDATE_METADATA.out
+			CHECK_COLUMN_NAMES.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -430,7 +438,7 @@ process GET_DESIGNATION_DATES {
 	
 	script:
 	"""
-	curl -fsSL https://raw.githubusercontent.com/corneliusroemer/pango-designation-dates/main/data/lineage_designation_date.csv > lineage_designation_dates.csv
+	curl -fsSL ${params.lineage_dates} > lineage_designation_dates.csv
 	"""
 }
 
@@ -474,7 +482,7 @@ process UNZIP_NCBI_METADATA {
 	errorStrategy { task.attempt < 3 ? 'retry' : params.errorMode }
 	maxRetries 2
 
-	cpus 3
+	cpus 4
 
 	input:
 	path zip
@@ -482,11 +490,14 @@ process UNZIP_NCBI_METADATA {
 	output:
 	path "genbank_metadata.tsv"
 
-	script:
-	"""
-	unzip -p ${zip} ncbi_dataset/data/data_report.jsonl \
-	| dataformat tsv virus-genome --force > genbank_metadata.tsv
-	"""
+	shell:
+	'''
+	unzip -p !{zip} ncbi_dataset/data/data_report.jsonl \
+	| dataformat tsv virus-genome --force \
+	| csvtk -t -j !{task.cpus} filter2  -D $'\t' -l \
+	-f 'len(${Isolate Collection date})>=10 && len(${Isolate Collection date})!=0 && len(${Geographic location})!=0' \
+	-o genbank_metadata.tsv
+	'''
 
 }
 
@@ -515,7 +526,8 @@ process EXTRACT_NCBI_FASTA {
 
 	script:
 	"""
-	unzip -p ${zip} ncbi_dataset/data/genomic.fna | zstd -10 -o genbank_sequences.fasta.zst
+	unzip -p ${zip} ncbi_dataset/data/genomic.fna \
+	| zstd -10 -o genbank_sequences.fasta.zst
 	"""
 
 }
@@ -533,22 +545,53 @@ process VALIDATE_METADATA {
 
 	label "alpine_container"
 
-	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
-	maxRetries 1
-
 	input:
 	path metadata
+	path still_schemas
 
 	output:
-	path "validated-metadata.arrow"
+	tuple path(metadata), env(db)
 
 	when:
 	params.download_only == false
 
 	script:
 	"""
-	validate-metadata.py ${metadata}
+	if head -n 1 ${metadata} | grep -q "Virus name"; then
+		db="GISAID"
+		still validate gisaid.schema ${metadata}
+	elif head -n 1 ${metadata} | grep -q ^"Virus name"; then
+		db="Genbank"
+		still validate genbank.schema ${metadata}
+	else
+		echo "Database source not recognized and thus column names and types cannot be ascertained."
+		exit 1
+	fi
 	"""
+}
+
+process CHECK_COLUMN_NAMES {
+
+	/* */
+
+	tag "${params.pathogen}"
+
+	label "alpine_container"
+
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
+	maxRetries 1
+
+	input:
+	tuple path(metadata), val(db)
+
+	output:
+	path "validated.arrow"
+
+	script:
+	"""
+	check-columns.py ${metadata}
+	"""
+
 }
 
 process VALIDATE_SEQUENCES {
@@ -581,7 +624,9 @@ process VALIDATE_SEQUENCES {
 
 	script:
 	"""
-	seqkit replace -j ${task.cpus} --f-by-name --keep-untouch --pattern "\\|" --replacement " " \
+	seqkit replace \
+	-j ${task.cpus} --f-by-name --keep-untouch \
+	--pattern "\\|" --replacement " " \
 	${fasta} -o validated.fasta.zst
 	"""
 
@@ -611,9 +656,11 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	script:
 	"""
-	ln -s /opt/.julia/alpine.so alpine.so
-	export JULIA_SCRATCH_TRACK_ACCESS=0 && \
-	filter-to-geography.jl ${metadata} ${params.max_date} ${params.min_date} ${params.geography}
+	filter-to-geography.py \
+	--metadata ${metadata} \
+	--max_date ${params.max_date} \
+	--min_date ${params.min_date} \
+	--geography ${params.geography}
 	"""
 
 }
@@ -711,8 +758,10 @@ process FILTER_BY_MASKED_BASES {
 
 	script:
 	"""
-	ln -s /opt/.julia/alpine.so alpine.so
-	filter-by-n-count.jl ${fasta} ${params.max_ambiguity} ${reference}
+	alpine filter-by-n \
+	--fasta ${fasta} \
+	--ambiguity ${params.max_ambiguity} \
+	--reference ${reference}
 	"""
 
 }
@@ -742,8 +791,7 @@ process SEPARATE_BY_MONTH {
 
 	script:
 	"""
-	ln -s /opt/.julia/alpine.so alpine.so
-	separate-by-yearmonth.jl ${fasta} ${metadata}
+	alpine separate-by-month --fasta ${fasta} --metadata ${metadata}
 	"""
 
 }
@@ -1084,8 +1132,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	script:
 	"""
-	ln -s /opt/.julia/alpine.so alpine.so
-	compare-lineage-prevalences.jl \
+	compare-lineage-prevalences.R \
 	${lineages} \
 	${metadata} \
 	${fasta}

@@ -15,38 +15,52 @@ docstrings below for more granular explanations.
 
 
 # bring in the modules used in this namespace
-import os
 import argparse
+import os
 import subprocess
+
+import matplotlib.pyplot as pyplot
 import numpy
 import polars
-from polars.testing import assert_frame_equal
-import matplotlib.pyplot as pyplot
 import seaborn
+from polars.testing import assert_frame_equal
 
 
 # define functions:
 def parse_command_line_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--sequences", "-s",
-                        default="filtered-to-geography.fasta",
-                        type=str,
-                        help="The name of the database FASTA file to filter for candidates.")
-    parser.add_argument("--metadata", "-m",
-                        default="filtered-to-geography.arrow",
-                        type=str,
-                        help="The name of the database metadata file to join other files to.")
-    parser.add_argument("--stringency", "-str",
-                        type=str,
-                        required=True,
-                        help="The chosen level of strictness for retaining candidates.")
-    parser.add_argument("--workingdir", "-wd",
-                        default=".",
-                        type=str,
-                        help="Directory where the script should search for files.")
+    parser.add_argument(
+        "--sequences",
+        "-s",
+        default="filtered-to-geography.fasta",
+        type=str,
+        help="The name of the database FASTA file to filter for candidates.",
+    )
+    parser.add_argument(
+        "--metadata",
+        "-m",
+        default="filtered-to-geography.arrow",
+        type=str,
+        help="The name of the database metadata file to join other files to.",
+    )
+    parser.add_argument(
+        "--stringency",
+        "-str",
+        type=str,
+        required=True,
+        help="The chosen level of strictness for retaining candidates.",
+    )
+    parser.add_argument(
+        "--workingdir",
+        "-wd",
+        default=".",
+        type=str,
+        help="Directory where the script should search for files.",
+    )
     args = parser.parse_args()
     return args.metadata, args.sequences, args.stringency, args.workingdir
+
 
 def quantify_stringency(stringency: str) -> int:
     """
@@ -74,17 +88,18 @@ def quantify_stringency(stringency: str) -> int:
 
     return strict_quant
 
+
 def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> None:
     """
     This function uses Matplotlib and Seaborn to visualize the distribution
     of distance scores in the provided metadata. It also plots the retention
     threshold that was computed based on the data. The graphic is then written
     to a PDF file called "distance_score_distribution.pdf".
-    
+
     Args:
     metadata - a Polars DataFrame with a column called "Distance Score"
     threshold - a floating point value specifying the distance score retention threshold
-    
+
     Returns:
     None
     """
@@ -93,7 +108,7 @@ def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> N
     metadata_pd = metadata.to_pandas()
 
     # Check for unique values in "Distance Score"
-    unique_values = metadata_pd['Distance Score'].nunique()
+    unique_values = metadata_pd["Distance Score"].nunique()
 
     # Set the style and size of the plot
     pyplot.figure(figsize=(7, 5.5))
@@ -102,12 +117,14 @@ def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> N
     # handle a couple of edge cases that could otherwise cause errors
     assert "Distance Score" in metadata_pd.columns
     if unique_values > 1:
-        seaborn.barplot(x=['Distance Score'], y=[metadata_pd['Distance Score'].iloc[0]])
+        seaborn.barplot(x=["Distance Score"], y=[metadata_pd["Distance Score"].iloc[0]])
         max_count = 1
     else:
-        seaborn.histplot(metadata_pd["Distance Score"], kde=True, color="lightblue", element="step")
-        max_count = max(pyplot.hist(metadata_pd['Distance_Score'], bins=10, alpha=0)[0])
-    
+        seaborn.histplot(
+            metadata_pd["Distance Score"], kde=True, color="lightblue", element="step"
+        )
+        max_count = max(pyplot.hist(metadata_pd["Distance_Score"], bins=10, alpha=0)[0])
+
     # Add a vertical line at the retention threshold
     pyplot.axvline(x=threshold, color="red", lw=3)
 
@@ -122,9 +139,10 @@ def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> N
     # Save the plot to a file
     pyplot.savefig("distance_score_distribution.pdf")
 
-def read_metadata_files(metadata_filename: str,
-                        yearmonths: list,
-                        workingdir: str) -> tuple[polars.DataFrame, polars.DataFrame, polars.DataFrame]:
+
+def read_metadata_files(
+    metadata_filename: str, yearmonths: list, workingdir: str
+) -> tuple[polars.DataFrame, polars.DataFrame, polars.DataFrame]:
     """
     Metadata file reading is relegated to this function so that other functions
     can be CPU-bound alone instead of interleaving IO and additional computations.
@@ -137,73 +155,73 @@ def read_metadata_files(metadata_filename: str,
 
     Returns:
     A tuple of three polars dataframes, one of which is the full database metadata, one
-    of which records the distance scores for each accession, and one of which records 
+    of which records the distance scores for each accession, and one of which records
     clustering metadata for each accession. These metadata include 1) whether an accession
-    is a "hit" or a "centroid," 2) the cluster index for the month each accession was 
+    is a "hit" or a "centroid," 2) the cluster index for the month each accession was
     collected it, 3) the size of each cluster, and 4) the sequence accessions themselves.
     """
 
     # Make some empty dataframes to vstack on top of
-    dist_scores = polars.DataFrame({
-        "Accession": None,
-        "Distance Score": None
-    }, schema={
-        "Accession": polars.Utf8, "Distance Score": polars.Float64
-    })
+    dist_scores = polars.DataFrame(
+        {"Accession": None, "Distance Score": None},
+        schema={"Accession": polars.Utf8, "Distance Score": polars.Float64},
+    )
     dist_scores = dist_scores.clear()
-    cluster_meta = polars.read_csv(f"{workingdir}/{yearmonths[0]}-clusters.uc",
-                                separator="\t", has_header=False, columns=[0,1,2,8],
-                                new_columns=["Type", "Index", "Size", "Accession"],
-                                n_rows=1)
+    cluster_meta = polars.read_csv(
+        f"{workingdir}/{yearmonths[0]}-clusters.uc",
+        separator="\t",
+        has_header=False,
+        columns=[0, 1, 2, 8],
+        new_columns=["Type", "Index", "Size", "Accession"],
+        n_rows=1,
+    )
     cluster_meta = cluster_meta.with_columns(polars.lit("2023-08").alias("Month"))
     cluster_meta = cluster_meta.clear()
 
     # go through each month of data and bring in its various files
     for yearmonth in yearmonths:
-
         # sum up distance score for each accession and prep to vstack on
         # the distance score data frame, which we will use in some joins
         # in a later, non-IO-bound function.
         distmat = polars.read_csv(f"{workingdir}/{yearmonth}-dist-matrix.csv")
         assert "Sequence_Name" in distmat.columns
-        distmat = distmat.with_columns(
-            Distance_Score=polars.Series(
-            [distmat.select(col).sum().item() for col in distmat.columns[1:]]
+        distmat = (
+            distmat.with_columns(
+                Distance_Score=polars.Series(
+                    [distmat.select(col).sum().item() for col in distmat.columns[1:]]
+                )
             )
-        ).rename({
-            "Sequence_Name": "Accession",
-            "Distance_Score": "Distance Score"
-        }).select(polars.col(
-            ["Accession", "Distance Score"]
-        ))
+            .rename({"Sequence_Name": "Accession", "Distance_Score": "Distance Score"})
+            .select(polars.col(["Accession", "Distance Score"]))
+        )
 
         # Now, bring in clustering metadata and do the same kind of thing
-        cluster_table = polars.read_csv(f"{workingdir}/{yearmonth}-clusters.uc",
-                                    separator = "\t", has_header=False, columns=[0,1,2,8],
-                                    new_columns=["Type", "Index", "Size", "Accession"])
+        cluster_table = polars.read_csv(
+            f"{workingdir}/{yearmonth}-clusters.uc",
+            separator="\t",
+            has_header=False,
+            columns=[0, 1, 2, 8],
+            new_columns=["Type", "Index", "Size", "Accession"],
+        )
         cluster_table = cluster_table.with_columns(
             Month=polars.repeat(yearmonth, n=cluster_table.shape[0])
-        ).filter(
-            polars.col("Type") != "S"
-        )
+        ).filter(polars.col("Type") != "S")
 
         # correct any corrupted rows so the indices can be properly typed
         if cluster_table.dtypes[1] == polars.Utf8:
             cluster_table = cluster_table.filter(
-                (polars.col("Type") == "C") |
-                (polars.col("Type") == "H") &
-                (polars.col("Index") != "*")
-            ).with_columns(
-                polars.col("Index").cast(polars.Int64)
-            )
+                (polars.col("Type") == "C")
+                | (polars.col("Type") == "H") & (polars.col("Index") != "*")
+            ).with_columns(polars.col("Index").cast(polars.Int64))
 
         # Use an assertion to check for possible silent errors before vstacking and
         # returning the dataframes
         assert_frame_equal(
             left=distmat.select(polars.col("Accession")).unique().sort(by="Accession"),
-            right=cluster_table.filter(
-            polars.col("Type")=="C"
-            ).select(polars.col("Accession")).unique().sort(by="Accession")
+            right=cluster_table.filter(polars.col("Type") == "C")
+            .select(polars.col("Accession"))
+            .unique()
+            .sort(by="Accession"),
         )
 
         # vstack (i.e., append) them onto the growing metadata dataframes
@@ -211,24 +229,28 @@ def read_metadata_files(metadata_filename: str,
         cluster_meta.vstack(cluster_table, in_place=True)
 
     # parse the full database metadata as a data frame to return
-    metadata = polars.read_ipc(f"{workingdir}/{metadata_filename}", use_pyarrow = True)
+    metadata = polars.read_ipc(f"{workingdir}/{metadata_filename}", use_pyarrow=True)
 
     return (metadata, dist_scores, cluster_meta)
 
+
 # end read_metadata_files def
 
-def collate_metadata(metadata: polars.DataFrame,
-                    dist_scores: polars.DataFrame,
-                    cluster_meta: polars.DataFrame,
-                    stringency: int) -> tuple[polars.DataFrame, polars.DataFrame]:
+
+def collate_metadata(
+    metadata: polars.DataFrame,
+    dist_scores: polars.DataFrame,
+    cluster_meta: polars.DataFrame,
+    stringency: int,
+) -> tuple[polars.DataFrame, polars.DataFrame]:
     """
-    This function takes the dataframes read by read_metadata_files and 
+    This function takes the dataframes read by read_metadata_files and
     runs a number of computations on them. The thrust of all these
-    computations is to join them together with the whole-database 
+    computations is to join them together with the whole-database
     metadata while maximizing helpful information for each candidate
     cluster. Notably, this function handles the CPU-bound tasks that
-    are required with the provided metadata. 
-    
+    are required with the provided metadata.
+
     Future updates may implement multiprocessing for some of the slower
     steps here. They may also implement LazyFrames instead of dataframes
     to handle very large metadata files.
@@ -244,12 +266,12 @@ def collate_metadata(metadata: polars.DataFrame,
     # join distance scores onto the cluster metadata, which will add
     # scores to the centroids from each cluster
     assert "Accession" in cluster_meta.columns
-    cluster_meta = cluster_meta.join(dist_scores, on = "Accession", how="left")
+    cluster_meta = cluster_meta.join(dist_scores, on="Accession", how="left")
 
     # merge the month and cluster index columns to make a unique identifier
-    cluster_meta = cluster_meta.with_columns([
-        polars.format("{}_{}", "Month", "Index").alias("Month Index")
-    ])
+    cluster_meta = cluster_meta.with_columns(
+        [polars.format("{}_{}", "Month", "Index").alias("Month Index")]
+    )
 
     # Use a series of Polars expressions to:
     # 1 - replace sequence length entries in "H" entries with the cluster
@@ -262,31 +284,26 @@ def collate_metadata(metadata: polars.DataFrame,
     assert "Month Index" in cluster_meta.columns
     assert "Size" in cluster_meta.columns
     assert "Distance Score" in cluster_meta.columns
-    centroid_data = cluster_meta.filter(
-        polars.col("Type") == "C"
-    ).select([
-        "Month Index", "Size", "Distance Score"
-    ])
-    cluster_meta = cluster_meta.join(
-        centroid_data, on="Month Index", how="left", suffix="_right"
-    ).select([
-        "Accession", "Month Index", "Size_right", "Distance Score_right"
-    ]).rename({
-        "Size_right": "Cluster Size",
-        "Distance Score_right": "Distance Score"
-    })
+    centroid_data = cluster_meta.filter(polars.col("Type") == "C").select(
+        ["Month Index", "Size", "Distance Score"]
+    )
+    cluster_meta = (
+        cluster_meta.join(centroid_data, on="Month Index", how="left", suffix="_right")
+        .select(["Accession", "Month Index", "Size_right", "Distance Score_right"])
+        .rename(
+            {"Size_right": "Cluster Size", "Distance Score_right": "Distance Score"}
+        )
+    )
 
     # filter out any clusters with only one entry (this shouldn't
     # be necessary when run in the context of the pipeline, but
     # we include it here just to be safe.)
-    cluster_meta = cluster_meta.group_by("Month Index").agg(
-        polars.col("Month Index").count().alias("count")
-    ).join(
-        cluster_meta, on="Month Index", how="left"
-    ).filter(
-        polars.col("count") > 1
-    ).select(
-        cluster_meta.columns
+    cluster_meta = (
+        cluster_meta.group_by("Month Index")
+        .agg(polars.col("Month Index").count().alias("count"))
+        .join(cluster_meta, on="Month Index", how="left")
+        .filter(polars.col("count") > 1)
+        .select(cluster_meta.columns)
     )
 
     # join with the big metadata
@@ -295,14 +312,14 @@ def collate_metadata(metadata: polars.DataFrame,
     # sort the new high distance metadata by distance score
     # in descending order and remove any null rows
     high_dist_meta = high_dist_meta.sort(
-        by = "Distance Score", descending=True, nulls_last=True
-    ).filter(
-        polars.col("Distance Score").is_not_null()
-    )
+        by="Distance Score", descending=True, nulls_last=True
+    ).filter(polars.col("Distance Score").is_not_null())
 
     # And finally, filter down to distances above the retention threshold while
     # also visualizing the distance score distribution
-    retention_threshold = float(numpy.quantile(high_dist_meta['Distance Score'], (stringency / 1000)))
+    retention_threshold = float(
+        numpy.quantile(high_dist_meta["Distance Score"], (stringency / 1000))
+    )
     try:
         visualize_distance_scores(high_dist_meta, retention_threshold)
     except Exception as e:
@@ -316,12 +333,14 @@ def collate_metadata(metadata: polars.DataFrame,
 
     return high_dist_meta, accessions
 
+
 # end collate_metadata def
+
 
 def main():
     """
-    Main function. Main ties together all the above functions if 
-    they are being invoked as a script. It also works to "glue" 
+    Main function. Main ties together all the above functions if
+    they are being invoked as a script. It also works to "glue"
     in a subprocess command using Seqkit to handle FASTA filtering
     (Seqkit, written in Go, is much faster at filtering large
     numbers of FASTA records than Python).
@@ -334,31 +353,47 @@ def main():
     strict_quant = quantify_stringency(stringency)
 
     # List all files in current directory that end with '-dist-matrix.csv'
-    files = [f for f in os.listdir(workingdir) if f.endswith('-dist-matrix.csv')]
+    files = [f for f in os.listdir(workingdir) if f.endswith("-dist-matrix.csv")]
 
     # Remove '-dist-matrix.csv' from each file name
-    yearmonths = [f.replace('-dist-matrix.csv', '') for f in files]
+    yearmonths = [f.replace("-dist-matrix.csv", "") for f in files]
 
     # retrieve all candidate metadata
-    metadata, dist_scores, cluster_meta = read_metadata_files(metadata_name,yearmonths,workingdir)
+    metadata, dist_scores, cluster_meta = read_metadata_files(
+        metadata_name, yearmonths, workingdir
+    )
 
     # pile up all metadata from clustering, distance-calling, and the original database
-    high_dist_meta, accessions = collate_metadata(metadata, dist_scores, cluster_meta, strict_quant)
+    high_dist_meta, accessions = collate_metadata(
+        metadata, dist_scores, cluster_meta, strict_quant
+    )
 
     # Use an assertion to spare the computer some effort if no candidates were found
     assert accessions.shape[0] > 0, "No candidate sequences identified."
 
     # write the metadata and the accessions
-    high_dist_meta.write_csv(f"{workingdir}/high_distance_candidates.tsv", separator="\t")
-    accessions.write_csv(f"{workingdir}/high-dist-accessions.txt", has_header=False, separator="\t")
+    high_dist_meta.write_csv(
+        f"{workingdir}/high_distance_candidates.tsv", separator="\t"
+    )
+    accessions.write_csv(
+        f"{workingdir}/high-dist-accessions.txt", has_header=False, separator="\t"
+    )
 
     # Use Seqkit to separate out high distance sequences based on the metadata
-    cmd = ["seqkit", "grep", "-f", "high-dist-accessions.txt",
-           fasta_path, "-o", f"{workingdir}/high_distance_candidates.fasta"]
+    cmd = [
+        "seqkit",
+        "grep",
+        "-f",
+        "high-dist-accessions.txt",
+        fasta_path,
+        "-o",
+        f"{workingdir}/high_distance_candidates.fasta",
+    ]
     subprocess.run(cmd, check=True)
 
     # remove the accessions file that is now unnecessary
     os.remove("high-dist-accessions.txt")
+
 
 # end main def
 

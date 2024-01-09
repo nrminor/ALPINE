@@ -16,20 +16,27 @@ with the consensus sequences and clean the "*" symbols out of
 any remaining records here.
 """
 
-import os
 import argparse
+import os
+
 from Bio import SeqIO
 from Bio.Align.Applications import ClustalOmegaCommandline
+
 
 def parse_command_line_args():
     """parse command line arguments"""
     parser = argparse.ArgumentParser()
     parser.add_argument("fasta_path", help="The path to the FASTA file.")
     parser.add_argument("label", help="Label to use when naming the output file.")
-    parser.add_argument("count", type=int, help="An expected count of the records in the FASTA.")
-    parser.add_argument("threads", type=int, help="The number of processors to use for alignment.")
+    parser.add_argument(
+        "count", type=int, help="An expected count of the records in the FASTA."
+    )
+    parser.add_argument(
+        "threads", type=int, help="The number of processors to use for alignment."
+    )
     args = parser.parse_args()
     return args.fasta_path, args.label, args.count, args.threads
+
 
 def align_centroids(fasta_path: str, threads: int) -> str:
     """
@@ -44,30 +51,34 @@ def align_centroids(fasta_path: str, threads: int) -> str:
     Returns:
     File path to fasta that should be used downstream. This
     is either the same path that was checked as the input
-    (keyword argument 'fasta_path'), or a new FASTA that 
+    (keyword argument 'fasta_path'), or a new FASTA that
     has been aligned with Clustal Omega.
     """
 
     # Align with Clustal Omega
     new_fasta = "tmp.fasta"
-    clustalomega_cline = ClustalOmegaCommandline(infile = fasta_path,
-                                                    outfile = new_fasta,
-                                                    outfmt = 'fasta',
-                                                    threads = threads,
-                                                    wrap = 80,
-                                                    verbose = True,
-                                                    auto = False)
+    clustalomega_cline = ClustalOmegaCommandline(
+        infile=fasta_path,
+        outfile=new_fasta,
+        outfmt="fasta",
+        threads=threads,
+        wrap=80,
+        verbose=True,
+        auto=False,
+    )
     clustalomega_cline()
 
     # return the path to the aligned FASTA
     return new_fasta
 
+
 # end align_centroids def
+
 
 def main():
     """
-    This function parses a FASTA file and removes all records with 
-    "consensus" in their defline and then removes an asterisk 
+    This function parses a FASTA file and removes all records with
+    "consensus" in their defline and then removes an asterisk
     ("*") symbols in the deflines of the remaining records.
 
     Args (parsed from the command line):
@@ -85,9 +96,13 @@ def main():
 
     output_filename = f"{label}-aligned-centroids.fasta"
 
-    with open(working_fasta, "r", encoding="utf-8") as infile, open(output_filename, "w", encoding="utf-8") as outfile:
+    with open(working_fasta, "r", encoding="utf-8") as infile, open(
+        output_filename, "w", encoding="utf-8"
+    ) as outfile:
         records = SeqIO.parse(infile, "fasta")
-        filtered_records = [record for record in records if "consensus" not in record.description]
+        filtered_records = [
+            record for record in records if "consensus" not in record.description
+        ]
 
         assert len(filtered_records) == count
 
@@ -99,6 +114,8 @@ def main():
         # delete temporary clusalo fasta
         if os.path.exists("tmp.fasta"):
             os.remove("tmp.fasta")
+
+
 # end main function def
 
 if __name__ == "__main__":
