@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "alpine"
-version = "0.2.0"
+version = "0.3.0"
 description = "Anachronistic Lineage and Persistent INfection Explorer"
 authors = ["Nicholas Minor <nrminor@wisc.edu>"]
 license = "MIT"
