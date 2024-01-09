@@ -165,11 +165,6 @@ workflow {
 		SEPARATE_BY_MONTH.out.flatten()
 	)
 
-	// PREP_CENTROID_FASTAS (
-	// 	CLUSTER_BY_IDENTITY.out.centroid_fasta
-	// 		.filter { it[2].toInteger() > 1 }
-	// )
-
 	COMPUTE_DISTANCE_MATRIX (
 		CLUSTER_BY_IDENTITY.out.cluster_table,
 		CLUSTER_BY_IDENTITY.out.centroid_fasta
@@ -835,38 +830,6 @@ process CLUSTER_BY_IDENTITY {
 	count=\$(grep -c "^>" ${yearmonth}-centroids.fasta)
 	"""
 	
-}
-
-process PREP_CENTROID_FASTAS {
-
-	/*
-	This process runs Clustal Omega if the sequences in
-	the input FASTA are not aligned. It then adjusts the 
-	multi-sequence alignment of each month's centroids to
-	remove some odd VSEARCH conventions that will disrupt 
-	downstream processes.
-	*/
-
-	tag "${yearmonth}"
-	label "alpine_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
-
-	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
-	maxRetries 1
-
-	cpus params.max_cpus
-
-	input:
-	tuple path(fasta), val(yearmonth), val(count)
-
-	output:
-	tuple path("${yearmonth}-aligned-centroids.fasta.fasta"), val(count)
-
-	script:
-	"""
-	prep-centroid-fasta.py ${fasta} ${yearmonth} ${count} ${task.cpus}
-	"""
-
 }
 
 process COMPUTE_DISTANCE_MATRIX {
