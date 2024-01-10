@@ -5,8 +5,5 @@ filter (
     `Isolate Collection date` | text.length >= 10
 )
 filter (
-    `Isolate Collection date` | text.length != 0
-)
-filter (
     `Geographic location` | text.length != 0
 )
