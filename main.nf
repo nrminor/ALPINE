@@ -84,7 +84,8 @@ workflow {
 		)
 
 		VALIDATE_METADATA (
-			UNZIP_NCBI_METADATA.out
+			UNZIP_NCBI_METADATA.out,
+			ch_still_schemas
 		)
 
 		FILTER_META_TO_GEOGRAPHY (
