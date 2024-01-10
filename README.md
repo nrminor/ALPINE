@@ -22,8 +22,8 @@ The pipeline uses a variety of tools to run quickly, use a minimum of memory and
 - [_Docker_](https://www.docker.com/) (or Apptainer) as the container engine. These tools ensure that the pipeline runs the same way on any machine, regardless of whether its software requirements are installed.
 - [_Apache Arrow_](https://arrow.apache.org/) for data tables. Using the Arrow spec instead of traditional CSVs makes it faster to read and write large tables of data with millions of rows. It also makes working with the data in those tables more memory-efficient. This is part of why the pipeline does not require an HPC cluster to run; in principle, there's no reason it couldn't run on a laptop.
 - [_ZStandard_](https://facebook.github.io/zstd/) for sequence data compression. ZStandard is a fast and effective compression algorithm that is used on sequence data throughout the pipeline. This makes it tractable to probe millions of sequences without requiring terabytes of available disk space.
-- [_Polars DataFrames_](https://pola.rs/), a blazingly fast dataframe frontend and query engine written in Rust. We use Polars to filter and transform data matrices.
-- Core command line interface written in [_Rust_](https://www.rust-lang.org/). Rust is a statically-compiled, lower-level language that has been gaining traction in the life sciences and in data science writ large. It comes with modern tooling, guaranteed memory safety, and the ability to build an API that feels high-level without sacrificing performance or granular memory management. ALPINE's utilities for calling distance matrices on large sequences, filtering large FASTAs based on the number of masked bases (N's), and sorting each FASTA entry into a separate file for each month are all written in Rust. And most Python scripts in the project `bin/` directory are similarly fast because of their use of Polars DataFrames (or more specifically, [LazyFrame queries](https://docs.pola.rs/user-guide/lazy/using/)).
+- [_Polars DataFrames_](https://pola.rs/), a blazingly fast dataframe frontend and query engine written in Rust. We use Polars to filter and transform data tables throughout each executation of ALPINE.
+- Core command line interface written in [_Rust_](https://www.rust-lang.org/). Rust is a statically-compiled, lower-level language that has been gaining traction in the life sciences and in data science writ large. It comes with modern tooling, guaranteed memory safety, and the ability to build an API that feels high-level without sacrificing performance or granular memory management. ALPINE's utilities for calling distance matrices on large sequences, filtering large FASTAs based on the number of masked bases (N's), and sorting each FASTA entry into a separate file for each month are all written in Rust. And most Python scripts in the project `bin/` directory are similarly fast because of their use of Rust-based Polars DataFrames (or more specifically, [LazyFrame queries](https://docs.pola.rs/user-guide/lazy/using/)).
 
 For more details on exactly what the pipeline does, see the Workflow Overview section below.
 
@@ -32,7 +32,7 @@ For more details on exactly what the pipeline does, see the Workflow Overview se
 If Docker and NextFlow are already installed on your system, simply run the following command in the directory of your choice to execute the workflow with default settings (more below):
 
 ```
-nextflow run dholab/ALPINE
+nextflow run nrminor/ALPINE
 ```
 
 ## Detailed Setup Instructions
