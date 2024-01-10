@@ -112,13 +112,13 @@ def filter_metadata(
         `Result[pl.LazyFrame, str]`
     """
 
-    meta_lf = pl.scan_ipc(metadata_path)
+    meta_lf = pl.scan_ipc(metadata_path, memory_map=False)
 
     if "Geographic location" not in meta_lf.columns:
         return Err(
             "Geographic location column not found in provided metadata column header."
         )
-    if "Isolate Collection date" in meta_lf.columns:
+    if "Isolate Collection date" not in meta_lf.columns:
         return Err(
             "Isolate Collection date column not found in provided metadata column header."
         )
@@ -155,7 +155,7 @@ def write_out_accessions() -> Result[None, str]:
             "The filtered dataset in Apache Arrow format 'filtered-to-geography.arrow' is missing in the current working directory."
         )
 
-    filtered_lf = pl.scan_ipc("filtered-to-geography.arrow")
+    filtered_lf = pl.scan_ipc("filtered-to-geography.arrow", memory_map=False)
 
     if "Accession" not in filtered_lf:
         return Err(
@@ -163,9 +163,9 @@ def write_out_accessions() -> Result[None, str]:
         )
 
     (
-        filtered_lf.select("Accession").sink_csv(
-            "accessions.txt", separator="\t", include_header=False
-        )
+        filtered_lf.select("Accession")
+        .collect()
+        .write_csv("accessions.txt", separator="\t", include_header=False)
     )
 
     return Ok(None)
@@ -173,7 +173,7 @@ def write_out_accessions() -> Result[None, str]:
 
 def main() -> None:
     """
-    Placeholder
+    Function `main()` controls the flow of data through the above functions.
     """
 
     # parse desired filters out of command line arguments

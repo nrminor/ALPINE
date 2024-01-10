@@ -74,8 +74,8 @@ def main():
         )
 
     # Double check the column name for geographic locations
-    if "Geographic location" in metadata.columns:
-        metadata = metadata.rename({"Geographic location": "Geographic Location"})
+    if "Geographic Location" in metadata.columns:
+        metadata = metadata.rename({"Geographic Location": "Geographic location"})
 
     # Correct date typing
     assert "Isolate Collection date" in metadata.columns
