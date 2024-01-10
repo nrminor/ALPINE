@@ -23,14 +23,7 @@ using DelimitedFiles,
     StringDistances
 import Base.Threads
 
-export filter_metadata_by_geo,
-    filter_by_geo,
-    replace_gaps,
-    filter_by_n,
-    date_accessions,
-    lookup_date,
-    separate_by_month,
-    distance_matrix,
+export distance_matrix,
     set_to_uppercase,
     weight_by_cluster_size,
     date_pango_calls,
