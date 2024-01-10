@@ -1,3 +1,13 @@
+_____/\\\\\\\\\_____/\\\______________/\\\\\\\\\\\\\____/\\\\\\\\\\\__/\\\\\_____/\\\__/\\\\\\\\\\\\\\\_        
+ ___/\\\\\\\\\\\\\__\/\\\_____________\/\\\/////////\\\_\/////\\\///__\/\\\\\\___\/\\\_\/\\\///////////__       
+  __/\\\/////////\\\_\/\\\_____________\/\\\_______\/\\\_____\/\\\_____\/\\\/\\\__\/\\\_\/\\\_____________      
+   _\/\\\_______\/\\\_\/\\\_____________\/\\\\\\\\\\\\\/______\/\\\_____\/\\\//\\\_\/\\\_\/\\\\\\\\\\\_____     
+    _\/\\\\\\\\\\\\\\\_\/\\\_____________\/\\\/////////________\/\\\_____\/\\\\//\\\\/\\\_\/\\\///////______    
+     _\/\\\/////////\\\_\/\\\_____________\/\\\_________________\/\\\_____\/\\\_\//\\\/\\\_\/\\\_____________   
+      _\/\\\_______\/\\\_\/\\\_____________\/\\\_________________\/\\\_____\/\\\__\//\\\\\\_\/\\\_____________  
+       _\/\\\_______\/\\\_\/\\\\\\\\\\\\\\\_\/\\\______________/\\\\\\\\\\\_\/\\\___\//\\\\\_\/\\\\\\\\\\\\\\\_ 
+        _\///________\///__\///////////////__\///______________\///////////__\///_____\/////__\///////////////__
+
 # ALPINE: Anachronistic Lineage and Persistent INfection Explorer
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A522.10.1-23aa62.svg)](https://www.nextflow.io/) [![run with docker](https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker)](https://www.docker.com/) [![run with singularity](https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000)](https://sylabs.io/docs/) [![Julia CI](https://github.com/nrminor/ALPINE/actions/workflows/julia.yml/badge.svg)](https://github.com/nrminor/ALPINE/actions/workflows/julia.yml) [![Docker CI](https://github.com/nrminor/ALPINE/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/nrminor/ALPINE/actions/workflows/docker-image.yaml)
 
