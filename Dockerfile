@@ -34,6 +34,9 @@ RUN conda config --add channels conda-forge && \
     conda-libmamba-solver=23.1.0=pyhd8ed1ab_0
 
 # install Rust
+RUN apt-get update && \
+    apt-get install -y curl && \
+    apt-get clean
 RUN mkdir -m777 /opt/rust /opt/.cargo
 ENV RUSTUP_HOME=/opt/rust CARGO_HOME=/opt/.cargo PATH=/opt/.cargo/bin:$PATH
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y && \
