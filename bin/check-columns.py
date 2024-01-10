@@ -50,8 +50,8 @@ def main():
     # parse command line arguments
     metadata_path = parse_command_line_args()
 
-    # Scan the CSV into a LazyFrame
-    metadata = polars.scan_csv(metadata_path, separator="\t")
+    # Scan the metadata into a LazyFrame
+    metadata = polars.scan_ipc(metadata_path)
 
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
@@ -86,7 +86,7 @@ def main():
     ).filter(polars.col("Isolate Collection date").is_not_null())
 
     # evaluate and sink into compressed Arrow file in batches
-    metadata.sink_ipc("validated-metadata.arrow", compression="zstd")
+    metadata.sink_ipc("validated.arrow", compression="zstd")
 
 
 # end main def

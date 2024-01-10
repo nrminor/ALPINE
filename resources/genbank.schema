@@ -1,4 +1,4 @@
-@separator: TAB
+@separator: ,
 @na_values NA unknown Unknown
 Accession: is_string() && !is_empty() && !is_na()
 Isolate Collection date: !is_empty() && !is_na() && is_date_format("[2020-02-10]")

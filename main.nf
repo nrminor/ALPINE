@@ -67,11 +67,15 @@ workflow {
 	DOWNLOAD_REFSEQ ( )
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
+	
+		ch_prql_query = Channel
+			.fromPath( params.prql_query )
 
 		DOWNLOAD_NCBI_PACKAGE ( )
 
 		UNZIP_NCBI_METADATA (
-			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
+			DOWNLOAD_NCBI_PACKAGE.out.zip_archive,
+			ch_prql_query
 		)
 
 		EXTRACT_NCBI_FASTA (
@@ -103,6 +107,7 @@ workflow {
 
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
+			.map { metadata -> tuple( file(metadata), file(metadata) ) }
 
 		VALIDATE_METADATA (
 			ch_local_metadata,
@@ -481,18 +486,26 @@ process UNZIP_NCBI_METADATA {
 
 	input:
 	path zip
+	path query
 
 	output:
-	path "genbank_metadata.tsv"
+	tuple path("genbank_metadata.csv"), path("genbank_metadata.arrow")
 
-	shell:
-	'''
-	unzip -p !{zip} ncbi_dataset/data/data_report.jsonl \
+	script:
+	"""
+	prqlc compile ${query} > query.sql && \
+	unzip -p ${zip} ncbi_dataset/data/data_report.jsonl \
 	| dataformat tsv virus-genome --force \
-	| csvtk -t -j !{task.cpus} filter2  -D $'\t' -l \
-	-f 'len(${Isolate Collection date})>=10 && len(${Isolate Collection date})!=0 && len(${Geographic location})!=0' \
-	-o genbank_metadata.tsv
-	'''
+	| qsv fmt --delimiter "\t" --out-delimiter , -o genbank_metadata.csv
+
+	qsv index genbank_metadata.csv
+	qsv validate --invalid invalid_accessions.tsv --jobs 8 genbank_metadata.csv > validation_report.txt
+
+	qsv sqlp genbank_metadata.csv query.sql \
+	--try-parsedates --date-format '%Y-%m-%d' --ignore-errors \
+	--format arrow --compression 'zstd' \
+	--output genbank_metadata.arrow
+	"""
 
 }
 
@@ -541,11 +554,11 @@ process VALIDATE_METADATA {
 	label "alpine_container"
 
 	input:
-	path metadata
-	path still_schemas
+	tuple path(raw_text), path(arrow)
+	each path(still_schemas)
 
 	output:
-	tuple path(metadata), env(db)
+	tuple path(arrow), env(db)
 
 	when:
 	params.download_only == false
@@ -554,10 +567,10 @@ process VALIDATE_METADATA {
 	"""
 	if head -n 1 ${metadata} | grep -q "Virus name"; then
 		db="GISAID"
-		still validate gisaid.schema ${metadata}
+		still validate gisaid.schema ${raw_text}
 	elif head -n 1 ${metadata} | grep -q ^"Virus name"; then
 		db="Genbank"
-		still validate genbank.schema ${metadata}
+		still validate genbank.schema ${raw_text}
 	else
 		echo "Database source not recognized and thus column names and types cannot be ascertained."
 		exit 1

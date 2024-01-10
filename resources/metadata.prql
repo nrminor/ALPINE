@@ -1,0 +1,8 @@
+prql target:sql.sqlite
+
+from (read_csv "genbank_metadata.tsv")
+filter (
+  `Isolate Collection date`
+  text.length >= 10
+)
+filter (`Geographic location` | text.length != 0)
