@@ -452,7 +452,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	settings specified in nextflow.config, various processing
 	will be performed on these files downstream.
 	*/
-
+	
 	tag "${params.pathogen}"
 	// publishDir params.results_subdir, mode: 'copy'
 
@@ -475,9 +475,9 @@ process UNZIP_NCBI_METADATA {
 	Here the pathogen metadata in TSV format is extracted from the 
 	lightweight NCBI zip archive.
 	*/
-
+	
+	label "alpine_container"
 	tag "${params.pathogen}"
-
 	publishDir params.results_subdir, pattern: "*.tsv", mode: 'copy'
 
 	errorStrategy { task.attempt < 3 ? 'retry' : params.errorMode }

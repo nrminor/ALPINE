@@ -9,7 +9,7 @@ ENV TZ America/New_York
 
 # Install dependencies
 # Use `dpkg -l > apt-get.lock` inside a container to print package versions after a successful build
-COPY ./apt-get.lock /tmp/apt-get.lock
+COPY ./config/apt-get.lock /tmp/apt-get.lock
 RUN apt-get update && \
     awk '/^ii/ { printf("apt-get install -y %s=%s\n", $2, $3) }' /tmp/apt-get.lock > /tmp/install_packages.sh && \
     chmod +x /tmp/install_packages.sh && \
@@ -33,12 +33,31 @@ RUN conda config --add channels conda-forge && \
     libmambapy=1.2.0=py311h2b46443_0 \
     conda-libmamba-solver=23.1.0=pyhd8ed1ab_0
 
+# install Rust
+RUN mkdir -m777 /opt/rust /opt/.cargo
+ENV RUSTUP_HOME=/opt/rust CARGO_HOME=/opt/.cargo PATH=/opt/.cargo/bin:$PATH
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y && \
+    bash "/opt/.cargo/env"
+
+
 # Install all other dependencies, save for the two R packages below and the julia packages
-COPY ./conda_env.yaml /tmp/conda_env.yaml
+COPY ./config/conda_env.yaml /tmp/conda_env.yaml
 RUN mamba env update --file /tmp/conda_env.yaml && \
     mamba clean --all && \
     rm /tmp/conda_env.yaml
 ENV NXF_HOME=/scratch/.nextflow
+
+# Install Rust tools
+RUN cd /opt && \
+    git clone https://github.com/nrminor/ALPINE-core.git && \
+    cd ALPINE-core && \
+    cargo install --path . \
+    --root /opt/.cargo
+RUN cargo install prqlc \
+    --root /opt/.cargo
+RUN cargo install qsv \
+    --features=apply,fetch,foreach,generate,luau,polars,to,to_parquet,self_update \
+    --root /opt/.cargo
 
 # Install outbreak.info and cdc R packages
 RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library', clean = TRUE)"
@@ -53,7 +72,7 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
 # Copy Julia functions to precompile as a module
 ENV JULIA_DEPOT_PATH=/root/.julia
 ENV JULIA_SCRATCH_TRACK_ACCESS=0
-COPY ALPINE.jl/ /root/.julia/environments/v1.9
+COPY ./config/ALPINE.jl/ /root/.julia/environments/v1.9
 RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
             Pkg.instantiate(); \
