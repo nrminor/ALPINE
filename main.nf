@@ -102,7 +102,6 @@ workflow {
 
 	} else {
 
-
 		ch_local_fasta = Channel
 			.fromPath( params.fasta_path )
 

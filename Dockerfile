@@ -33,6 +33,14 @@ RUN conda config --add channels conda-forge && \
     libmambapy=1.2.0=py311h2b46443_0 \
     conda-libmamba-solver=23.1.0=pyhd8ed1ab_0
 
+
+# Install all other dependencies, save for the two R packages below and the julia packages
+COPY ./config/conda_env.yaml /tmp/conda_env.yaml
+RUN mamba env update --file /tmp/conda_env.yaml && \
+    mamba clean --all && \
+    rm /tmp/conda_env.yaml
+ENV NXF_HOME=/scratch/.nextflow
+
 # install Rust
 RUN apt-get update && \
     apt-get install -y curl && \
@@ -41,14 +49,6 @@ RUN mkdir -m777 /opt/rust /opt/.cargo
 ENV RUSTUP_HOME=/opt/rust CARGO_HOME=/opt/.cargo PATH=/opt/.cargo/bin:$PATH
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y && \
     bash "/opt/.cargo/env"
-
-
-# Install all other dependencies, save for the two R packages below and the julia packages
-COPY ./config/conda_env.yaml /tmp/conda_env.yaml
-RUN mamba env update --file /tmp/conda_env.yaml && \
-    mamba clean --all && \
-    rm /tmp/conda_env.yaml
-ENV NXF_HOME=/scratch/.nextflow
 
 # Install Rust tools
 RUN cd /opt && \
