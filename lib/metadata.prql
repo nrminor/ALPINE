@@ -1,3 +1,5 @@
+prql target:sql.sqlite
+
 from (read_csv "genbank_metadata.tsv" )
 filter (
     `Isolate Collection date` | text.length >= 10
