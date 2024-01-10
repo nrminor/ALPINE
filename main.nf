@@ -60,6 +60,10 @@ workflow {
 	
 	ch_still_schemas = Channel
 		.fromPath( "${params.resources}/*.schema" )
+		.collect()
+	
+	ch_prql_query = Channel
+		.fromPath( params.prql_query )
 
 	// Data setup steps
 	GET_DESIGNATION_DATES ( )
@@ -67,9 +71,6 @@ workflow {
 	DOWNLOAD_REFSEQ ( )
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
-	
-		ch_prql_query = Channel
-			.fromPath( params.prql_query )
 
 		DOWNLOAD_NCBI_PACKAGE ( )
 
