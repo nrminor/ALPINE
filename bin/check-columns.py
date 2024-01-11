@@ -16,6 +16,7 @@ compressed Arrow IPC format, will have the same benefits
 for future scripts.
 """
 
+import sys
 import argparse
 
 import polars
@@ -51,7 +52,15 @@ def main():
     metadata_path = parse_command_line_args()
 
     # Scan the metadata into a LazyFrame
-    metadata = polars.scan_ipc(metadata_path)
+    if metadata_path.contains(".arrow"):
+        metadata = polars.scan_ipc(metadata_path)
+    elif metadata_path.contains(".csv"):
+        metadata = polars.scan_csv(metadata_path)
+    elif metadata_path.contains(".tsv"):
+        metadata = polars.scan_csv(metadata_path, separator="\t")
+    else:
+        print("Could not parse the input metadata file type.")
+        sys.exit("Please only input CSV, TSV, or Apache Arrow/IPC files.")
 
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
