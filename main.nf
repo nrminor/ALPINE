@@ -595,7 +595,7 @@ process NORMALIZE_METADATA {
 	# extract the metadata, convert it to CSV, and attempt to
 	# normalize it with `qsv`
 	cat ${metadata} \
-	| qsv input \
+	| qsv input --delimiter "\t" \
 	--no-quoting --auto-skip --trim-headers \
 	--trim-fields --encoding-errors skip \
 	| qsv fmt --delimiter "\t" --out-delimiter , \
