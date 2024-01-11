@@ -614,7 +614,8 @@ process NORMALIZE_METADATA {
 	prqlc compile gisaid.prql > query.sql
 
 	qsv sqlp gisaid_metadata.csv query.sql \
-	--try-parsedates --date-format '%Y-%m-%d' --ignore-errors \
+	--try-parsedates --date-format '%Y-%m-%d' \
+	--ignore-errors --low-memory --quiet \
 	--format arrow --compression 'zstd' \
 	--output gisaid_metadata.arrow
 	"""
