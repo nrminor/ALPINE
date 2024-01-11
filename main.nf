@@ -601,7 +601,6 @@ process NORMALIZE_METADATA {
 	| qsv input --delimiter "\t" \
 	--no-quoting --auto-skip --trim-headers \
 	--trim-fields --encoding-errors skip \
-	| qsv fmt --delimiter "\t" --out-delimiter , \
 	| qsv replace --select 1 " " "_" \
 	-o gisaid_metadata.csv
 
@@ -612,7 +611,7 @@ process NORMALIZE_METADATA {
 	--invalid invalid_accessions.tsv --jobs 8 \
 	gisaid_metadata.csv > validation_report.txt
 
-	# compile the PRQL query to SQLite-dialext SQL
+	# compile the PRQL query to SQLite-dialect SQL
 	prqlc compile gisaid.prql > query.sql
 
 	qsv sqlp gisaid_metadata.csv query.sql \
