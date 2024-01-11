@@ -515,7 +515,7 @@ process UNZIP_NCBI_METADATA {
 	path query
 
 	output:
-	tuple path("genbank_metadata.csv"), path("genbank_metadata.arrow")
+	tuple path("genbank_metadata.csv"), path("genbank_metadata.parquet")
 
 	script:
 	"""
@@ -532,16 +532,16 @@ process UNZIP_NCBI_METADATA {
 	# meets the RFC 4180 CSV Standard
 	qsv index genbank_metadata.csv
 	qsv validate \
-	--invalid invalid_accessions.tsv --jobs 8 \
+	--invalid invalid_accessions.tsv --jobs ${task.cpus} \
 	genbank_metadata.csv > validation_report.txt
 
 	# compile the PRQL query to SQLite-dialext SQL
 	prqlc compile genbank.prql > query.sql
 
 	qsv sqlp genbank_metadata.csv query.sql \
-	--try-parsedates --date-format '%Y-%m-%d' --ignore-errors \
-	--format arrow --compression 'zstd' \
-	--output genbank_metadata.arrow
+	--ignore-errors --low-memory --quiet \
+	--format parquet --compression 'zstd' --compress-level 6 \
+	--output genbank_metadata.parquet
 	"""
 
 }
@@ -590,7 +590,7 @@ process NORMALIZE_METADATA {
 	path queries
 
 	output:
-	tuple path("gisaid_metadata.csv"), path("gisaid_metadata.arrow")
+	tuple path("gisaid_metadata.csv"), path("gisaid_metadata.parquet")
 
 	script:
 	"""
@@ -607,17 +607,16 @@ process NORMALIZE_METADATA {
 	# meets the RFC 4180 CSV Standard
 	qsv index gisaid_metadata.csv
 	qsv validate \
-	--invalid invalid_accessions.tsv --jobs 8 \
+	--invalid invalid_accessions.tsv --jobs ${task.cpus} \
 	gisaid_metadata.csv > validation_report.txt
 
 	# compile the PRQL query to SQLite-dialect SQL
 	prqlc compile gisaid.prql > query.sql
 
 	qsv sqlp gisaid_metadata.csv query.sql \
-	--try-parsedates --date-format '%Y-%m-%d' \
 	--ignore-errors --low-memory --quiet \
-	--format arrow --compression 'zstd' \
-	--output gisaid_metadata.arrow
+	--format parquet --compression 'zstd' --compress-level 6 \
+	--output gisaid_metadata.parquet
 	"""
 }
 

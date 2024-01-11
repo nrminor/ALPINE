@@ -54,6 +54,8 @@ def main():
     # Scan the metadata into a LazyFrame
     if ".arrow" in metadata_path:
         metadata = polars.scan_ipc(metadata_path)
+    elif ".parquet" in metadata_path:
+        metadata = polars.scan_parquet(metadata_path)
     elif ".csv" in metadata_path:
         metadata = polars.scan_csv(metadata_path)
     elif ".tsv" in metadata_path:
