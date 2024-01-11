@@ -64,6 +64,7 @@ RUN apt-get update && \
     cargo install qsv \
     --locked --root /opt/.cargo \
     --features=apply,foreach,polars,to,to_parquet,self_update,feature_capable
+# RUN cargo install nu --features=dataframe --root /opt/.cargo
 
 # Install outbreak.info and cdc R packages
 RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library', clean = TRUE)"
