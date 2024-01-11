@@ -547,7 +547,6 @@ process EXTRACT_NCBI_FASTA {
 	*/
 
 	tag "${params.pathogen}"
-
 	label "alpine_container"
 	storeDir params.ncbi_storedir
 
@@ -577,6 +576,9 @@ process NORMALIZE_METADATA {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
+
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
+	maxRetries 1
 
 	input:
 	path metadata
@@ -618,6 +620,9 @@ process VALIDATE_METADATA {
 	tag "${params.pathogen}"
 	label "alpine_container"
 
+	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
+	maxRetries 1
+
 	input:
 	tuple path(raw_text), path(parquet)
 	path still_schemas
@@ -654,7 +659,6 @@ process CHECK_COLUMN_NAMES {
 	/* */
 
 	tag "${params.pathogen}"
-
 	label "alpine_container"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
