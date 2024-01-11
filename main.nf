@@ -118,11 +118,13 @@ workflow {
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
 
-		println("It is recommended that users clean their input metadata such that all dates")
-		println("are at least 10 characters long (the length of YYYY-MM-DD) and parseable")
-		println("in that date format. Metadata should also contain no spaces in the Accession")
-		println("column in the case of NCBI GenBank data, or in the 'Virus name' column in")
-		println("the case of GISAID data. We recommend `csvtk` or `qsv` for metadata cleaning.")
+		println("ALPINE will attempt to catch a few common data normalization errors in local")
+		println("input FASTA files and metadata files. However, it is recommended that users")
+		println("assess data normalization themselves before inputing them to ALPINE. The most")
+		println("important rules are: 1) Dates must be in YYYY-MM-DD format, which means")
+		println("editing metadata in Excel may break this pipeline; 2) Accession numbers/Virus")
+		println("names cannot contain spaces; 3) Geographic locations must not be empty; And")
+		println("4) there may be no regex special characters in any of the aforementioned columns.")
 		println()
 
 		NORMALIZE_METADATA (
