@@ -708,7 +708,7 @@ process VALIDATE_SEQUENCES {
 	"""
 	if head -n 1 ${fasta} | grep -q "\\|"; then
 		cat ${fasta} \
-		| seqkit replace -j ${task.cpus} --pattern " " --replacement "_" \
+		| seqkit replace -j ${task.cpus} --pattern " " --replacement "_" --keep-untouch \
 		| seqkit replace -j ${task.cpus} --f-by-name --keep-untouch --pattern "\\|" --replacement " " \
 		| seqkit seq -j ${task.cpus} --only-id --validate-seq -o validated.fasta.zst
 	else
