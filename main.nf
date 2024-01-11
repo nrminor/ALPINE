@@ -493,7 +493,7 @@ process UNZIP_NCBI_METADATA {
 	
 	label "alpine_container"
 	tag "${params.pathogen}"
-	publishDir params.results_subdir, pattern: "*.tsv", mode: 'copy'
+	storeDir params.ncbi_storedir
 
 	errorStrategy { task.attempt < 3 ? 'retry' : params.errorMode }
 	maxRetries 2
@@ -535,7 +535,7 @@ process EXTRACT_NCBI_FASTA {
 	tag "${params.pathogen}"
 
 	label "alpine_container"
-	publishDir params.results_subdir, mode: 'copy'
+	storeDir params.ncbi_storedir
 
 	errorStrategy { task.attempt < 3 ? 'retry' : params.errorMode }
 	maxRetries 2
@@ -566,7 +566,6 @@ process VALIDATE_METADATA {
 	*/
 
 	tag "${params.pathogen}"
-
 	label "alpine_container"
 
 	input:
@@ -629,7 +628,6 @@ process VALIDATE_SEQUENCES {
 	*/
 
 	tag "${params.pathogen}"
-
 	label "alpine_container"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
@@ -648,10 +646,12 @@ process VALIDATE_SEQUENCES {
 
 	script:
 	"""
-	seqkit replace \
+	cat ${fasta} \
+	| seqkit replace \
 	-j ${task.cpus} --f-by-name --keep-untouch \
 	--pattern "\\|" --replacement " " \
-	${fasta} -o validated.fasta.zst
+	| seqkit seq \
+	-j ${task.cpus} --validate-seq -o validated.fasta.zst
 	"""
 
 }
