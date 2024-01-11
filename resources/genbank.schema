@@ -1,6 +1,6 @@
 @separator: ,
 @na_values NA unknown Unknown
-Accession: is_string() && !is_empty() && !is_na()
+Accession: is_string() && !is_empty() && !is_na() && !contains(" ")
 Isolate Collection date: !is_empty() && !is_na() && is_date_format("[2020-02-10]")
 Geographic location: is_string() && !is_empty() && !is_na()
 Virus Pangolin Classification: is_string() && !is_empty() && !is_na()

@@ -122,7 +122,10 @@ workflow {
 
 		println("It is recommended that users clean their input metadata such that all dates")
 		println("are at least 10 characters long (the length of YYYY-MM-DD) and parseable")
-		println("in that date format before providing them as an input to ALPINE.")
+		println("in that date format. Metadata should also contain no spaces in the Accession")
+		println("column in the case of NCBI GenBank data, or in the 'Virus name' column in")
+		println("the case of GISAID data. We recommend `csvtk` or `qsv` for metadata cleaning,")
+		println("and `seqkit` for replacing spaces in FASTA accession numbers.")
 		println()
 
 		VALIDATE_METADATA (
@@ -650,6 +653,9 @@ process VALIDATE_SEQUENCES {
 	| seqkit replace \
 	-j ${task.cpus} --f-by-name --keep-untouch \
 	--pattern "\\|" --replacement " " \
+	| seqkit replace \
+	-j ${task.cpus} --keep-untouch \
+	--pattern " " --replacement "_" \
 	| seqkit seq \
 	-j ${task.cpus} --validate-seq -o validated.fasta.zst
 	"""
@@ -1169,7 +1175,7 @@ process SEARCH_NCBI_METADATA {
 	search-ncbi-metadata.py ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus} && \
 	cut -f 1 anachronistic_metadata_only_candidates.tsv \
 	| tail -n +2 > anachronistic_accessions.txt && \
-	seqkit grep -j ${task.cpus} -nri -f anachronistic_accessions.txt ${fasta} \
+	seqkit grep -j ${task.cpus} -f anachronistic_accessions.txt ${fasta} \
 	-o anachronistic_metadata_only_candidates.fasta
 	"""
 

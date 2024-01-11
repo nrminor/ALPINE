@@ -6,3 +6,10 @@ filter (
   text.length >= 10
 )
 filter (`Geographic location` | text.length != 0)
+filter (
+  `Virus Pangolin Classification`
+  text.length != 0
+)
+derive {
+  Accession = (`Accession` | text.replace " " "_"),
+}
