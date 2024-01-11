@@ -72,6 +72,7 @@ workflow {
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
 
+		println()
 		println("Remote NCBI input branch selected")
 		println("---------------------------------")
 		println()
@@ -107,6 +108,7 @@ workflow {
 
 	} else {
 
+		println()
 		println("Local input branch selected")
 		println("---------------------------")
 		println()
@@ -121,8 +123,9 @@ workflow {
 				) }
 
 		println("It is recommended that users clean their input metadata such that all dates")
-		println("are at least 10 characters long (the length of YYYY-MM-DD) before providing")
-		println("them as an input to ALPINE.")
+		println("are at least 10 characters long (the length of YYYY-MM-DD) and parseable")
+		println("in that date format before providing them as an input to ALPINE.")
+		println()
 
 		VALIDATE_METADATA (
 			ch_local_metadata,
