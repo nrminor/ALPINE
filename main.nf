@@ -112,6 +112,10 @@ workflow {
 				file(metadata).mklink("$workDir/tmp/placeholder.tsv", overwrite: true), file(metadata) 
 				) }
 
+		println("It is recommended that users clean their input metadata such that all dates")
+		println("are at least 10 characters long (the length of YYYY-MM-DD) before providing")
+		println("them as an input to ALPINE.")
+
 		VALIDATE_METADATA (
 			ch_local_metadata,
 			ch_still_schemas
