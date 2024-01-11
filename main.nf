@@ -46,7 +46,6 @@ log.info	"""
 			-----------------------------------
 			Available CPUs     : ${params.available_cpus}
 			Max shared CPUs    : ${params.max_shared_cpus}
-			
 			"""
 			.stripIndent()
 
