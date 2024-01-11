@@ -619,13 +619,13 @@ process VALIDATE_METADATA {
 	label "alpine_container"
 
 	input:
-	tuple path(raw_text), path(arrow)
+	tuple path(raw_text), path(parquet)
 	path still_schemas
 
 	cpus 4
 
 	output:
-	tuple path(arrow), env(db)
+	tuple path(parquet), env(db)
 
 	when:
 	params.download_only == false
