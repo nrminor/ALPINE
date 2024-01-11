@@ -707,13 +707,11 @@ process VALIDATE_SEQUENCES {
 	script:
 	"""
 	cat ${fasta} \
-	| seqkit replace \
-	-j ${task.cpus} --pattern " " --replacement "_" \
-	| seqkit replace \
-	-j ${task.cpus} --f-by-name --keep-untouch \
+	| seqkit seq -j ${task.cpus} --only-id
+	| seqkit replace -j ${task.cpus} --pattern " " --replacement "_" \
+	| seqkit replace -j ${task.cpus} --f-by-name --keep-untouch \
 	--pattern "\|" --replacement " " \
-	| seqkit seq -j \
-	${task.cpus} --only-id --validate-seq \
+	| seqkit seq -j ${task.cpus} --only-id --validate-seq \
 	-o validated.fasta.zst
 	"""
 
