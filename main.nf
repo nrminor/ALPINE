@@ -110,7 +110,6 @@ workflow {
 		println()
 		println("Local input branch selected")
 		println("---------------------------")
-		println()
 
 		ch_local_fasta = Channel
 			.fromPath( params.fasta_path )
