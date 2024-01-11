@@ -523,7 +523,6 @@ process UNZIP_NCBI_METADATA {
 	# normalize it with `qsv`
 	unzip -p ${zip} ncbi_dataset/data/data_report.jsonl \
 	| dataformat tsv virus-genome --force \
-	| qsv fmt --delimiter "\t" --out-delimiter , \
 	| qsv input \
 	--no-quoting --auto-skip --trim-headers \
 	--trim-fields --encoding-errors skip \
