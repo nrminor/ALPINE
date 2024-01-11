@@ -183,7 +183,6 @@ def main() -> None:
     args = args_attempt.unwrap()  # pylint: disable=E1111
     metadata_path = args.metadata
     run_min_date = None if args.min_date == 'null' else args.min_date
-    run_geography = args.geography.replace(" ", "_")
     filters = FilterParams(
         geography=run_geography,
         min_date=run_min_date,

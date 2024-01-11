@@ -523,17 +523,10 @@ process UNZIP_NCBI_METADATA {
 	# normalize it with `qsv`
 	unzip -p ${zip} ncbi_dataset/data/data_report.jsonl \
 	| dataformat tsv virus-genome --force \
-	| qsv input \
+	| qsv input --delimiter "\t" \
 	--no-quoting --auto-skip --trim-headers \
 	--trim-fields --encoding-errors skip \
 	-o genbank_metadata.csv
-
-	# index the very large CSV and check that it is valid UTF-8 and
-	# meets the RFC 4180 CSV Standard
-	qsv index genbank_metadata.csv
-	qsv validate \
-	--invalid invalid_accessions.tsv --jobs ${task.cpus} \
-	genbank_metadata.csv > validation_report.txt
 
 	# compile the PRQL query to SQLite-dialext SQL
 	prqlc compile genbank.prql > query.sql
@@ -603,13 +596,6 @@ process NORMALIZE_METADATA {
 	| qsv replace --quiet --select 1 " " "_" \
 	-o gisaid_metadata.csv
 
-	# index the very large CSV and check that it is valid UTF-8 and
-	# meets the RFC 4180 CSV Standard
-	qsv index gisaid_metadata.csv
-	qsv validate \
-	--invalid invalid_accessions.tsv --jobs ${task.cpus} \
-	gisaid_metadata.csv > validation_report.txt
-
 	# compile the PRQL query to SQLite-dialect SQL
 	prqlc compile gisaid.prql > query.sql
 
@@ -636,6 +622,8 @@ process VALIDATE_METADATA {
 	tuple path(raw_text), path(arrow)
 	path still_schemas
 
+	cpus 4
+
 	output:
 	tuple path(arrow), env(db)
 
@@ -647,9 +635,13 @@ process VALIDATE_METADATA {
 	if head -n 1 ${raw_text} | grep -q "Virus name"; then
 		db="GISAID"
 		still validate gisaid.schema ${raw_text}
+		qsv validate --invalid invalid_accessions.tsv --jobs ${task.cpus} \
+		${raw_text} > validation_report.txt
 	elif head -n 1 ${raw_text} | grep -q ^"Virus name"; then
 		db="Genbank"
 		still validate genbank.schema ${raw_text}
+		qsv validate --invalid invalid_accessions.tsv --jobs ${task.cpus} \
+		${raw_text} > validation_report.txt
 	else
 		echo "Database source not recognized and thus column names and types cannot be ascertained."
 		exit 1
