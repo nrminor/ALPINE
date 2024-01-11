@@ -72,6 +72,10 @@ workflow {
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
 
+		println("Remote NCBI input branch selected")
+		println("---------------------------------")
+		println()
+
 		DOWNLOAD_NCBI_PACKAGE ( )
 
 		UNZIP_NCBI_METADATA (
@@ -102,6 +106,10 @@ workflow {
 		)
 
 	} else {
+
+		println("Local input branch selected")
+		println("---------------------------")
+		println()
 
 		ch_local_fasta = Channel
 			.fromPath( params.fasta_path )
