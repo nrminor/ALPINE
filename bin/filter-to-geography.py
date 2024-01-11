@@ -184,7 +184,7 @@ def main() -> None:
     metadata_path = args.metadata
     run_min_date = None if args.min_date == 'null' else args.min_date
     filters = FilterParams(
-        geography=run_geography,
+        geography=args.geography,
         min_date=run_min_date,
         max_date=args.max_date,
     )
