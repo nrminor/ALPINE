@@ -706,13 +706,15 @@ process VALIDATE_SEQUENCES {
 
 	script:
 	"""
-	cat ${fasta} \
-	| seqkit seq -j ${task.cpus} --only-id \
-	| seqkit replace -j ${task.cpus} --pattern " " --replacement "_" \
-	| seqkit replace -j ${task.cpus} --f-by-name --keep-untouch \
-	--pattern "\|" --replacement " " \
-	| seqkit seq -j ${task.cpus} --only-id --validate-seq \
-	-o validated.fasta.zst
+	if head -n 1 ${fasta} | grep -q "\\|"; then
+		cat ${fasta} \
+		| seqkit replace -j ${task.cpus} --pattern " " --replacement "_" \
+		| seqkit replace -j ${task.cpus} --f-by-name --keep-untouch --pattern "\\|" --replacement " " \
+		| seqkit seq -j ${task.cpus} --only-id --validate-seq -o validated.fasta.zst
+	else
+		cat ${fasta} \
+		| seqkit seq -j ${task.cpus} --only-id --validate-seq -o validated.fasta.zst
+	fi
 	"""
 
 }
