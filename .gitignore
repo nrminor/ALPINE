@@ -165,7 +165,7 @@ results/report.html*
 results/
 results/lineage_designation_dates.csv
 resources/lineage_designation_dates.csv
-resources/*.csv
+resources/*.fasta
 results/pango_consensus_sequences.fasta
 .nextflow.log*
 .DS_Store

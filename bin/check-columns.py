@@ -52,11 +52,11 @@ def main():
     metadata_path = parse_command_line_args()
 
     # Scan the metadata into a LazyFrame
-    if metadata_path.contains(".arrow"):
+    if ".arrow" in metadata_path:
         metadata = polars.scan_ipc(metadata_path)
-    elif metadata_path.contains(".csv"):
+    elif ".csv" in metadata_path:
         metadata = polars.scan_csv(metadata_path)
-    elif metadata_path.contains(".tsv"):
+    elif ".tsv" in metadata_path:
         metadata = polars.scan_csv(metadata_path, separator="\t")
     else:
         print("Could not parse the input metadata file type.")
