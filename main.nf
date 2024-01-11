@@ -61,7 +61,7 @@ workflow {
 		.fromPath( "${params.resources}/*.schema" )
 		.collect()
 	
-	ch_prql_query = Channel
+	ch_prql_queries = Channel
 		.fromPath( "${params.resources}/*.prql" )
 
 	// Data setup steps
@@ -80,7 +80,7 @@ workflow {
 
 		UNZIP_NCBI_METADATA (
 			DOWNLOAD_NCBI_PACKAGE.out.zip_archive,
-			ch_prql_query
+			ch_prql_queries
 		)
 
 		EXTRACT_NCBI_FASTA (
@@ -125,7 +125,8 @@ workflow {
 		println()
 
 		NORMALIZE_METADATA (
-			ch_local_metadata
+			ch_local_metadata,
+			ch_prql_queries
 		)
 
 		VALIDATE_METADATA (
