@@ -122,9 +122,9 @@ workflow {
 		println("input FASTA files and metadata files. However, it is recommended that users")
 		println("assess data normalization themselves before inputing them to ALPINE. The most")
 		println("important rules are: 1) Dates must be in YYYY-MM-DD format, which means")
-		println("editing metadata in Excel may break this pipeline; 2) Accession numbers/Virus")
-		println("names cannot contain spaces; 3) Geographic locations must not be empty; And")
-		println("4) there may be no regex special characters in any of the aforementioned columns.")
+		println("editing metadata in Excel may break this pipeline; 2) Geographic locations must")
+		println("not be empty; And 3) there may be no regex special characters in any of the")
+		println("aforementioned columns.")
 		println()
 
 		NORMALIZE_METADATA (
@@ -598,7 +598,7 @@ process NORMALIZE_METADATA {
 	# normalize it with `qsv`
 	cat ${metadata} \
 	| qsv input --delimiter "\t" \
-	--no-quoting --auto-skip --trim-headers \
+	--no-quoting --trim-headers \
 	--trim-fields --encoding-errors skip \
 	| qsv replace --quiet --select 1 " " "_" \
 	-o gisaid_metadata.csv
