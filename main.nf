@@ -707,7 +707,7 @@ process VALIDATE_SEQUENCES {
 	script:
 	"""
 	cat ${fasta} \
-	| seqkit seq -j ${task.cpus} --only-id
+	| seqkit seq -j ${task.cpus} --only-id \
 	| seqkit replace -j ${task.cpus} --pattern " " --replacement "_" \
 	| seqkit replace -j ${task.cpus} --f-by-name --keep-untouch \
 	--pattern "\|" --replacement " " \
