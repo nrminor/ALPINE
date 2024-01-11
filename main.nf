@@ -63,6 +63,7 @@ workflow {
 	
 	ch_prql_queries = Channel
 		.fromPath( "${params.resources}/*.prql" )
+		.collect()
 
 	// Data setup steps
 	GET_DESIGNATION_DATES ( )
