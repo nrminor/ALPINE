@@ -72,6 +72,10 @@ workflow {
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
 
+		println("Remote NCBI input branch selected")
+		println("---------------------------------")
+		println()
+
 		DOWNLOAD_NCBI_PACKAGE ( )
 
 		UNZIP_NCBI_METADATA (
@@ -103,6 +107,10 @@ workflow {
 
 	} else {
 
+		println("Local input branch selected")
+		println("---------------------------")
+		println()
+
 		ch_local_fasta = Channel
 			.fromPath( params.fasta_path )
 
@@ -111,6 +119,10 @@ workflow {
 			.map { metadata -> tuple( 
 				file(metadata).mklink("$workDir/tmp/placeholder.tsv", overwrite: true), file(metadata) 
 				) }
+
+		println("It is recommended that users clean their input metadata such that all dates")
+		println("are at least 10 characters long (the length of YYYY-MM-DD) before providing")
+		println("them as an input to ALPINE.")
 
 		VALIDATE_METADATA (
 			ch_local_metadata,
