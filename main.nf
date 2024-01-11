@@ -708,13 +708,13 @@ process VALIDATE_SEQUENCES {
 	"""
 	cat ${fasta} \
 	| seqkit replace \
-	-j ${task.cpus} --f-by-name --keep-untouch \
-	--pattern "\\|" --replacement " " \
+	-j ${task.cpus} --pattern " " --replacement "_" \
 	| seqkit replace \
-	-j ${task.cpus} --keep-untouch \
-	--pattern " " --replacement "_" \
-	| seqkit seq \
-	-j ${task.cpus} --validate-seq -o validated.fasta.zst
+	-j ${task.cpus} --f-by-name --keep-untouch \
+	--pattern "\|" --replacement " " \
+	| seqkit seq -j \
+	${task.cpus} --only-id --validate-seq \
+	-o validated.fasta.zst
 	"""
 
 }
