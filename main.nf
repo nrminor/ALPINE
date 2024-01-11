@@ -456,7 +456,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	*/
 	
 	tag "${params.pathogen}"
-	// publishDir params.results_subdir, mode: 'copy'
+	storeDir params.ncbi_storedir
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 1000 as long); return 'retry' }
 	maxRetries 3
