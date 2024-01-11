@@ -601,7 +601,7 @@ process NORMALIZE_METADATA {
 	| qsv input --delimiter "\t" \
 	--no-quoting --auto-skip --trim-headers \
 	--trim-fields --encoding-errors skip \
-	| qsv replace --select 1 " " "_" \
+	| qsv replace --quiet --select 1 " " "_" \
 	-o gisaid_metadata.csv
 
 	# index the very large CSV and check that it is valid UTF-8 and
