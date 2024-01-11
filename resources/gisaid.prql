@@ -5,7 +5,7 @@ filter (`Collection date` | text.length >= 10)
 filter (`Location` | text.length != 0)
 filter (`Pango lineage` | text.length != 0)
 derive {
-  Virus name = (
+  `Virus name` = (
     `Virus name`
     text.replace " " "_"
   ),
