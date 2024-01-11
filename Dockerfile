@@ -58,9 +58,12 @@ RUN cd /opt && \
     --root /opt/.cargo
 RUN cargo install prqlc \
     --root /opt/.cargo
-RUN cargo install qsv \
-    --features=apply,fetch,foreach,generate,luau,polars,to,to_parquet,self_update \
-    --root /opt/.cargo
+RUN apt-get update && \
+    apt-get install -y clang && \
+    apt-get clean && \
+    cargo install qsv \
+    --locked --root /opt/.cargo \
+    --features=apply,foreach,polars,to,to_parquet,self_update,feature_capable
 
 # Install outbreak.info and cdc R packages
 RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library', clean = TRUE)"
@@ -82,7 +85,17 @@ RUN julia -e 'using Pkg; \
             using PackageCompiler; \
             create_sysimage(:ALPINE, sysimage_path="/opt/.julia/alpine.so")'
 
-# Make sure nothing is amiss and that julia is still in the path
+# Install go and still
+RUN apt-get update && \
+    apt-get install -y golang-go && \
+    apt-get clean
+RUN cd /opt && \
+    git clone https://github.com/danielecook/still.git && \
+    cd still && \
+    go build
+ENV PATH=$PATH:/opt/still
+
+# Make sure nothing is amiss and that everything is still in the path
 ENV NXF_HOME=/scratch/.nextflow
 ENV PATH=$PATH:/opt/julia-1.9.0/bin:/scratch/.julia/compiled/v1.9
 
