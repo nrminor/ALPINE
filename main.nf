@@ -595,10 +595,10 @@ process NORMALIZE_METADATA {
 	# extract the metadata, convert it to CSV, and attempt to
 	# normalize it with `qsv`
 	cat ${metadata} \
-	| qsv fmt --delimiter "\t" --out-delimiter , \
 	| qsv input \
 	--no-quoting --auto-skip --trim-headers \
 	--trim-fields --encoding-errors skip \
+	| qsv fmt --delimiter "\t" --out-delimiter , \
 	-o gisaid_metadata.csv
 
 	# index the very large CSV and check that it is valid UTF-8 and
