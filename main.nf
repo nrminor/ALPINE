@@ -62,7 +62,7 @@ workflow {
 		.collect()
 	
 	ch_prql_query = Channel
-		.fromPath( params.prql_query )
+		.fromPath( "${params.resources}/*.prql" )
 
 	// Data setup steps
 	GET_DESIGNATION_DATES ( )
@@ -116,20 +116,20 @@ workflow {
 
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
-			.map { metadata -> tuple( 
-				file(metadata).mklink("$workDir/tmp/placeholder.tsv", overwrite: true), file(metadata) 
-				) }
 
 		println("It is recommended that users clean their input metadata such that all dates")
 		println("are at least 10 characters long (the length of YYYY-MM-DD) and parseable")
 		println("in that date format. Metadata should also contain no spaces in the Accession")
 		println("column in the case of NCBI GenBank data, or in the 'Virus name' column in")
-		println("the case of GISAID data. We recommend `csvtk` or `qsv` for metadata cleaning,")
-		println("and `seqkit` for replacing spaces in FASTA accession numbers.")
+		println("the case of GISAID data. We recommend `csvtk` or `qsv` for metadata cleaning.")
 		println()
 
+		NORMALIZE_METADATA (
+			ch_local_metadata
+		)
+
 		VALIDATE_METADATA (
-			ch_local_metadata,
+			NORMALIZE_METADATA.out,
 			ch_still_schemas
 		)
 
@@ -423,7 +423,7 @@ process DOWNLOAD_REFSEQ {
 	tag "${params.pathogen}"
 	publishDir params.resources, mode: 'copy'
 
-	errorStrategy { sleep(Math.pow(2, task.attempt) * 200 as long); return 'retry' }
+	errorStrategy { sleep(Math.pow(2, task.attempt) * 1000 as long); return 'retry' }
 	maxRetries 5
 
 	output:
@@ -490,8 +490,11 @@ process DOWNLOAD_NCBI_PACKAGE {
 process UNZIP_NCBI_METADATA {
 
 	/*
-	Here the pathogen metadata in TSV format is extracted from the 
-	lightweight NCBI zip archive.
+	Here the tabular pathogen metadata is extracted, normalized,
+	validated, and filtered so that the relevant columns only contain
+	usable data. Note that we have attempted to catch a few common
+	data normalization issues the users may run into here, but it
+	remains possible that others will appear in the future.
 	*/
 	
 	label "alpine_container"
@@ -512,13 +515,25 @@ process UNZIP_NCBI_METADATA {
 
 	script:
 	"""
-	prqlc compile ${query} > query.sql && \
+	# extract the metadata, convert it to CSV, and attempt to
+	# normalize it with `qsv`
 	unzip -p ${zip} ncbi_dataset/data/data_report.jsonl \
 	| dataformat tsv virus-genome --force \
-	| qsv fmt --delimiter "\t" --out-delimiter , -o genbank_metadata.csv
+	| qsv fmt --delimiter "\t" --out-delimiter , \
+	| qsv input \
+	--no-quoting --auto-skip --trim-headers \
+	--trim-fields --encoding-errors skip \
+	-o genbank_metadata.csv
 
+	# index the very large CSV and check that it is valid UTF-8 and
+	# meets the RFC 4180 CSV Standard
 	qsv index genbank_metadata.csv
-	qsv validate --invalid invalid_accessions.tsv --jobs 8 genbank_metadata.csv > validation_report.txt
+	qsv validate \
+	--invalid invalid_accessions.tsv --jobs 8 \
+	genbank_metadata.csv > validation_report.txt
+
+	# compile the PRQL query to SQLite-dialext SQL
+	prqlc compile genbank.prql > query.sql
 
 	qsv sqlp genbank_metadata.csv query.sql \
 	--try-parsedates --date-format '%Y-%m-%d' --ignore-errors \
@@ -559,6 +574,49 @@ process EXTRACT_NCBI_FASTA {
 
 }
 
+process NORMALIZE_METADATA {
+
+	/*
+	*/
+
+	tag "${params.pathogen}"
+	label "alpine_container"
+
+	input:
+	path metadata
+	path queries
+
+	output:
+	tuple path("gisaid_metadata.csv"), path("gisaid_metadata.arrow")
+
+	script:
+	"""
+	# extract the metadata, convert it to CSV, and attempt to
+	# normalize it with `qsv`
+	cat ${metadata} \
+	| qsv fmt --delimiter "\t" --out-delimiter , \
+	| qsv input \
+	--no-quoting --auto-skip --trim-headers \
+	--trim-fields --encoding-errors skip \
+	-o gisaid_metadata.csv
+
+	# index the very large CSV and check that it is valid UTF-8 and
+	# meets the RFC 4180 CSV Standard
+	qsv index gisaid_metadata.csv
+	qsv validate \
+	--invalid invalid_accessions.tsv --jobs 8 \
+	gisaid_metadata.csv > validation_report.txt
+
+	# compile the PRQL query to SQLite-dialext SQL
+	prqlc compile gisaid.prql > query.sql
+
+	qsv sqlp gisaid_metadata.csv query.sql \
+	--try-parsedates --date-format '%Y-%m-%d' --ignore-errors \
+	--format arrow --compression 'zstd' \
+	--output gisaid_metadata.arrow
+	"""
+}
+
 process VALIDATE_METADATA {
 
 	/*
@@ -585,7 +643,7 @@ process VALIDATE_METADATA {
 	"""
 	if head -n 1 ${raw_text} | grep -q "Virus name"; then
 		db="GISAID"
-		still validate gisaid.schema ${arrow}
+		still validate gisaid.schema ${raw_text}
 	elif head -n 1 ${raw_text} | grep -q ^"Virus name"; then
 		db="Genbank"
 		still validate genbank.schema ${raw_text}
