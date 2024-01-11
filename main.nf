@@ -108,7 +108,9 @@ workflow {
 
 		ch_local_metadata = Channel
 			.fromPath( params.metadata_path )
-			.map { metadata -> tuple( file(metadata), file(metadata) ) }
+			.map { metadata -> tuple( 
+				file(metadata).mklink("$workDir/tmp/placeholder.tsv", overwrite: true), file(metadata) 
+				) }
 
 		VALIDATE_METADATA (
 			ch_local_metadata,
@@ -556,7 +558,7 @@ process VALIDATE_METADATA {
 
 	input:
 	tuple path(raw_text), path(arrow)
-	each path(still_schemas)
+	path still_schemas
 
 	output:
 	tuple path(arrow), env(db)
@@ -566,10 +568,10 @@ process VALIDATE_METADATA {
 
 	script:
 	"""
-	if head -n 1 ${metadata} | grep -q "Virus name"; then
+	if head -n 1 ${raw_text} | grep -q "Virus name"; then
 		db="GISAID"
-		still validate gisaid.schema ${raw_text}
-	elif head -n 1 ${metadata} | grep -q ^"Virus name"; then
+		still validate gisaid.schema ${arrow}
+	elif head -n 1 ${raw_text} | grep -q ^"Virus name"; then
 		db="Genbank"
 		still validate genbank.schema ${raw_text}
 	else
