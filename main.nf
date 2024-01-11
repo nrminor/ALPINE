@@ -635,7 +635,7 @@ process VALIDATE_SEQUENCES {
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
-	cpus params.max_cpus
+	cpus params.available_cpus
 
 	input:
 	path fasta
@@ -684,7 +684,7 @@ process FILTER_META_TO_GEOGRAPHY {
 	--metadata ${metadata} \
 	--max_date ${params.max_date} \
 	--min_date ${params.min_date} \
-	--geography ${params.geography}
+	--geography "${params.geography}"
 	"""
 
 }

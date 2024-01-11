@@ -33,10 +33,10 @@ RUN conda config --add channels conda-forge && \
     libmambapy=1.2.0=py311h2b46443_0 \
     conda-libmamba-solver=23.1.0=pyhd8ed1ab_0
 
-
 # Install all other dependencies, save for the two R packages below and the julia packages
 COPY ./config/conda_env.yaml /tmp/conda_env.yaml
 RUN mamba env update --file /tmp/conda_env.yaml && \
+    mamba install -y -c conda-forge pydantic && \
     mamba clean --all && \
     rm /tmp/conda_env.yaml
 ENV NXF_HOME=/scratch/.nextflow

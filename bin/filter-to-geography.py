@@ -182,9 +182,10 @@ def main() -> None:
         sys.exit("Command line argument parsing failed.")
     args = args_attempt.unwrap()  # pylint: disable=E1111
     metadata_path = args.metadata
+    run_min_date = None if args.min_date == 'null' else args.min_date
     filters = FilterParams(
         geography=args.geography,
-        min_date=args.min_date,
+        min_date=run_min_date,
         max_date=args.max_date,
     )
 
