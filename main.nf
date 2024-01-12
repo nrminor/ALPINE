@@ -510,7 +510,7 @@ process UNZIP_NCBI_METADATA {
 	path zip
 
 	output:
-	tuple path("genbank_metadata.cleaned.tsv.sz"), val("genbank")
+	path "genbank_metadata.cleaned.tsv.sz"
 
 	script:
 	"""
@@ -568,7 +568,7 @@ process NORMALIZE_METADATA {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
-	storeDir "$launchDir/work/gisaid"
+	storeDir params.gisaid_storedir
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -577,7 +577,7 @@ process NORMALIZE_METADATA {
 	path metadata
 
 	output:
-	tuple path("gisaid_metadata.cleaned.tsv.sz"), val("gisaid")
+	path "gisaid_metadata.cleaned.tsv.sz"
 
 	script:
 	"""
@@ -606,7 +606,7 @@ process VALIDATE_METADATA {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
-	storeDir "$launchDir/work/gisaid"
+	storeDir params.gisaid_storedir
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -614,7 +614,7 @@ process VALIDATE_METADATA {
 	cpus 4
 
 	input:
-	tuple path(metadata), val(db)
+	path metadata
 	path still_schemas
 
 	output:
@@ -624,6 +624,7 @@ process VALIDATE_METADATA {
 	params.download_only == false
 
 	script:
+	db = file(metadata.toString()).split("_")[0]
 	"""
 	# run RFC 4180 standard and UTF-8 validation
 	qsv validate \
@@ -679,7 +680,7 @@ process VALIDATE_SEQUENCES {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
-	storeDir "$launchDir/work/gisaid"
+	storeDir params.gisaid_storedir
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
