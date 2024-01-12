@@ -421,6 +421,7 @@ process DOWNLOAD_REFSEQ {
 
 	tag "${params.pathogen}"
 	publishDir params.resources, mode: 'copy'
+	storeDir "$launchDir/work/ncbi"
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 1000 as long); return 'retry' }
 	maxRetries 5
@@ -567,6 +568,7 @@ process NORMALIZE_METADATA {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
+	storeDir "$launchDir/work/gisaid"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -604,6 +606,7 @@ process VALIDATE_METADATA {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
+	storeDir "$launchDir/work/gisaid"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -676,6 +679,7 @@ process VALIDATE_SEQUENCES {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
+	storeDir "$launchDir/work/gisaid"
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
