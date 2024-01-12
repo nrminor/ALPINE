@@ -624,7 +624,7 @@ process VALIDATE_METADATA {
 	params.download_only == false
 
 	script:
-	db = file(metadata.toString()).split("_")[0]
+	db = metadata.toString().split("_")[0]
 	"""
 	# run RFC 4180 standard and UTF-8 validation
 	qsv validate \
