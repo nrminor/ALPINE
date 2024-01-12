@@ -516,7 +516,7 @@ process UNZIP_NCBI_METADATA {
 	# extract the metadata, convert it to CSV, and attempt to
 	# normalize it with `qsv`
 	unzip -p ${zip} ncbi_dataset/data/data_report.jsonl \
-	| dataformat tsv virus-genome --force \ \
+	| dataformat tsv virus-genome --force \
 	| qsv replace --delimiter "\t" ',' ';' - \
 	| qsv input \
 		--no-quoting --auto-skip --trim-headers \
