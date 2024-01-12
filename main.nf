@@ -132,7 +132,7 @@ workflow {
 			ch_still_schemas
 		)
 
-		CHECK_COLUMN_NAMES (
+		RECONCILE_COLUMN_NAMES (
 			VALIDATE_METADATA.out
 		)
 
@@ -141,7 +141,7 @@ workflow {
 		)
 
 		FILTER_META_TO_GEOGRAPHY (
-			CHECK_COLUMN_NAMES.out
+			RECONCILE_COLUMN_NAMES.out
 		)
 
 		FILTER_SEQS_TO_GEOGRAPHY (
@@ -645,12 +645,13 @@ process VALIDATE_METADATA {
 	"""
 }
 
-process CHECK_COLUMN_NAMES {
+process RECONCILE_COLUMN_NAMES {
 
 	/* */
 
 	tag "${params.pathogen}"
 	label "alpine_container"
+	storeDir params.storage_root
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -680,7 +681,7 @@ process VALIDATE_SEQUENCES {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
-	storeDir params.gisaid_storedir
+	storeDir params.storage_root
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
