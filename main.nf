@@ -512,29 +512,25 @@ process UNZIP_NCBI_METADATA {
 
 	input:
 	path zip
-	path query
 
 	output:
-	tuple path("genbank_metadata.csv"), path("genbank_metadata.parquet")
+	tuple path("genbank_metadata.cleaned.tsv.sz"), val("genbank")
 
 	script:
 	"""
 	# extract the metadata, convert it to CSV, and attempt to
 	# normalize it with `qsv`
 	unzip -p ${zip} ncbi_dataset/data/data_report.jsonl \
-	| dataformat tsv virus-genome --force \
-	| qsv input --delimiter "\t" \
-	--no-quoting --auto-skip --trim-headers \
-	--trim-fields --encoding-errors skip \
-	-o genbank_metadata.csv
-
-	# compile the PRQL query to SQLite-dialext SQL
-	prqlc compile genbank.prql > query.sql
-
-	qsv sqlp genbank_metadata.csv query.sql \
-	--ignore-errors --low-memory --quiet \
-	--format parquet --compression 'zstd' --compress-level 6 \
-	--output genbank_metadata.parquet
+	| dataformat tsv virus-genome --force \ \
+	| qsv replace --delimiter "\t" ',' ';' - \
+	| qsv input \
+		--no-quoting --auto-skip --trim-headers \
+		--trim-fields --encoding-errors skip \
+	| qsv luau filter "string.len(col['Location']) > 0" \
+	| qsv luau filter "string.len(col['Collection date']) >= 10" \
+	| qsv replace --select 'Virus name' ' ' '_' \
+	| qsv fmt --out-delimiter "\t" \
+		--output genbank_metadata.cleaned.csv.sz
 	"""
 
 }
@@ -582,29 +578,23 @@ process NORMALIZE_METADATA {
 
 	input:
 	path metadata
-	path queries
 
 	output:
-	tuple path("gisaid_metadata.csv"), path("gisaid_metadata.parquet")
+	tuple path("gisaid_metadata.cleaned.tsv.sz"), val("gisaid")
 
 	script:
 	"""
-	# extract the metadata, convert it to CSV, and attempt to
-	# normalize it with `qsv`
+	qsv index ${metadata} && \
 	cat ${metadata} \
-	| qsv input --delimiter "\t" \
-	--no-quoting --trim-headers \
-	--trim-fields --encoding-errors skip \
-	| qsv replace --quiet --select 1 " " "_" \
-	-o gisaid_metadata.csv
-
-	# compile the PRQL query to SQLite-dialect SQL
-	prqlc compile gisaid.prql > query.sql
-
-	qsv sqlp gisaid_metadata.csv query.sql \
-	--ignore-errors --low-memory --quiet \
-	--format parquet --compression 'zstd' --compress-level 6 \
-	--output gisaid_metadata.parquet
+	| qsv replace --delimiter "\t" ',' ';' - \
+	| qsv input \
+		--no-quoting --auto-skip --trim-headers \
+		--trim-fields --encoding-errors skip \
+	| qsv luau filter "string.len(col['Location']) > 0" \
+	| qsv luau filter "string.len(col['Collection date']) >= 10" \
+	| qsv replace --select 'Virus name' ' ' '_' \
+	| qsv fmt --out-delimiter "\t" \
+		--output gisaid_metadata.cleaned.tsv.sz
 	"""
 }
 
@@ -623,34 +613,36 @@ process VALIDATE_METADATA {
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
-	input:
-	tuple path(raw_text), path(parquet)
-	path still_schemas
-
 	cpus 4
 
+	input:
+	tuple path(metadata), val(db)
+	path still_schemas
+
 	output:
-	tuple path(parquet), env(db)
+	path "${db}*.parquet"
 
 	when:
 	params.download_only == false
 
 	script:
 	"""
-	if head -n 1 ${raw_text} | grep -q "Virus name"; then
-		db="GISAID"
-		still validate gisaid.schema ${raw_text}
-		qsv validate --invalid invalid_accessions.tsv --jobs ${task.cpus} \
-		${raw_text} > validation_report.txt
-	elif head -n 1 ${raw_text} | grep -q ^"Virus name"; then
-		db="Genbank"
-		still validate genbank.schema ${raw_text}
-		qsv validate --invalid invalid_accessions.tsv --jobs ${task.cpus} \
-		${raw_text} > validation_report.txt
-	else
-		echo "Database source not recognized and thus column names and types cannot be ascertained."
-		exit 1
-	fi
+	# run RFC 4180 standard and UTF-8 validation
+	qsv validate \
+		--invalid invalid_accessions.tsv --jobs ${task.cpus} ${metadata}
+
+	# run Still validation
+	qsv snappy decompress \
+		--jobs ${task.cpus} ${metadata} \
+		-o tmp.csv && \
+	still validate ${db}.schema tmp.csv && \
+	rm tmp.csv
+
+	# convert to parquet
+	qsv sqlp -d "\t" ${metadata} "select * from _t_1" \
+		--low-memory --ignore-errors \
+		--format parquet --compression 'zstd' --compress-level 6 \
+		--output gisaid_metadata.cleaned.parquet
 	"""
 }
 
@@ -665,7 +657,7 @@ process CHECK_COLUMN_NAMES {
 	maxRetries 1
 
 	input:
-	tuple path(metadata), val(db)
+	path metadata
 
 	output:
 	path "validated.arrow"
@@ -955,7 +947,6 @@ process COMPUTE_DISTANCE_MATRIX {
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
 	"""
-	ln -s /opt/.julia/alpine.so alpine.so
 	compute-distance-matrix.jl ${fasta} ${cluster_table} ${yearmonth} ${params.strictness_mode}
 	"""
 
@@ -1266,7 +1257,6 @@ process FIND_DOUBLE_CANDIDATES {
 
 	script:
 	"""
-	ln -s /opt/.julia/alpine.so alpine.so
 	find-double-candidates.jl
 	"""
 
@@ -1328,7 +1318,6 @@ process COMPUTE_PREVALENCE_ESTIMATE {
 
 	script:
 	"""
-	ln -s /opt/.julia/alpine.so alpine.so
 	estimate-prevalence.jl ${early_stats} ${late_stats}
 	"""
 

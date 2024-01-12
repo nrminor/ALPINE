@@ -1,7 +1,7 @@
 name = "ALPINE"
 uuid = "86e0aada-7cfe-4a3c-b0f8-902a8a7d1317"
 authors = ["Nicholas Minor <nrminor@wisc.edu>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 Arrow = "69666777-d1a9-59fb-9406-91d4454c9d45"

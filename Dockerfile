@@ -35,10 +35,13 @@ RUN conda config --add channels conda-forge && \
 
 # Install all other dependencies, save for the two R packages below and the julia packages
 COPY ./config/conda_env.yaml /tmp/conda_env.yaml
+COPY ./config/requirements.txt /tmp/requirements.txt
 RUN mamba env update --file /tmp/conda_env.yaml && \
-    mamba install -y -c conda-forge pydantic && \
+    mamba install -y -c conda-forge pydantic result && \
+    mamba install -y -c conda-forge -c bioconda -c anaconda --file requirements.txt && \
     mamba clean --all && \
-    rm /tmp/conda_env.yaml
+    rm /tmp/conda_env.yaml && \
+    rm /tmp/requirements.txt
 ENV NXF_HOME=/scratch/.nextflow
 
 # install Rust
@@ -79,12 +82,11 @@ RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-
 # Copy Julia functions to precompile as a module
 ENV JULIA_DEPOT_PATH=/root/.julia
 ENV JULIA_SCRATCH_TRACK_ACCESS=0
-COPY ./config/ALPINE.jl/ /root/.julia/environments/v1.9
+COPY ./Manifest.toml /root/.julia/environments/v1.9/
+COPY ./Project.toml /root/.julia/environments/v1.9/
 RUN julia -e 'using Pkg; \
             Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
-            Pkg.instantiate(); \
-            using PackageCompiler; \
-            create_sysimage(:ALPINE, sysimage_path="/opt/.julia/alpine.so")'
+            Pkg.instantiate()'
 
 # Install go and still
 RUN apt-get update && \
