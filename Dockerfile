@@ -38,7 +38,7 @@ COPY ./config/conda_env.yaml /tmp/conda_env.yaml
 COPY ./config/requirements.txt /tmp/requirements.txt
 RUN mamba env update --file /tmp/conda_env.yaml && \
     mamba install -y -c conda-forge pydantic result && \
-    mamba install -y -c conda-forge -c bioconda -c anaconda --file requirements.txt && \
+    mamba install -y -c conda-forge -c bioconda -c anaconda --file /tmp/requirements.txt && \
     mamba clean --all && \
     rm /tmp/conda_env.yaml && \
     rm /tmp/requirements.txt
