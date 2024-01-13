@@ -522,9 +522,8 @@ process UNZIP_NCBI_METADATA {
 	| qsv input \
 		--no-quoting --auto-skip --trim-headers \
 		--trim-fields --encoding-errors skip \
-	| qsv luau filter "string.len(col['Location']) > 0" \
-	| qsv luau filter "string.len(col['Collection date']) >= 10" \
-	| qsv replace --select 'Virus name' ' ' '_' \
+	| qsv luau filter "string.len(col['Geographic ocation']) > 0" \
+	| qsv luau filter "string.len(col['Isolate Collection date']) >= 10" \
 	| qsv fmt --out-delimiter "\t" \
 		ut genbank_metadata.cleaned.csv.sz
 	"""
