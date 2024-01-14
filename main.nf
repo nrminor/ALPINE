@@ -771,7 +771,8 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	script:
 	"""
-	seqkit grep -j ${task.cpus} -f ${accessions} ${fasta} -o filtered-to-geography.fasta.zst
+	seqkit grep -j ${task.cpus} -f ${accessions} ${fasta} \
+	| bgzip --stdout > filtered-to-geography.fasta.gz
 	"""
 
 }
@@ -840,7 +841,8 @@ process FILTER_BY_MASKED_BASES {
 	alpine filter-by-n \
 	--fasta ${fasta} \
 	--ambiguity ${params.max_ambiguity} \
-	--reference ${reference}
+	--reference ${reference} \
+	--out_file "filtered-by-n.fasta.gz"
 	"""
 
 }
@@ -870,7 +872,9 @@ process SEPARATE_BY_MONTH {
 
 	script:
 	"""
-	alpine separate-by-month --fasta ${fasta} --metadata ${metadata}
+	alpine separate-by-month \
+	--fasta ${fasta} \
+	--metadata ${metadata}
 	"""
 
 }
@@ -942,7 +946,11 @@ process COMPUTE_DISTANCE_MATRIX {
 	path "${yearmonth}-dist-matrix.csv"
 
 	when:
-	file(fasta.toString()).getSimpleName().contains(file(cluster_table.toString()).getSimpleName().replace("-clusters", ""))
+	file(fasta.toString())
+		.getSimpleName()
+		.contains(file(cluster_table.toString())
+		.getSimpleName()
+		.replace("-clusters", ""))
 
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
@@ -977,7 +985,11 @@ process MULTIDIMENSIONAL_SCALING {
 	path "*"
 
 	when:
-	file(cluster_table.toString()).getSimpleName().contains(file(centroid_fasta.toString()).getSimpleName().replace("-aligned-centroids", ""))
+	file(cluster_table.toString())
+		.getSimpleName()
+		.contains(file(centroid_fasta.toString())
+		.getSimpleName()
+		.replace("-aligned-centroids", ""))
 
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
