@@ -76,8 +76,7 @@ workflow {
 		DOWNLOAD_NCBI_PACKAGE ( )
 
 		UNZIP_NCBI_METADATA (
-			DOWNLOAD_NCBI_PACKAGE.out.zip_archive,
-			ch_prql_queries
+			DOWNLOAD_NCBI_PACKAGE.out.zip_archive
 		)
 
 		EXTRACT_NCBI_FASTA (
