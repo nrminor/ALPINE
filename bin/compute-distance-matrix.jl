@@ -1,7 +1,7 @@
 #!/usr/bin/env -S julia -t auto --sysimage alpine.so
 
 # loading necessary packages
-using FastaIO, BioSequences, StringDistances, Statistics, DataFrames, CSV
+using FastaIO, BioSequences, Distances, StringDistances, Statistics, DataFrames, CSV
 
 # parse supplied command line arguments to locate files and set parameters
 const FASTA_PATH::String = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
@@ -97,7 +97,7 @@ function distance_matrix(
     seq_vectors = [LongSequence{DNAAlphabet{4}}(seq) for seq in filtered_seqs]
 
     # Compute the Hamming distance matrix
-    dist_matrix = pairwise(DamerauLevenshtein(), seq_vectors, seq_vectors)
+    dist_matrix = pairwise(DamerauLevenshtein(), seq_vectors)
 
     # Convert the distance matrix to a DataFrame
     dist_df = DataFrame(dist_matrix, :auto)
