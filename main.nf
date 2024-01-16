@@ -771,8 +771,8 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	script:
 	"""
-	seqkit grep -j ${task.cpus} -f ${accessions} ${fasta} \
-	| bgzip --threads ${task.cpus} --compress-level 6 > filtered-to-geography.fasta.gz
+	seqkit grep -j ${task.cpus} -f ${accessions} ${fasta} -o filtered-to-geography.fasta && \
+	bgzip --threads ${task.cpus} --compress-level 9 filtered-to-geography.fasta
 	"""
 
 }
