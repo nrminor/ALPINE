@@ -767,12 +767,12 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 	path accessions
 
 	output:
-	path "filtered-to-geography.fasta.zst", emit: fasta
+	path "filtered-to-geography.fasta.gz", emit: fasta
 
 	script:
 	"""
 	seqkit grep -j ${task.cpus} -f ${accessions} ${fasta} \
-	| bgzip --stdout > filtered-to-geography.fasta.gz
+	| bgzip --threads ${task.cpus} --compress-level 6 > filtered-to-geography.fasta.gz
 	"""
 
 }
