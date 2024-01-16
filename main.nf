@@ -632,7 +632,7 @@ process VALIDATE_METADATA {
 	qsv snappy decompress \
 		--jobs ${task.cpus} ${metadata} \
 		-o tmp.csv && \
-	still validate ${db}.schema tmp.csv && \
+	still validate ${db}.schema tmp.csv
 	rm tmp.csv
 
 	# convert to parquet
@@ -721,6 +721,7 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
+	publishDir params.results_subdir, mode: 'copy'
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
