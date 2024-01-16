@@ -721,7 +721,7 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
-	publishDir params.results_subdir, mode: 'copy'
+	publishDir params.results_subdir, pattern: "filtered-to-geography.arrow", mode: 'copy'
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
