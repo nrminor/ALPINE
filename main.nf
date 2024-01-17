@@ -509,7 +509,7 @@ process UNZIP_NCBI_METADATA {
 	path zip
 
 	output:
-	path "genbank_metadata.cleaned.tsv.sz"
+	path "genbank_metadata.cleaned.csv.sz"
 
 	script:
 	"""
