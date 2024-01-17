@@ -639,7 +639,7 @@ process VALIDATE_METADATA {
 	qsv sqlp -d "\t" ${metadata} "select * from _t_1" \
 	--low-memory --ignore-errors \
 	--format parquet --compression 'zstd' --compress-level 6 \
-	--output gisaid_metadata.cleaned.parquet
+	--output ${db}_metadata.cleaned.parquet
 	"""
 }
 
