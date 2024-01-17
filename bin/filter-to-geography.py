@@ -93,7 +93,6 @@ def parse_command_line_args() -> Result[argparse.Namespace, str]:
     return Ok(args)
 
 
-@validate_call
 def filter_metadata(
     meta_lf: pl.LazyFrame, filters: FilterParams
 ) -> Result[pl.LazyFrame, str]:

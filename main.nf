@@ -653,7 +653,6 @@ process RECONCILE_COLUMN_NAMES {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
-	storeDir params.storage_root
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
