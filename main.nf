@@ -519,12 +519,12 @@ process UNZIP_NCBI_METADATA {
 	| dataformat tsv virus-genome --force \
 	| qsv replace --delimiter "\t" ',' ';' - \
 	| qsv input \
-		--no-quoting --auto-skip --trim-headers \
-		--trim-fields --encoding-errors skip \
+	--no-quoting --auto-skip --trim-headers \
+	--trim-fields --encoding-errors skip \
 	| qsv luau filter "string.len(col['Geographic location']) > 0" \
 	| qsv luau filter "string.len(col['Isolate Collection date']) >= 10" \
 	| qsv fmt --out-delimiter "\t" \
-		--output genbank_metadata.cleaned.csv.sz
+	--output genbank_metadata.cleaned.csv.sz
 	"""
 
 }
@@ -583,13 +583,13 @@ process NORMALIZE_METADATA {
 	cat ${metadata} \
 	| qsv replace --delimiter "\t" ',' ';' - \
 	| qsv input \
-		--no-quoting --auto-skip --trim-headers \
-		--trim-fields --encoding-errors skip \
+	--no-quoting --auto-skip --trim-headers \
+	--trim-fields --encoding-errors skip \
 	| qsv luau filter "string.len(col['Location']) > 0" \
 	| qsv luau filter "string.len(col['Collection date']) >= 10" \
 	| qsv replace --select 'Virus name' ' ' '_' \
 	| qsv fmt --out-delimiter "\t" \
-		--output gisaid_metadata.cleaned.tsv.sz
+	--output gisaid_metadata.cleaned.tsv.sz
 	"""
 }
 
@@ -630,16 +630,16 @@ process VALIDATE_METADATA {
 
 	# run Still validation
 	qsv snappy decompress \
-		--jobs ${task.cpus} ${metadata} \
-		-o tmp.csv && \
+	--jobs ${task.cpus} ${metadata} \
+	-o tmp.csv && \
 	still validate ${db}.schema tmp.csv
 	rm tmp.csv
 
 	# convert to parquet
 	qsv sqlp -d "\t" ${metadata} "select * from _t_1" \
-		--low-memory --ignore-errors \
-		--format parquet --compression 'zstd' --compress-level 6 \
-		--output gisaid_metadata.cleaned.parquet
+	--low-memory --ignore-errors \
+	--format parquet --compression 'zstd' --compress-level 6 \
+	--output gisaid_metadata.cleaned.parquet
 	"""
 }
 
