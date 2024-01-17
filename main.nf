@@ -524,7 +524,7 @@ process UNZIP_NCBI_METADATA {
 	| qsv luau filter "string.len(col['Geographic location']) > 0" \
 	| qsv luau filter "string.len(col['Isolate Collection date']) >= 10" \
 	| qsv fmt --out-delimiter "\t" \
-		ut genbank_metadata.cleaned.csv.sz
+		--output genbank_metadata.cleaned.csv.sz
 	"""
 
 }
