@@ -95,7 +95,7 @@ def parse_command_line_args() -> Result[argparse.Namespace, str]:
 
 @validate_call
 def filter_metadata(
-    metadata_path: Path, filters: FilterParams
+    meta_lf: pl.LazyFrame, filters: FilterParams
 ) -> Result[pl.LazyFrame, str]:
     """
         Function `filter_metadata` performs filtering with Polars
@@ -111,8 +111,6 @@ def filter_metadata(
     Returns:
         `Result[pl.LazyFrame, str]`
     """
-
-    meta_lf = pl.scan_ipc(metadata_path, memory_map=False)
 
     if "Geographic location" not in meta_lf.columns:
         return Err(
@@ -189,8 +187,20 @@ def main() -> None:
         max_date=args.max_date,
     )
 
+    if ".arrow" in metadata_path:
+        metadata = pl.scan_ipc(metadata_path, memory_map=False)
+    elif ".parquet" in metadata_path:
+        metadata = pl.scan_parquet(metadata_path)
+    elif ".csv" in metadata_path:
+        metadata = pl.scan_csv(metadata_path)
+    elif ".tsv" in metadata_path:
+        metadata = pl.scan_csv(metadata_path, separator="\t")
+    else:
+        print("Could not parse the input metadata file type.")
+        sys.exit("Please only input CSV, TSV, or Apache Arrow/IPC files.")
+
     # filter the metadata
-    lz_attempt = filter_metadata(metadata_path, filters)
+    lz_attempt = filter_metadata(metadata, filters)
     if isinstance(lz_attempt, Err):
         sys.exit(
             f"Metadata filtering failed with the following error:\n{lz_attempt.unwrap_err()}"
