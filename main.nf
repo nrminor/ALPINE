@@ -575,7 +575,7 @@ process NORMALIZE_METADATA {
 	path metadata
 
 	output:
-	path "gisaid_metadata.cleaned.tsv.sz"
+	path "gisaid_metadata.cleaned.csv.sz"
 
 	script:
 	"""
@@ -589,7 +589,7 @@ process NORMALIZE_METADATA {
 	| qsv luau filter "string.len(col['Collection date']) >= 10" \
 	| qsv replace --select 'Virus name' ' ' '_' \
 	| qsv fmt --out-delimiter "\t" \
-	--output gisaid_metadata.cleaned.tsv.sz
+	--output gisaid_metadata.cleaned.csv.sz
 	"""
 }
 
