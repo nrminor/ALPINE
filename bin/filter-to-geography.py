@@ -23,7 +23,6 @@ from pathlib import Path
 from typing import Optional
 
 import polars as pl
-from pydantic import validate_call
 from pydantic.dataclasses import dataclass
 from result import Err, Ok, Result
 
@@ -186,13 +185,14 @@ def main() -> None:
         max_date=args.max_date,
     )
 
-    if ".arrow" in metadata_path:
+    metadata: pl.LazyFrame
+    if ".arrow" in str(metadata_path):
         metadata = pl.scan_ipc(metadata_path, memory_map=False)
-    elif ".parquet" in metadata_path:
+    elif ".parquet" in str(metadata_path):
         metadata = pl.scan_parquet(metadata_path)
-    elif ".csv" in metadata_path:
+    elif ".csv" in str(metadata_path):
         metadata = pl.scan_csv(metadata_path)
-    elif ".tsv" in metadata_path:
+    elif ".tsv" in str(metadata_path):
         metadata = pl.scan_csv(metadata_path, separator="\t")
     else:
         print("Could not parse the input metadata file type.")
