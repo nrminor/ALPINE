@@ -245,8 +245,6 @@ function find_double_candidates(metadata1::DataFrame, metadata2::DataFrame)
 
 end
 
-# use multiple dispatch to collect double candidates based on the 
-# number of available files
 function main(metadata_files::Vector{String}, fasta_files::Vector{String})
 
     num_meta = length(metadata_files)
