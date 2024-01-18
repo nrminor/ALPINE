@@ -19,7 +19,7 @@ function estimate_prevalence(early_stats::DataFrame, late_stats::DataFrame)
 
     # make sure that candidates were found at all before pulling out
     # the final sample size
-    candidate_count = nrow(late_stats) == 0 ? 0 : unique(late_stats.num_seqs)
+    candidate_count = nrow(late_stats) == 0 ? 0 : unique(late_stats.num_seqs)[1]
 
     # pull out the input sample size
     sample_size = unique(early_stats.num_seqs)[1]
