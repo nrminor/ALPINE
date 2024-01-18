@@ -25,7 +25,7 @@ function estimate_prevalence(early_stats::DataFrame, late_stats::DataFrame)
     sample_size = unique(early_stats.num_seqs)[1]
 
     # compute the prevalence estimate
-    prevalence = join((candidate_count / sample_size) * 100, ";")
+    prevalence = join(round((candidate_count / sample_size); digits=5) * 100, ";")
 
     return (prevalence, sample_size)
 
