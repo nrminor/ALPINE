@@ -845,7 +845,7 @@ process FILTER_BY_MASKED_BASES {
 	--fasta ${fasta} \
 	--ambiguity ${params.max_ambiguity} \
 	--reference ${reference} \
-	--out_file "filtered-by-n.fasta.gz"
+	--out-file "filtered-by-n.fasta.gz"
 	"""
 
 }
