@@ -1,4 +1,4 @@
-#!/usr/bin/env -S julia -t auto --sysimage alpine.so
+#!/usr/bin/env -S julia -t auto
 
 # loading necessary packages
 using FastaIO, BioSequences, Distances, StringDistances, Statistics, DataFrames, CSV
