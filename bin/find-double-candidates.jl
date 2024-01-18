@@ -1,6 +1,6 @@
 #!/usr/bin/env -S julia -t auto
 
-using CSV, DataFrames
+using CSV, DataFrames, FastaIO
 
 # load I/O
 const METADATA_FILES::Vector{String} = filter(x->occursin(".tsv",x), readdir(abspath("."), join=true))
