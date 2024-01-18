@@ -205,7 +205,7 @@ workflow {
 	// 		.map { fasta, count -> fasta }
 	// )
 
-	REPORT_HIGHDIST_CANDIDATES (
+	REPORT_HIGH_DIST_CANDIDATES (
 		CLUSTER_BY_IDENTITY.out.cluster_table.collect(),
 		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
 		COMPUTE_DISTANCE_MATRIX.out.collect(),
@@ -213,13 +213,13 @@ workflow {
 	)
 
 	RUN_META_CLUSTER (
-		REPORT_HIGHDIST_CANDIDATES.out.high_dist_seqs
+		REPORT_HIGH_DIST_CANDIDATES.out.high_dist_seqs
 	)
 
 	META_CLUSTER_REPORT (
 		RUN_META_CLUSTER.out.cluster_table,
 		RUN_META_CLUSTER.out.cluster_fastas,
-		REPORT_HIGHDIST_CANDIDATES.out.metadata,
+		REPORT_HIGH_DIST_CANDIDATES.out.metadata,
 		RUN_META_CLUSTER.out.whether_repeats
 	)
 	
@@ -246,9 +246,9 @@ workflow {
 	if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == false ){
 
 		FIND_DOUBLE_CANDIDATES (
-			REPORT_HIGHDIST_CANDIDATES.out.metadata
+			REPORT_HIGH_DIST_CANDIDATES.out.metadata
 				.mix(
-					REPORT_HIGHDIST_CANDIDATES.out.high_dist_seqs,
+					REPORT_HIGH_DIST_CANDIDATES.out.high_dist_seqs,
 					SEARCH_NCBI_METADATA.out.metadata
 				).collect()
 		)
@@ -271,9 +271,9 @@ workflow {
 	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
-			REPORT_HIGHDIST_CANDIDATES.out.metadata
+			REPORT_HIGH_DIST_CANDIDATES.out.metadata
 				.mix(
-					REPORT_HIGHDIST_CANDIDATES.out.high_dist_seqs,
+					REPORT_HIGH_DIST_CANDIDATES.out.high_dist_seqs,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
 						.filter { it[1].toInteger() > 2 }
@@ -299,9 +299,9 @@ workflow {
 	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
 		FIND_DOUBLE_CANDIDATES (
-			REPORT_HIGHDIST_CANDIDATES.out.metadata
+			REPORT_HIGH_DIST_CANDIDATES.out.metadata
 				.mix(
-					REPORT_HIGHDIST_CANDIDATES.out.high_dist_seqs,
+					REPORT_HIGH_DIST_CANDIDATES.out.high_dist_seqs,
 					SEARCH_NCBI_METADATA.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.metadata,
 					FIND_CANDIDATE_LINEAGES_BY_DATE.out.sequences
@@ -1002,7 +1002,7 @@ process MULTIDIMENSIONAL_SCALING {
 
 }
 
-process REPORT_HIGHDIST_CANDIDATES {
+process REPORT_HIGH_DIST_CANDIDATES {
 
 	/*
 	In this process, the clustering results are combined with metadata
