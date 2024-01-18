@@ -41,7 +41,7 @@ define_search_tree <- compiler::cmpfun(function(path) {
   subdirs_to_search <- subdirs[grepl(query_pattern, subdirs)]
   
   if (length(subdirs_to_search) == 0 ) {
-    return(list())
+    return(NA)
   }
   
   search_tree <- list(subdirs[1])
@@ -197,6 +197,8 @@ main <- compiler::cmpfun(function() {
   # dictionary of dictionaries) that will guide downstream steps
   search_tree <- lapply(paths, define_search_tree)
   names(search_tree) <- names(paths)
+  search_tree <- search_tree[!is.na(search_tree)]
+  paths <- paths[names(search_tree)]
 
   # use the search tree to construct dataframes of anachronistic, high-distance,
   # and double candidate results, and then joirn them
