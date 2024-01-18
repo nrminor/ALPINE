@@ -1,6 +1,6 @@
 #!/usr/bin/env -S julia -t auto
 
-using CSV, DataFrames
+using CSV, DataFrames, Pipe
 
 # define input paths from the command line as typed constants
 const STATS_FILE1::String = islink(ARGS[1]) ? readlink(ARGS[1]) : ARGS[1]
@@ -25,7 +25,9 @@ function estimate_prevalence(early_stats::DataFrame, late_stats::DataFrame)
     sample_size = unique(early_stats.num_seqs)[1]
 
     # compute the prevalence estimate
-    prevalence = join(round((candidate_count / sample_size); digits=5) * 100, ";")
+    prevalence = @pipe (candidate_count / sample_size) * 100 |>
+        round(_; digits = 5) |>
+        join(_, ";")
 
     return (prevalence, sample_size)
 
