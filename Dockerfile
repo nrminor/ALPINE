@@ -33,20 +33,19 @@ RUN conda config --add channels conda-forge && \
     libmambapy=1.2.0=py311h2b46443_0 \
     conda-libmamba-solver=23.1.0=pyhd8ed1ab_0
 
-# Install all other dependencies, save for the two R packages below and the julia packages
-COPY ./config/conda_env.yaml /tmp/conda_env.yaml
-RUN mamba env update --file /tmp/conda_env.yaml && \
+# Install Python dependencies
+# conda env export > environment.yml
+# conda list -e > requirements.txt
+COPY ./config/environment.yml /tmp/environment.yml
+RUN mamba env update --file /tmp/environment.yml && \
     mamba clean --all && \
-    rm /tmp/conda_env.yaml
+    rm /tmp/environment.yml
 COPY ./config/requirements.txt /tmp/requirements.txt
 RUN python3 -m pip install -r /tmp/requirements.txt && \
     rm /tmp/requirements.txt
 ENV NXF_HOME=/scratch/.nextflow
 
 # install Rust
-RUN apt-get update && \
-    apt-get install -y curl && \
-    apt-get clean
 RUN mkdir -m777 /opt/rust /opt/.cargo
 ENV RUSTUP_HOME=/opt/rust CARGO_HOME=/opt/.cargo PATH=/opt/.cargo/bin:$PATH
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y && \
@@ -57,13 +56,9 @@ RUN cd /opt && \
     git clone https://github.com/nrminor/ALPINE-core.git && \
     cd ALPINE-core && \
     cargo install --path . \
-    --root /opt/.cargo
-RUN cargo install prqlc \
-    --root /opt/.cargo
-RUN apt-get update && \
-    apt-get install -y clang && \
-    apt-get clean && \
-    cargo install qsv \
+    --root /opt/.cargo && \
+    cargo clean
+RUN cargo install qsv \
     --locked --root /opt/.cargo \
     --features=apply,foreach,polars,to,to_parquet,self_update,feature_capable
 # RUN cargo install nu --features=dataframe --root /opt/.cargo
@@ -72,25 +67,7 @@ RUN apt-get update && \
 RUN Rscript -e "install.packages('cdcfluview', repos = 'https://cloud.r-project.org/', lib='/opt/conda/lib/R/library', clean = TRUE)"
 RUN Rscript -e "devtools::install_github('outbreak-info/R-outbreak-info', lib='/opt/conda/lib/R/library', clean = TRUE)"
 
-# Install Julia
-RUN wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.0-linux-x86_64.tar.gz && \
-    tar -xzf julia-1.9.0-linux-x86_64.tar.gz -C /opt && \
-    ln -s /opt/julia-1.9.0/bin/julia /usr/local/bin/julia && \
-    rm julia-1.9.0-linux-x86_64.tar.gz
-
-# Copy Julia functions to precompile as a module
-ENV JULIA_DEPOT_PATH=/root/.julia
-ENV JULIA_SCRATCH_TRACK_ACCESS=0
-COPY ./Manifest.toml /root/.julia/environments/v1.9/
-COPY ./Project.toml /root/.julia/environments/v1.9/
-RUN julia -e 'using Pkg; \
-            Pkg.activate(joinpath(DEPOT_PATH[1], "environments", "v1.9")); \
-            Pkg.instantiate()'
-
-# Install go and still
-RUN apt-get update && \
-    apt-get install -y golang-go tabix && \
-    apt-get clean
+# Install the still spreadsheet unit-tester
 RUN cd /opt && \
     git clone https://github.com/danielecook/still.git && \
     cd still && \
@@ -103,19 +80,10 @@ ENV PATH=$PATH:/opt/julia-1.9.0/bin:/scratch/.julia/compiled/v1.9
 
 # make sure bin files are executable
 RUN chmod +x /usr/local/bin/* && \
-    chmod +x /opt/julia-1.9.0/bin/* && \
     rm -f /opt/conda/bin/cpp && \
     chmod +x /opt/conda/bin/* && \
     chmod +rw /root/ && \
-    chmod -R +rwx /root/ && \
-    chmod -R +rwx /root/.julia/ && \
-    chmod -R +rw /root/.julia/logs/ && \
-    chmod -R +rwx /root/.julia/logs/* && \
-    chmod -R +rwx /root/.julia/compiled/ && \
-    chmod -R +rwx /root/.julia/compiled/v1.9/* && \
-    chmod -R +rwx /root/.julia/logs/* && \
-    chmod -R +rwx /root/.julia/packages/ && \
-    chmod -R 755 /root/.julia/scratchspaces/
+    chmod -R +rwx /root/
 
 # make sure shells are bash
 CMD ["/bin/bash"]

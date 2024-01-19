@@ -12,6 +12,7 @@ dependencies:
   - abseil-cpp=20211102.0=hd4dd3e8_0
   - amply=0.1.6=py311h06a4308_0
   - appdirs=1.4.4=pyhd3eb1b0_0
+  - archspec=0.2.2=pyhd8ed1ab_0
   - argtable2=2.13=h14c3975_1001
   - arrow-cpp=11.0.0=hda39474_2
   - attrs=23.1.0=py311h06a4308_0
@@ -21,7 +22,6 @@ dependencies:
   - aws-sdk-cpp=1.8.185=hce553d0_0
   - binutils_impl_linux-64=2.38=h2a08ee3_1
   - binutils_linux-64=2.38.0=hc2dff05_0
-  - biopython=1.78=py311h5eee18b_0
   - blas=1.0=openblas
   - blosc=1.21.3=hafa529b_0
   - boltons=23.0.0=py311h06a4308_0
@@ -29,16 +29,15 @@ dependencies:
   - bottleneck=1.3.5=py311hbed6279_0
   - brotli=1.0.9=h5eee18b_7
   - brotli-bin=1.0.9=h5eee18b_7
+  - brotli-python=1.0.9=py311h6a678d5_7
   - brotlipy=0.7.0=py311h5eee18b_1002
   - bwidget=1.9.14=ha770c72_1
   - bzip2=1.0.8=h7b6447c_0
   - c-ares=1.19.0=h5eee18b_0
   - ca-certificates=2023.08.22=h06a4308_0
   - cairo=1.16.0=hb05425b_5
-  - certifi=2023.7.22=pyhd8ed1ab_0
   - cffi=1.15.1=py311h5eee18b_3
   - cfitsio=3.470=hb418390_7
-  - charset-normalizer=2.0.4=pyhd3eb1b0_0
   - clustalo=1.2.4=hdbdd923_7
   - coin-or-cbc=2.10.10=hd28fd6d_0
   - coin-or-cgl=0.60.5=h3cb4718_0
@@ -46,6 +45,7 @@ dependencies:
   - coin-or-osi=0.108.7=h3cb4718_0
   - coin-or-utils=2.11.6=h4e0f3ec_0
   - coincbc=2.10.10=0_metapackage
+  - colorama=0.4.6=pyhd8ed1ab_0
   - conda=23.1.0=py311h38be061_0
   - conda-content-trust=0.1.3=py311h06a4308_0
   - conda-libmamba-solver=23.1.0=pyhd8ed1ab_0
@@ -56,13 +56,14 @@ dependencies:
   - contourpy=1.0.5=py311hdb19cb5_0
   - coreutils=8.32=h7b6447c_0
   - cryptography=39.0.0=py311h211fabd_0
-  - csvtk
+  - csvtk=0.29.0=h9ee0642_0
   - curl=7.88.1=h37d81fd_2
   - cycler=0.11.0=pyhd3eb1b0_0
   - cyrus-sasl=2.1.27=h957375c_6
   - datrie=0.8.2=py311h5eee18b_0
   - dbus=1.13.18=hb2f20db_0
   - dendropy=4.6.1=pyhdfd78af_0
+  - distro=1.9.0=pyhd8ed1ab_0
   - docutils=0.18.1=py311h06a4308_3
   - dpath=2.1.6=pyha770c72_0
   - expat=2.5.0=h6a678d5_0
@@ -96,7 +97,6 @@ dependencies:
   - hdf5=1.10.6=nompi_h6a2412b_1114
   - humanfriendly=10.0=py311h06a4308_1
   - icu=58.2=he6710b0_3
-  - idna=3.4=py311h06a4308_0
   - importlib-metadata=6.8.0=pyha770c72_0
   - iqtree=1.6.12=he513fc3_1
   - jinja2=3.1.2=py311h06a4308_0
@@ -176,6 +176,7 @@ dependencies:
   - markupsafe=2.1.1=py311h5eee18b_0
   - matplotlib=3.7.2=py311h06a4308_0
   - matplotlib-base=3.7.2=py311ha02d727_0
+  - menuinst=2.0.2=py311h38be061_0
   - munkres=1.1.4=py_0
   - mysql=5.7.20=hf484d3e_1001
   - nbformat=5.9.2=py311h06a4308_0
@@ -185,14 +186,10 @@ dependencies:
   - nspr=4.35=h6a678d5_0
   - nss=3.89.1=h6a678d5_0
   - numexpr=2.8.7=py311h812550d_0
-  - numpy=1.26.0=py311h24aa872_0
-  - numpy-base=1.26.0=py311hbfb1bba_0
   - openjdk=11.0.13=h87a67e3_0
   - openjpeg=2.4.0=h3ad879b_0
   - openssl=1.1.1w=hd590300_0
   - orc=1.7.4=hb3bc3d3_1
-  - packaging=23.0=py311h06a4308_0
-  - pandas=2.0.3=py311ha02d727_0
   - pandoc=3.1.3=h32600fe_0
   - pango=1.50.7=h05da053_0
   - pangolin=1.1.5=py_0
@@ -202,17 +199,14 @@ dependencies:
   - pip=23.1.2=py311h06a4308_0
   - pixman=0.42.2=h59595ed_0
   - plac=1.3.4=pyhd3eb1b0_0
-  - platformdirs=3.10.0=py311h06a4308_0
   - pluggy=1.0.0=py311h06a4308_1
   - ply=3.11=py311h06a4308_0
-  - polars=0.19.8=py311hf926cbc_0
   - poppler=22.12.0=h381b16e_0
   - poppler-data=0.4.12=hd8ed1ab_0
   - postgresql=12.15=h16c4e8d_1
   - proj=6.2.1=hc80f0dc_0
   - psutil=5.9.0=py311h5eee18b_0
   - pulp=2.7.0=py311h38be061_1
-  - pyarrow=11.0.0=py311hd8e8d9b_1
   - pybind11-abi=4=hd3eb1b0_1
   - pycosat=0.6.4=py311h5eee18b_0
   - pycparser=2.21=pyhd3eb1b0_0
@@ -225,7 +219,6 @@ dependencies:
   - python=3.11.5=h7a1cb2a_0
   - python-dateutil=2.8.2=pyhd3eb1b0_0
   - python-fastjsonschema=2.16.2=py311h06a4308_0
-  - python-tzdata=2023.3=pyhd3eb1b0_0
   - python_abi=3.11=2_cp311
   - pytools=2023.1.1=pyhd8ed1ab_0
   - pytz=2023.3.post1=py311h06a4308_0
@@ -401,9 +394,9 @@ dependencies:
   - readline=8.2=h5eee18b_0
   - reproc=14.2.4=h295c915_1
   - reproc-cpp=14.2.4=h295c915_1
-  - requests=2.29.0=py311h06a4308_0
   - reretry=0.11.8=pyhd8ed1ab_0
   - ruamel.yaml=0.17.21=py311h5eee18b_0
+  - ruamel.yaml.clib=0.2.7=py311h459d7ec_2
   - seaborn=0.12.2=py311h06a4308_0
   - seqkit=2.5.1=h9ee0642_0
   - setuptools=67.8.0=py311h06a4308_0
@@ -425,13 +418,10 @@ dependencies:
   - toolz=0.12.0=py311h06a4308_0
   - toposort=1.10=pyhd8ed1ab_0
   - tornado=6.3.3=py311h5eee18b_0
-  - tqdm=4.65.0=py311h92b7b1e_0
   - traitlets=5.7.1=py311h06a4308_0
-  - typing_extensions=4.7.1=py311h06a4308_0
-  - tzdata=2023c=h04d1e81_0
+  - truststore=0.8.0=pyhd8ed1ab_0
   - udunits2=2.2.28=h40f5838_3
   - uriparser=0.9.7=hcb278e6_1
-  - urllib3=1.26.16=py311h06a4308_0
   - utf8proc=2.6.1=h27cfd23_0
   - vsearch=2.23.0=h6a68c12_0
   - wheel=0.38.4=py311h06a4308_0
@@ -446,5 +436,30 @@ dependencies:
   - zstandard=0.19.0=py311h5eee18b_0
   - zstd=1.5.5=hc292b87_0
   - pip:
+      - annotated-types==0.6.0
+      - bio==1.6.2
+      - biopython==1.82
+      - biothings-client==0.3.1
+      - certifi==2023.11.17
+      - charset-normalizer==3.3.2
+      - gprofiler-official==1.0.0
+      - idna==3.6
       - lineages==2020-04-27
+      - loguru==0.7.2
+      - mygene==3.2.2
+      - numpy==1.26.3
+      - packaging==23.2
+      - pandas==2.1.4
+      - platformdirs==4.1.0
+      - polars==0.20.3
+      - pooch==1.8.0
+      - pyarrow==14.0.2
+      - pydantic==2.5.3
+      - pydantic-core==2.14.6
+      - requests==2.31.0
+      - result==0.16.0
+      - tqdm==4.66.1
+      - typing-extensions==4.9.0
+      - tzdata==2023.4
+      - urllib3==2.1.0
 prefix: /opt/conda
