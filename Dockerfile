@@ -76,14 +76,6 @@ ENV PATH=$PATH:/opt/still
 
 # Make sure nothing is amiss and that everything is still in the path
 ENV NXF_HOME=/scratch/.nextflow
-ENV PATH=$PATH:/opt/julia-1.9.0/bin:/scratch/.julia/compiled/v1.9
-
-# make sure bin files are executable
-RUN chmod +x /usr/local/bin/* && \
-    rm -f /opt/conda/bin/cpp && \
-    chmod +x /opt/conda/bin/* && \
-    chmod +rw /root/ && \
-    chmod -R +rwx /root/
 
 # make sure shells are bash
 CMD ["/bin/bash"]
