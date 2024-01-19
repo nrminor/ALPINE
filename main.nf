@@ -1277,7 +1277,7 @@ process FIND_DOUBLE_CANDIDATES {
 
 	script:
 	"""
-	find-double-candidates.jl
+	find-double-candidates.py
 	"""
 
 }
