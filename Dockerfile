@@ -40,9 +40,9 @@ COPY ./config/environment.yml /tmp/environment.yml
 RUN mamba env update --file /tmp/environment.yml && \
     mamba clean --all && \
     rm /tmp/environment.yml
-COPY ./config/requirements.txt /tmp/requirements.txt
-RUN python3 -m pip install -r /tmp/requirements.txt && \
-    rm /tmp/requirements.txt
+# COPY ./config/requirements.txt /tmp/requirements.txt
+# RUN python3 -m pip install -r /tmp/requirements.txt && \
+#     rm /tmp/requirements.txt
 ENV NXF_HOME=/scratch/.nextflow
 
 # install Rust
