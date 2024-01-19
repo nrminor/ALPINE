@@ -1338,7 +1338,9 @@ process COMPUTE_PREVALENCE_ESTIMATE {
 
 	script:
 	"""
-	estimate-prevalence.jl ${early_stats} ${late_stats}
+	estimate-prevalence.py \
+	--early_stats ${early_stats} \
+	--late_stats ${late_stats}
 	"""
 
 }
