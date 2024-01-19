@@ -16,8 +16,8 @@ compressed Arrow IPC format, will have the same benefits
 for future scripts.
 """
 
-import sys
 import argparse
+import sys
 
 import polars
 

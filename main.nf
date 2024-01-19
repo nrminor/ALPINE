@@ -927,9 +927,9 @@ process COMPUTE_DISTANCE_MATRIX {
 
 	/*
 	In parallel to clustering each month's sequences by nucleotide 
-	identity, the workflow will also compute a simple nucleotide
-	distance matrix, which will be used to assign distances for each
-	sequence in each month.
+	identity, the workflow will also compute a cluster-size-weighted 
+	nucleotide distance matrix, which will be used to assign distances 
+	for each sequence in each month.
 	*/
 
 	tag "${yearmonth}"
@@ -958,7 +958,12 @@ process COMPUTE_DISTANCE_MATRIX {
 	script:
 	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
 	"""
-	compute-distance-matrix.jl ${fasta} ${cluster_table} ${yearmonth} ${params.strictness_mode}
+	alpine distance-matrix \
+	--fasta ${fasta} \
+	--cluster-table ${cluster_table} \
+	--yearmonth "${yearmonth}" \
+	--stringency "${params.strictness_mode}" \
+	--distance-method "${params.distance_method}"
 	"""
 
 }
