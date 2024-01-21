@@ -5,14 +5,15 @@ USE PRE-ASSIGNED PANGO LINEAGES FROM NCBI METADATA TO IDENTIFY ANACHRONISTICS
 -----------------------------------------------------------------------------
 
 At each new release of the Pangolin tool, NCBI updates the pango lineage calls
-associated with all SARS-CoV-2 sequences. This script uses these sequences, 
+associated with all SARS-CoV-2 sequences. This script uses these sequences,
 along with a file reporting when each lineage was designated in Pangolin, to
 identify lineages that are collected long after a lineage was prevalent. This
 is the fastest branch of the advanced-virus-finder workflow, as it does not
-involve running Pangolin or clustering. 
+involve running Pangolin or clustering.
 """
 
 # make necessary modules available
+import sys
 import argparse
 import multiprocessing
 from typing import Optional
@@ -20,6 +21,7 @@ from typing import Optional
 import numpy
 import pandas
 import pyarrow
+from loguru import logger
 
 
 def parse_command_line_args():
@@ -37,7 +39,7 @@ def parse_command_line_args():
     return args.metadata_path, args.dates_path, args.infection_cutoff, args.cores
 
 
-# Defining functions for multiprocessing
+@logger.catch
 def add_designation_date(
     lineage: str, dates: pandas.DataFrame
 ) -> Optional[numpy.datetime64]:
@@ -59,9 +61,7 @@ def add_designation_date(
     return date_values[0] if date_values.size > 0 else None
 
 
-# end add_designation_date()
-
-
+@logger.catch
 def add_infection_duration(
     i: int, ncbi_dates: list, desig_dates: list
 ) -> Optional[int]:
@@ -84,9 +84,6 @@ def add_infection_duration(
     return anachronicity
 
 
-# end add_infection_duration()
-
-
 # define main function
 def main():
     """
@@ -102,6 +99,8 @@ def main():
     Returns:
     None
     """
+
+    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # parse command line arguments
     metadata_path, dates_path, infection_cutoff, cores = parse_command_line_args()

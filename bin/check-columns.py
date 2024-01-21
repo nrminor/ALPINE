@@ -5,8 +5,8 @@ FINESSE COLUMN NAMES AND CONVERT TO APACHE ARROW IPC
 ---------------------------------------------------
 
 In the advanced finder pipeline, this script is run as soon
-as a) the metadata is supplied by the user, or b) the 
-decompressed metadata is extracted from the NCBI datasets 
+as a) the metadata is supplied by the user, or b) the
+decompressed metadata is extracted from the NCBI datasets
 download. When run, the script double-checks typing for all
 columns but especially for collection date, which is crucial
 to parse at multiple junctures downstream. Is uses the Polars
@@ -20,6 +20,7 @@ import argparse
 import sys
 
 import polars
+from loguru import logger
 
 
 def parse_command_line_args():
@@ -48,17 +49,23 @@ def main():
     None
     """
 
+    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
+
     # parse command line arguments
     metadata_path = parse_command_line_args()
 
     # Scan the metadata into a LazyFrame
     if ".arrow" in metadata_path:
+        logger.debug("Arrow-formatted metadata detected.")
         metadata = polars.scan_ipc(metadata_path)
     elif ".parquet" in metadata_path:
+        logger.debug("Parquet-formatted metadata detected.")
         metadata = polars.scan_parquet(metadata_path)
     elif ".csv" in metadata_path:
+        logger.debug("CSV-formatted metadata detected.")
         metadata = polars.scan_csv(metadata_path)
     elif ".tsv" in metadata_path:
+        logger.debug("TSV-formatted metadata detected.")
         metadata = polars.scan_csv(metadata_path, separator="\t")
     else:
         print("Could not parse the input metadata file type.")
@@ -66,6 +73,7 @@ def main():
 
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
+        logger.debug("GISAID metadata detected.")
         # double check that the expected column names are present
         assert "Virus name" in metadata.columns
         assert "Accession ID" in metadata.columns
@@ -95,6 +103,9 @@ def main():
         .str.strptime(polars.Date, format="%Y-%m-%d", strict=False)
         .alias("Isolate Collection date")
     ).filter(polars.col("Isolate Collection date").is_not_null())
+
+    logger.debug("Dates successfully formatted.")
+    logger.debug("Now exporting as ZStandard-compressed Apache Arrow IPC file.")
 
     # evaluate and sink into compressed Arrow file in batches
     metadata.sink_ipc("validated.arrow", compression="zstd")

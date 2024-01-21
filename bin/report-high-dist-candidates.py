@@ -4,8 +4,8 @@
 REPORT EVOLUTIONARILY ADVANCED SEQUENCES FOR ADDITIONAL SCRUTINY
 ----------------------------------------------------------------
 
-This script collates a large number of clustering, genetic distance, 
-and sequence files to identify sequences that are suitable for 
+This script collates a large number of clustering, genetic distance,
+and sequence files to identify sequences that are suitable for
 additional review. To do so efficiently, it uses the Polars
 library to represent data frames and strictly separates file
 reading and writing from CPU-intensive computations. See function
@@ -18,11 +18,13 @@ docstrings below for more granular explanations.
 import argparse
 import os
 import subprocess
+import sys
 
 import matplotlib.pyplot as pyplot
 import numpy
 import polars
 import seaborn
+from loguru import logger
 from polars.testing import assert_frame_equal
 
 
@@ -62,6 +64,7 @@ def parse_command_line_args():
     return args.metadata, args.sequences, args.stringency, args.workingdir
 
 
+@logger.catch
 def quantify_stringency(stringency: str) -> int:
     """
     Define strictness level as a quantile.
@@ -86,9 +89,14 @@ def quantify_stringency(stringency: str) -> int:
     else:
         strict_quant = 995
 
+    logger.debug(
+        "Stringency of {stringency} quantified to the {strict_quant}th quantile."
+    )
+
     return strict_quant
 
 
+@logger.catch
 def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> None:
     """
     This function uses Matplotlib and Seaborn to visualize the distribution
@@ -140,6 +148,7 @@ def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> N
     pyplot.savefig("distance_score_distribution.pdf")
 
 
+@logger.catch
 def read_metadata_files(
     metadata_filename: str, yearmonths: list, workingdir: str
 ) -> tuple[polars.DataFrame, polars.DataFrame, polars.DataFrame]:
@@ -234,9 +243,7 @@ def read_metadata_files(
     return (metadata, dist_scores, cluster_meta)
 
 
-# end read_metadata_files def
-
-
+@logger.catch
 def collate_metadata(
     metadata: polars.DataFrame,
     dist_scores: polars.DataFrame,
@@ -323,6 +330,7 @@ def collate_metadata(
     try:
         visualize_distance_scores(high_dist_meta, retention_threshold)
     except Exception as e:
+        logger.debug("Plotting the distance score distribution failed: {e}")
         print(f"Plotting the distance score distribution failed: {e}")
     high_dist_meta = high_dist_meta.filter(
         polars.col("Distance Score") >= retention_threshold
@@ -334,9 +342,7 @@ def collate_metadata(
     return high_dist_meta, accessions
 
 
-# end collate_metadata def
-
-
+@logger.catch
 def main():
     """
     Main function. Main ties together all the above functions if
@@ -345,6 +351,8 @@ def main():
     (Seqkit, written in Go, is much faster at filtering large
     numbers of FASTA records than Python).
     """
+
+    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # retrieve file paths and settings from keyword command line arguments
     metadata_name, fasta_path, stringency, workingdir = parse_command_line_args()

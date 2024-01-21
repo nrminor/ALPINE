@@ -16,8 +16,10 @@ from typing import List, Set, Tuple
 
 import polars as pl
 from Bio import SeqIO
+from loguru import logger
 
 
+@logger.catch
 async def list_metadata_files() -> Tuple[str, ...]:
     """
     List the available TSV files in the current working directory. This
@@ -28,6 +30,7 @@ async def list_metadata_files() -> Tuple[str, ...]:
     return tuple(glob.glob("./*.tsv"))
 
 
+@logger.catch
 async def list_fasta_files() -> Tuple[str, ...]:
     """
     List the available FASTA files in the current working directory. This
@@ -39,6 +42,7 @@ async def list_fasta_files() -> Tuple[str, ...]:
     return tuple(glob.glob("./*.fasta"))
 
 
+@logger.catch
 async def sort_meta_files(meta_files: Tuple[str, ...]) -> List[str]:
     """
     Sort the metadata files by size and keep the two largest. This provides
@@ -50,6 +54,7 @@ async def sort_meta_files(meta_files: Tuple[str, ...]) -> List[str]:
     return sorted(meta_files, key=os.path.getsize, reverse=True)[0:1]
 
 
+@logger.catch
 async def sort_fasta_files(fasta_files: Tuple[str, ...]) -> List[str]:
     """
     Sort the sequence files by size and keep the two largest. This provides
@@ -64,6 +69,7 @@ async def sort_fasta_files(fasta_files: Tuple[str, ...]) -> List[str]:
     return sorted(fasta_files, key=os.path.getsize, reverse=True)
 
 
+@logger.catch
 async def read_metadata(sorted_meta: List[str]) -> Tuple[pl.LazyFrame, pl.LazyFrame]:
     """
     Asynchronously read metadata files.
@@ -75,6 +81,7 @@ async def read_metadata(sorted_meta: List[str]) -> Tuple[pl.LazyFrame, pl.LazyFr
     return left_meta, right_meta
 
 
+@logger.catch
 async def overlap_metadata(
     left_meta: pl.LazyFrame, right_meta: pl.LazyFrame
 ) -> pl.LazyFrame:
@@ -137,11 +144,13 @@ async def overlap_metadata(
         "Anachronicity (days)" not in right_meta
         and "infection_duration" not in right_meta
     ):
+        logger.debug("No columns to allow reconciling two datasets found.")
         return double_candidates
 
     return double_candidates
 
 
+@logger.catch
 async def get_common_accessions(double_candidates: pl.LazyFrame) -> Set[str]:
     """
     Execute a Polars query to extract a unique set of double candidate
@@ -152,6 +161,7 @@ async def get_common_accessions(double_candidates: pl.LazyFrame) -> Set[str]:
     return set(double_candidates.select("Accession").collect().to_series().to_list())
 
 
+@logger.catch
 async def filter_fasta(candidate_set: Set[str], fasta_path: str) -> None:
     """
     Filter FASTA records so that the output FASTA only contains accessions
@@ -189,6 +199,8 @@ async def main() -> None:
     Main manages the asynchronous runtime that flows data through
     the above defined functions.
     """
+
+    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # retrieve available filenames
     meta_files = await list_metadata_files()

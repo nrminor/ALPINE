@@ -4,7 +4,7 @@
 REPORT REPEAT LINEAGE SEQUENCES AND METADATA
 --------------------------------------------
 
-Accessions flagged in this script clustered together in the 
+Accessions flagged in this script clustered together in the
 so-called "meta-clustering", where high-distance sequences
 were run through vsearch --cluster_fast with an even tighter
 identity threshold, 99.99%. Sequences that cluster together
@@ -14,9 +14,11 @@ are possible.
 """
 
 import argparse
+import sys
 
 import Bio.SeqIO
 import pandas as pd
+from loguru import logger
 
 
 def parse_command_line_args():
@@ -30,6 +32,7 @@ def parse_command_line_args():
     return args.cluster_table_path, args.metadata_path
 
 
+@logger.catch
 def main():
     """
     This function reads in a cluster table and metadata file,
@@ -43,6 +46,8 @@ def main():
     Returns:
     None
     """
+
+    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # parse command line arguments
     cluster_table_path, metadata_path = parse_command_line_args()
@@ -58,8 +63,11 @@ def main():
     # Check that each accession is only present in one cluster
     assert cluster_df[8].nunique() == len(cluster_df)
 
+    logger.debug("All clusters confirmed to be unique.")
+
     # Compile FASTA sequences for each cluster
     for cluster in set(cluster_df[1].tolist()):
+        logger.debug("Assessing repeat lineages in cluster {cluster}")
         fasta_seq = list(Bio.SeqIO.parse(f"meta-cluster-seqs{cluster}", "fasta"))
         with open(f"repeat-lineage-{cluster}.fasta", "w", encoding="utf-8") as outfile:
             Bio.SeqIO.write(fasta_seq, outfile, "fasta")
@@ -83,8 +91,6 @@ def main():
         "repeat-lineage-metadata.tsv", na_rep="", index=False, sep="\t"
     )
 
-
-# end def main
 
 if __name__ == "__main__":
     main()

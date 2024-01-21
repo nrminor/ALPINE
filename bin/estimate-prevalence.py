@@ -17,10 +17,12 @@ options:
 """
 
 import argparse
+import sys
 from typing import Tuple
 
 import numpy as np
 import polars as pl
+from loguru import logger
 
 
 def parse_command_line_args() -> Tuple[str, str]:
@@ -59,6 +61,7 @@ def _round_prevalence(prevalence):
     return np.round(prevalence, 5)
 
 
+@logger.catch
 def estimate_prevalence(
     early_stats: pl.LazyFrame, late_stats: pl.LazyFrame
 ) -> Tuple[float, int]:
@@ -93,6 +96,10 @@ def estimate_prevalence(
         (candidate_count, sample_size), _calculate_prevalence, _round_prevalence
     )
 
+    logger.debug(
+        "{candidate_count} candidates found among {sample_size} input sequences for a prevalence of {prevalence}%."
+    )
+
     return (prevalence, sample_size)
 
 
@@ -100,6 +107,8 @@ def main() -> None:
     """
     Main controls dataflow.
     """
+
+    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     early_file, late_file = parse_command_line_args()
 

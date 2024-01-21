@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Optional
 
 import polars as pl
+from loguru import logger
 from pydantic.dataclasses import dataclass
 from result import Err, Ok, Result
 
@@ -92,6 +93,7 @@ def parse_command_line_args() -> Result[argparse.Namespace, str]:
     return Ok(args)
 
 
+@logger.catch
 def filter_metadata(
     meta_lf: pl.LazyFrame, filters: FilterParams
 ) -> Result[pl.LazyFrame, str]:
@@ -120,12 +122,16 @@ def filter_metadata(
         )
 
     if filters.min_date is None:
+        logger.debug("No minimum date provided.")
         return Ok(
             meta_lf.filter(
                 pl.col("Geographic location").str.contains(filters.geography)
             ).filter(pl.col("Isolate Collection date") <= pl.lit(filters.max_date))
         )
 
+    logger.debug(
+        "Filtering to {filters.geography} between {filters.min_date} and {filters.max_date}."
+    )
     return Ok(
         meta_lf.filter(pl.col("Geographic location").str.contains(filters.geography))
         .filter(pl.col("Isolate Collection date") >= pl.lit(filters.min_date))
@@ -133,6 +139,7 @@ def filter_metadata(
     )
 
 
+@logger.catch
 def write_out_accessions() -> Result[None, str]:
     """
         If the above functions complete successfully, the
@@ -171,6 +178,8 @@ def main() -> None:
     """
     Function `main()` controls the flow of data through the above functions.
     """
+
+    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # parse desired filters out of command line arguments
     args_attempt = parse_command_line_args()
