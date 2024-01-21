@@ -96,7 +96,7 @@ def quantify_stringency(stringency: str) -> int:
     return strict_quant
 
 
-@logger.catch
+@logger.opt(lazy=True).catch
 def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> None:
     """
     This function uses Matplotlib and Seaborn to visualize the distribution
@@ -148,7 +148,7 @@ def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> N
     pyplot.savefig("distance_score_distribution.pdf")
 
 
-@logger.catch
+@logger.opt(lazy=True).catch
 def read_metadata_files(
     metadata_filename: str, yearmonths: list, workingdir: str
 ) -> tuple[polars.DataFrame, polars.DataFrame, polars.DataFrame]:
@@ -243,7 +243,7 @@ def read_metadata_files(
     return (metadata, dist_scores, cluster_meta)
 
 
-@logger.catch
+@logger.opt(lazy=True).catch
 def collate_metadata(
     metadata: polars.DataFrame,
     dist_scores: polars.DataFrame,
@@ -342,7 +342,7 @@ def collate_metadata(
     return high_dist_meta, accessions
 
 
-@logger.catch
+@logger.opt(lazy=True).catch
 def main():
     """
     Main function. Main ties together all the above functions if

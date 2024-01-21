@@ -56,16 +56,16 @@ def main():
 
     # Scan the metadata into a LazyFrame
     if ".arrow" in metadata_path:
-        logger.debug("Arrow-formatted metadata detected.")
+        logger.opt(lazy=True).debug("Arrow-formatted metadata detected.")
         metadata = polars.scan_ipc(metadata_path)
     elif ".parquet" in metadata_path:
-        logger.debug("Parquet-formatted metadata detected.")
+        logger.opt(lazy=True).debug("Parquet-formatted metadata detected.")
         metadata = polars.scan_parquet(metadata_path)
     elif ".csv" in metadata_path:
-        logger.debug("CSV-formatted metadata detected.")
+        logger.opt(lazy=True).debug("CSV-formatted metadata detected.")
         metadata = polars.scan_csv(metadata_path)
     elif ".tsv" in metadata_path:
-        logger.debug("TSV-formatted metadata detected.")
+        logger.opt(lazy=True).debug("TSV-formatted metadata detected.")
         metadata = polars.scan_csv(metadata_path, separator="\t")
     else:
         print("Could not parse the input metadata file type.")
@@ -73,7 +73,7 @@ def main():
 
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
-        logger.debug("GISAID metadata detected.")
+        logger.opt(lazy=True).debug("GISAID metadata detected.")
         # double check that the expected column names are present
         assert "Virus name" in metadata.columns
         assert "Accession ID" in metadata.columns
@@ -104,8 +104,10 @@ def main():
         .alias("Isolate Collection date")
     ).filter(polars.col("Isolate Collection date").is_not_null())
 
-    logger.debug("Dates successfully formatted.")
-    logger.debug("Now exporting as ZStandard-compressed Apache Arrow IPC file.")
+    logger.opt(lazy=True).debug("Dates successfully formatted.")
+    logger.opt(lazy=True).debug(
+        "Now exporting as ZStandard-compressed Apache Arrow IPC file."
+    )
 
     # evaluate and sink into compressed Arrow file in batches
     metadata.sink_ipc("validated.arrow", compression="zstd")

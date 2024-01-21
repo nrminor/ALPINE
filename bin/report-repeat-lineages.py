@@ -32,7 +32,7 @@ def parse_command_line_args():
     return args.cluster_table_path, args.metadata_path
 
 
-@logger.catch
+@logger.opt(lazy=True).catch
 def main():
     """
     This function reads in a cluster table and metadata file,

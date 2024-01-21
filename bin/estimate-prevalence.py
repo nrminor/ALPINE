@@ -61,7 +61,7 @@ def _round_prevalence(prevalence):
     return np.round(prevalence, 5)
 
 
-@logger.catch
+@logger.opt(lazy=True).catch
 def estimate_prevalence(
     early_stats: pl.LazyFrame, late_stats: pl.LazyFrame
 ) -> Tuple[float, int]:

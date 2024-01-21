@@ -161,7 +161,7 @@ async def get_common_accessions(double_candidates: pl.LazyFrame) -> Set[str]:
     return set(double_candidates.select("Accession").collect().to_series().to_list())
 
 
-@logger.catch
+@logger.opt(lazy=True).catch
 async def filter_fasta(candidate_set: Set[str], fasta_path: str) -> None:
     """
     Filter FASTA records so that the output FASTA only contains accessions
