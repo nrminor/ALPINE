@@ -18,23 +18,47 @@ for future scripts.
 
 import argparse
 import asyncio
+import inspect
 import sys
-from enum import Enum, auto
+from enum import Enum
 from pathlib import Path
 
 import polars as pl
 from loguru import logger
+from pydantic import validate_call
+from result import Err, Ok, Result
 
 
 class FileType(Enum):
-    ARROW = auto()
-    PARQUET = auto()
-    CSV = auto()
-    TSV = auto()
-    UNKNOWN = auto()
+    """
+    `FileType` is a sum type/enum containing the file formats
+    supported by the script. If the provided file name contains
+    a supported extension, the data will be lazily loaded.
+    """
+
+    ARROW = (".arrow", pl.scan_ipc)
+    PARQUET = (".parquet", pl.scan_parquet)
+    CSV = (".csv", pl.scan_csv)
+    TSV = (".tsv", lambda path: pl.scan_csv(path, separator="\t"))
+
+    def __init__(self, file_extension, load_function):
+        self.file_extension = file_extension
+        self.load_function = load_function
+
+    @staticmethod
+    def determine_file_type(metadata_path: str):
+        """
+        This static method returns the file-type variant that
+        matches the provided metadata file.
+        """
+        for file_type in FileType:
+            if file_type.file_extension in metadata_path:
+                return file_type
+        return None
 
 
-def parse_command_line_args():
+@validate_call
+def parse_command_line_args() -> Path:
     """parse command line arguments"""
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -44,43 +68,29 @@ def parse_command_line_args():
     return args.metadata_path
 
 
-async def _determine_file_type(metadata_path: Path) -> FileType:
+@logger.catch
+async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
+    """
+    Read metadata handles reading the metadata based on its file
+    extension, alongside any errors.
+    """
     path_str = str(metadata_path)
 
-    if ".arrow" in path_str:
-        return FileType.ARROW
-    elif ".parquet" in path_str:
-        return FileType.PARQUET
-    elif ".csv" in path_str:
-        return FileType.CSV
-    elif ".tsv" in path_str:
-        return FileType.TSV
+    # Determine the file type
+    file_type = FileType.determine_file_type(path_str)
 
-    return FileType.UNKNOWN
+    if file_type:
+        logger.opt(lazy=True).debug(f"{file_type.name}-formatted metadata detected.")
+        return Ok(file_type.load_function(metadata_path))
 
-
-@logger.catch
-async def _read_metadata(metadata_path: Path) -> pl.LazyFrame:
-    filetype = await _determine_file_type(metadata_path)
-
-    # Scan the metadata into a LazyFrame
-    if filetype == FileType.ARROW:
-        logger.opt(lazy=True).debug("Arrow-formatted metadata detected.")
-        metadata = pl.scan_ipc(metadata_path)
-    elif filetype == FileType.PARQUET:
-        logger.opt(lazy=True).debug("Parquet-formatted metadata detected.")
-        metadata = pl.scan_parquet(metadata_path)
-    elif filetype == FileType.CSV:
-        logger.opt(lazy=True).debug("CSV-formatted metadata detected.")
-        metadata = pl.scan_csv(metadata_path)
-    elif filetype == FileType.TSV:
-        logger.opt(lazy=True).debug("TSV-formatted metadata detected.")
-        metadata = pl.scan_csv(metadata_path, separator="\t")
-    else:
-        print("Could not parse the input metadata file type.")
-        sys.exit("Please only input CSV, TSV, or Apache Arrow/IPC files.")
-
-    return metadata
+    return Err(
+        inspect.cleandoc(
+            """
+        Could not parse the input metadata file type. Please double check
+        that input is CSV, TSV, or Apache Arrow/IPC files.
+        """
+        )
+    )
 
 
 @logger.opt(lazy=True).catch
@@ -150,15 +160,19 @@ async def main():
     None
     """
 
+    # set up logger
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # parse command line arguments
     metadata_path = parse_command_line_args()
 
-    # Scan the metadata into a LazyFrame
-    metadata = await _read_metadata(metadata_path)
+    # Scan the metadata into a LazyFrame and return any errors
+    metadata_attempt = await read_metadata(metadata_path)
+    if isinstance(metadata_attempt, Err):
+        sys.exit(metadata_attempt.unwrap_err())
 
-    new_cols_lf = await reconcile_columns(metadata)
+    # perform column renaming
+    new_cols_lf = await reconcile_columns(metadata_attempt.unwrap())
 
     # evaluate and sink into compressed Arrow file in batches
     new_cols_lf.sink_ipc("validated.arrow", compression="zstd")

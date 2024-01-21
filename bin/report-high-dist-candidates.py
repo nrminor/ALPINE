@@ -16,20 +16,23 @@ docstrings below for more granular explanations.
 
 # bring in the modules used in this namespace
 import argparse
+import asyncio
 import os
 import subprocess
 import sys
+from typing import Tuple
 
 import matplotlib.pyplot as pyplot
 import numpy
-import polars
+import polars as pl
 import seaborn
 from loguru import logger
-from polars.testing import assert_frame_equal
+from pl.testing import assert_frame_equal
+from pydantic import validate_call
 
 
-# define functions:
-def parse_command_line_args():
+@validate_call
+def parse_command_line_args() -> Tuple[str, str, str, str]:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -65,7 +68,8 @@ def parse_command_line_args():
 
 
 @logger.catch
-def quantify_stringency(stringency: str) -> int:
+@validate_call
+async def quantify_stringency(stringency: str) -> int:
     """
     Define strictness level as a quantile.
 
@@ -97,7 +101,7 @@ def quantify_stringency(stringency: str) -> int:
 
 
 @logger.opt(lazy=True).catch
-def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> None:
+async def visualize_distance_scores(metadata: pl.DataFrame, threshold: float) -> None:
     """
     This function uses Matplotlib and Seaborn to visualize the distribution
     of distance scores in the provided metadata. It also plots the retention
@@ -149,9 +153,10 @@ def visualize_distance_scores(metadata: polars.DataFrame, threshold: float) -> N
 
 
 @logger.opt(lazy=True).catch
-def read_metadata_files(
+@validate_call
+async def read_metadata_files(
     metadata_filename: str, yearmonths: list, workingdir: str
-) -> tuple[polars.DataFrame, polars.DataFrame, polars.DataFrame]:
+) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
     """
     Metadata file reading is relegated to this function so that other functions
     can be CPU-bound alone instead of interleaving IO and additional computations.
@@ -163,7 +168,7 @@ def read_metadata_files(
     workingdir: the working directory. By default, it is the current `pwd` working directory.
 
     Returns:
-    A tuple of three polars dataframes, one of which is the full database metadata, one
+    A tuple of three pl.dataframes, one of which is the full database metadata, one
     of which records the distance scores for each accession, and one of which records
     clustering metadata for each accession. These metadata include 1) whether an accession
     is a "hit" or a "centroid," 2) the cluster index for the month each accession was
@@ -171,12 +176,12 @@ def read_metadata_files(
     """
 
     # Make some empty dataframes to vstack on top of
-    dist_scores = polars.DataFrame(
+    dist_scores = pl.DataFrame(
         {"Accession": None, "Distance Score": None},
-        schema={"Accession": polars.Utf8, "Distance Score": polars.Float64},
+        schema={"Accession": pl.Utf8, "Distance Score": pl.Float64},
     )
     dist_scores = dist_scores.clear()
-    cluster_meta = polars.read_csv(
+    cluster_meta = pl.read_csv(
         f"{workingdir}/{yearmonths[0]}-clusters.uc",
         separator="\t",
         has_header=False,
@@ -184,7 +189,7 @@ def read_metadata_files(
         new_columns=["Type", "Index", "Size", "Accession"],
         n_rows=1,
     )
-    cluster_meta = cluster_meta.with_columns(polars.lit("2023-08").alias("Month"))
+    cluster_meta = cluster_meta.with_columns(pl.lit("2023-08").alias("Month"))
     cluster_meta = cluster_meta.clear()
 
     # go through each month of data and bring in its various files
@@ -192,20 +197,20 @@ def read_metadata_files(
         # sum up distance score for each accession and prep to vstack on
         # the distance score data frame, which we will use in some joins
         # in a later, non-IO-bound function.
-        distmat = polars.read_csv(f"{workingdir}/{yearmonth}-dist-matrix.csv")
+        distmat = pl.read_csv(f"{workingdir}/{yearmonth}-dist-matrix.csv")
         assert "Sequence_Name" in distmat.columns
         distmat = (
             distmat.with_columns(
-                Distance_Score=polars.Series(
+                Distance_Score=pl.Series(
                     [distmat.select(col).sum().item() for col in distmat.columns[1:]]
                 )
             )
             .rename({"Sequence_Name": "Accession", "Distance_Score": "Distance Score"})
-            .select(polars.col(["Accession", "Distance Score"]))
+            .select(pl.col(["Accession", "Distance Score"]))
         )
 
         # Now, bring in clustering metadata and do the same kind of thing
-        cluster_table = polars.read_csv(
+        cluster_table = pl.read_csv(
             f"{workingdir}/{yearmonth}-clusters.uc",
             separator="\t",
             has_header=False,
@@ -213,22 +218,22 @@ def read_metadata_files(
             new_columns=["Type", "Index", "Size", "Accession"],
         )
         cluster_table = cluster_table.with_columns(
-            Month=polars.repeat(yearmonth, n=cluster_table.shape[0])
-        ).filter(polars.col("Type") != "S")
+            Month=pl.repeat(yearmonth, n=cluster_table.shape[0])
+        ).filter(pl.col("Type") != "S")
 
         # correct any corrupted rows so the indices can be properly typed
-        if cluster_table.dtypes[1] == polars.Utf8:
+        if cluster_table.dtypes[1] == pl.Utf8:
             cluster_table = cluster_table.filter(
-                (polars.col("Type") == "C")
-                | (polars.col("Type") == "H") & (polars.col("Index") != "*")
-            ).with_columns(polars.col("Index").cast(polars.Int64))
+                (pl.col("Type") == "C")
+                | (pl.col("Type") == "H") & (pl.col("Index") != "*")
+            ).with_columns(pl.col("Index").cast(pl.Int64))
 
         # Use an assertion to check for possible silent errors before vstacking and
         # returning the dataframes
         assert_frame_equal(
-            left=distmat.select(polars.col("Accession")).unique().sort(by="Accession"),
-            right=cluster_table.filter(polars.col("Type") == "C")
-            .select(polars.col("Accession"))
+            left=distmat.select(pl.col("Accession")).unique().sort(by="Accession"),
+            right=cluster_table.filter(pl.col("Type") == "C")
+            .select(pl.col("Accession"))
             .unique()
             .sort(by="Accession"),
         )
@@ -238,18 +243,18 @@ def read_metadata_files(
         cluster_meta.vstack(cluster_table, in_place=True)
 
     # parse the full database metadata as a data frame to return
-    metadata = polars.read_ipc(f"{workingdir}/{metadata_filename}", use_pyarrow=True)
+    metadata = pl.read_ipc(f"{workingdir}/{metadata_filename}", use_pyarrow=True)
 
     return (metadata, dist_scores, cluster_meta)
 
 
 @logger.opt(lazy=True).catch
-def collate_metadata(
-    metadata: polars.DataFrame,
-    dist_scores: polars.DataFrame,
-    cluster_meta: polars.DataFrame,
+async def collate_metadata(
+    metadata: pl.DataFrame,
+    dist_scores: pl.DataFrame,
+    cluster_meta: pl.DataFrame,
     stringency: int,
-) -> tuple[polars.DataFrame, polars.DataFrame]:
+) -> tuple[pl.DataFrame, pl.DataFrame]:
     """
     This function takes the dataframes read by read_metadata_files and
     runs a number of computations on them. The thrust of all these
@@ -263,10 +268,10 @@ def collate_metadata(
     to handle very large metadata files.
 
     Args (parsed from the command line):
-    metadata - a polars dataframe that contains the whole-dataset metadata
-    dist_scores - a polars dataframe that contains distance scores for each
+    metadata - a pl.dataframe that contains the whole-dataset metadata
+    dist_scores - a pl.dataframe that contains distance scores for each
                 cluster centroid
-    cluster_meta - a polars dataframe that contains metadata from the
+    cluster_meta - a pl.dataframe that contains metadata from the
                 clustering algorithm.
     """
 
@@ -277,7 +282,7 @@ def collate_metadata(
 
     # merge the month and cluster index columns to make a unique identifier
     cluster_meta = cluster_meta.with_columns(
-        [polars.format("{}_{}", "Month", "Index").alias("Month Index")]
+        [pl.format("{}_{}", "Month", "Index").alias("Month Index")]
     )
 
     # Use a series of Polars expressions to:
@@ -291,7 +296,7 @@ def collate_metadata(
     assert "Month Index" in cluster_meta.columns
     assert "Size" in cluster_meta.columns
     assert "Distance Score" in cluster_meta.columns
-    centroid_data = cluster_meta.filter(polars.col("Type") == "C").select(
+    centroid_data = cluster_meta.filter(pl.col("Type") == "C").select(
         ["Month Index", "Size", "Distance Score"]
     )
     cluster_meta = (
@@ -307,9 +312,9 @@ def collate_metadata(
     # we include it here just to be safe.)
     cluster_meta = (
         cluster_meta.group_by("Month Index")
-        .agg(polars.col("Month Index").count().alias("count"))
+        .agg(pl.col("Month Index").count().alias("count"))
         .join(cluster_meta, on="Month Index", how="left")
-        .filter(polars.col("count") > 1)
+        .filter(pl.col("count") > 1)
         .select(cluster_meta.columns)
     )
 
@@ -320,7 +325,7 @@ def collate_metadata(
     # in descending order and remove any null rows
     high_dist_meta = high_dist_meta.sort(
         by="Distance Score", descending=True, nulls_last=True
-    ).filter(polars.col("Distance Score").is_not_null())
+    ).filter(pl.col("Distance Score").is_not_null())
 
     # And finally, filter down to distances above the retention threshold while
     # also visualizing the distance score distribution
@@ -328,12 +333,11 @@ def collate_metadata(
         numpy.quantile(high_dist_meta["Distance Score"], (stringency / 1000))
     )
     try:
-        visualize_distance_scores(high_dist_meta, retention_threshold)
-    except Exception as e:
-        logger.debug("Plotting the distance score distribution failed: {e}")
-        print(f"Plotting the distance score distribution failed: {e}")
+        await visualize_distance_scores(high_dist_meta, retention_threshold)
+    except Exception as _e:  # pylint: disable=W0718
+        logger.debug("Plotting the distance score distribution failed: {_e}")
     high_dist_meta = high_dist_meta.filter(
-        polars.col("Distance Score") >= retention_threshold
+        pl.col("Distance Score") >= retention_threshold
     )
 
     # separate out the accessions
@@ -343,7 +347,7 @@ def collate_metadata(
 
 
 @logger.opt(lazy=True).catch
-def main():
+async def main():
     """
     Main function. Main ties together all the above functions if
     they are being invoked as a script. It also works to "glue"
@@ -358,7 +362,7 @@ def main():
     metadata_name, fasta_path, stringency, workingdir = parse_command_line_args()
 
     # Retrieve a quantile to use to define a retention threshold downstream
-    strict_quant = quantify_stringency(stringency)
+    strict_quant = await quantify_stringency(stringency)
 
     # List all files in current directory that end with '-dist-matrix.csv'
     files = [f for f in os.listdir(workingdir) if f.endswith("-dist-matrix.csv")]
@@ -367,12 +371,12 @@ def main():
     yearmonths = [f.replace("-dist-matrix.csv", "") for f in files]
 
     # retrieve all candidate metadata
-    metadata, dist_scores, cluster_meta = read_metadata_files(
+    metadata, dist_scores, cluster_meta = await read_metadata_files(
         metadata_name, yearmonths, workingdir
     )
 
     # pile up all metadata from clustering, distance-calling, and the original database
-    high_dist_meta, accessions = collate_metadata(
+    high_dist_meta, accessions = await collate_metadata(
         metadata, dist_scores, cluster_meta, strict_quant
     )
 
@@ -403,7 +407,5 @@ def main():
     os.remove("high-dist-accessions.txt")
 
 
-# end main def
-
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -17,9 +17,11 @@ from typing import List, Set, Tuple
 import polars as pl
 from Bio import SeqIO
 from loguru import logger
+from pydantic import validate_call
 
 
 @logger.catch
+@validate_call
 async def list_metadata_files() -> Tuple[str, ...]:
     """
     List the available TSV files in the current working directory. This
@@ -31,6 +33,7 @@ async def list_metadata_files() -> Tuple[str, ...]:
 
 
 @logger.catch
+@validate_call
 async def list_fasta_files() -> Tuple[str, ...]:
     """
     List the available FASTA files in the current working directory. This
@@ -43,6 +46,7 @@ async def list_fasta_files() -> Tuple[str, ...]:
 
 
 @logger.catch
+@validate_call
 async def sort_meta_files(meta_files: Tuple[str, ...]) -> List[str]:
     """
     Sort the metadata files by size and keep the two largest. This provides
@@ -55,6 +59,7 @@ async def sort_meta_files(meta_files: Tuple[str, ...]) -> List[str]:
 
 
 @logger.catch
+@validate_call
 async def sort_fasta_files(fasta_files: Tuple[str, ...]) -> List[str]:
     """
     Sort the sequence files by size and keep the two largest. This provides
@@ -162,6 +167,7 @@ async def get_common_accessions(double_candidates: pl.LazyFrame) -> Set[str]:
 
 
 @logger.opt(lazy=True).catch
+@validate_call
 async def filter_fasta(candidate_set: Set[str], fasta_path: str) -> None:
     """
     Filter FASTA records so that the output FASTA only contains accessions

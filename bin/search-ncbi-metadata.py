@@ -15,20 +15,28 @@ involve running Pangolin or clustering.
 # make necessary modules available
 import argparse
 import multiprocessing
+from pathlib import Path
 import sys
-from typing import Optional
+from functools import lru_cache
+from typing import Optional, Tuple
 
 import numpy
 import pandas
 import pyarrow
 from loguru import logger
+from pydantic import validate_call
 
 
-def parse_command_line_args():
+@validate_call
+def parse_command_line_args() -> Tuple[Path, Path, int, int]:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("metadata_path", help="The path to the metadata file.")
-    parser.add_argument("dates_path", help="The path to the pango lineage dates file.")
+    parser.add_argument(
+        "metadata_path", type=Path, help="The path to the metadata file."
+    )
+    parser.add_argument(
+        "dates_path", type=Path, help="The path to the pango lineage dates file."
+    )
     parser.add_argument(
         "infection_cutoff", type=int, help="The minimum infection duration in days."
     )
@@ -40,6 +48,7 @@ def parse_command_line_args():
 
 
 @logger.catch
+@lru_cache
 def add_designation_date(
     lineage: str, dates: pandas.DataFrame
 ) -> Optional[numpy.datetime64]:
@@ -62,6 +71,7 @@ def add_designation_date(
 
 
 @logger.catch
+@lru_cache
 def add_infection_duration(
     i: int, ncbi_dates: list, desig_dates: list
 ) -> Optional[int]:
@@ -84,7 +94,7 @@ def add_infection_duration(
     return anachronicity
 
 
-# define main function
+@logger.opt(lazy=True).catch
 def main():
     """
     This script reads in filtered metadata and pango lineage dates,
@@ -153,8 +163,5 @@ def main():
         )
 
 
-# end main function def
-
-# run the script if not imported as a module
 if __name__ == "__main__":
     main()

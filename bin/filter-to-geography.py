@@ -16,14 +16,18 @@ options:
 """
 
 import argparse
+import asyncio
 import os
 import sys
 from datetime import date
+from enum import Enum
+from inspect import cleandoc
 from pathlib import Path
 from typing import Optional
 
 import polars as pl
 from loguru import logger
+from pydantic import validate_call
 from pydantic.dataclasses import dataclass
 from result import Err, Ok, Result
 
@@ -43,6 +47,35 @@ class FilterParams:
     max_date: date
 
 
+class FileType(Enum):
+    """
+    `FileType` is a sum type/enum containing the file formats
+    supported by the script. If the provided file name contains
+    a supported extension, the data will be lazily loaded.
+    """
+
+    ARROW = (".arrow", pl.scan_ipc)
+    PARQUET = (".parquet", pl.scan_parquet)
+    CSV = (".csv", pl.scan_csv)
+    TSV = (".tsv", lambda path: pl.scan_csv(path, separator="\t"))
+
+    def __init__(self, file_extension, load_function):
+        self.file_extension = file_extension
+        self.load_function = load_function
+
+    @staticmethod
+    def determine_file_type(metadata_path: str):
+        """
+        This static method returns the file-type variant that
+        matches the provided metadata file.
+        """
+        for file_type in FileType:
+            if file_type.file_extension in metadata_path:
+                return file_type
+        return None
+
+
+@validate_call
 def parse_command_line_args() -> Result[argparse.Namespace, str]:
     """
         Parse command line arguments while passing errors onto main.
@@ -93,8 +126,33 @@ def parse_command_line_args() -> Result[argparse.Namespace, str]:
     return Ok(args)
 
 
+@logger.catch
+async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
+    """
+    Read metadata handles reading the metadata based on its file
+    extension, alongside any errors.
+    """
+    path_str = str(metadata_path)
+
+    # Determine the file type
+    file_type = FileType.determine_file_type(path_str)
+
+    if file_type:
+        logger.opt(lazy=True).debug(f"{file_type.name}-formatted metadata detected.")
+        return Ok(file_type.load_function(metadata_path))
+
+    return Err(
+        cleandoc(
+            """
+        Could not parse the input metadata file type. Please double check
+        that input is CSV, TSV, or Apache Arrow/IPC files.
+        """
+        )
+    )
+
+
 @logger.opt(lazy=True).catch
-def filter_metadata(
+async def filter_metadata(
     meta_lf: pl.LazyFrame, filters: FilterParams
 ) -> Result[pl.LazyFrame, str]:
     """
@@ -140,7 +198,7 @@ def filter_metadata(
 
 
 @logger.opt(lazy=True).catch
-def write_out_accessions() -> Result[None, str]:
+async def write_out_accessions() -> Result[None, str]:
     """
         If the above functions complete successfully, the
         function `write_out_accessions()` quickly queries the
@@ -174,11 +232,12 @@ def write_out_accessions() -> Result[None, str]:
     return Ok(None)
 
 
-def main() -> None:
+async def main() -> None:
     """
     Function `main()` controls the flow of data through the above functions.
     """
 
+    # initialize logger
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # parse desired filters out of command line arguments
@@ -194,21 +253,13 @@ def main() -> None:
         max_date=args.max_date,
     )
 
-    metadata: pl.LazyFrame
-    if ".arrow" in str(metadata_path):
-        metadata = pl.scan_ipc(metadata_path, memory_map=False)
-    elif ".parquet" in str(metadata_path):
-        metadata = pl.scan_parquet(metadata_path)
-    elif ".csv" in str(metadata_path):
-        metadata = pl.scan_csv(metadata_path)
-    elif ".tsv" in str(metadata_path):
-        metadata = pl.scan_csv(metadata_path, separator="\t")
-    else:
-        print("Could not parse the input metadata file type.")
-        sys.exit("Please only input CSV, TSV, or Apache Arrow/IPC files.")
+    # Scan the metadata into a LazyFrame and return any errors
+    metadata_attempt = await read_metadata(metadata_path)
+    if isinstance(metadata_attempt, Err):
+        sys.exit(metadata_attempt.unwrap_err())
 
     # filter the metadata
-    lz_attempt = filter_metadata(metadata, filters)
+    lz_attempt = await filter_metadata(metadata_attempt.unwrap(), filters)
     if isinstance(lz_attempt, Err):
         sys.exit(
             f"Metadata filtering failed with the following error:\n{lz_attempt.unwrap_err()}"
@@ -220,10 +271,10 @@ def main() -> None:
     )
 
     # separate out accessions
-    acc_attempt = write_out_accessions()
+    acc_attempt = await write_out_accessions()
     if isinstance(acc_attempt, Err):
         sys.exit(f"Failed to separate out accessions with:\n{acc_attempt.unwrap_err()}")
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

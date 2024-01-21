@@ -18,13 +18,17 @@ options:
 
 import argparse
 import sys
+from functools import lru_cache
+from pprint import pprint
 from typing import Tuple
 
 import numpy as np
 import polars as pl
 from loguru import logger
+from pydantic import validate_call
 
 
+@validate_call
 def parse_command_line_args() -> Tuple[str, str]:
     """parse command line arguments"""
     parser = argparse.ArgumentParser()
@@ -52,11 +56,13 @@ def _pipe(data, *funcs):
     return data
 
 
+@lru_cache
 def _calculate_prevalence(data):
     candidate_count, sample_size = data
     return (candidate_count / sample_size) * 100
 
 
+@lru_cache
 def _round_prevalence(prevalence):
     return np.round(prevalence, 5)
 
@@ -117,7 +123,7 @@ def main() -> None:
 
     prevalence, sample_size = estimate_prevalence(early_stats, late_stats)
 
-    print(
+    pprint(
         f"{prevalence}% of ${sample_size} sequences were flagged as highly evolved and anachronistic."
     )
 
