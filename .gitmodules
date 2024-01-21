@@ -1,0 +1,3 @@
+[submodule "ALPINE-core"]
+	path = ALPINE-core
+	url = https://github.com/nrminor/ALPINE-core
