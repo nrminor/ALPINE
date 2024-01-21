@@ -13,9 +13,9 @@ involve running Pangolin or clustering.
 """
 
 # make necessary modules available
-import sys
 import argparse
 import multiprocessing
+import sys
 from typing import Optional
 
 import numpy
