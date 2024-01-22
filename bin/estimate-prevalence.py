@@ -26,24 +26,27 @@ from typing import Tuple
 import numpy as np
 import polars as pl
 from loguru import logger
+from pathlib import Path
 from pydantic import validate_call
 
 
 @validate_call
-def parse_command_line_args() -> Tuple[str, str]:
+def parse_command_line_args() -> Tuple[Path, Path]:
     """parse command line arguments"""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--early_stats",
         "--e",
-        required=False,
+        type=Path,
+        required=True,
         default="early_stats.tsv",
         help="A seqkit stats table from after filtering but before clustering.",
     )
     parser.add_argument(
         "--late_stats",
         "--l",
-        required=False,
+        type=Path,
+        required=True,
         default="late_stats.tsv",
         help="A seqkit stats table from after clustering.",
     )
@@ -57,7 +60,6 @@ def _pipe(data, *funcs):
     return data
 
 
-@lru_cache
 def _calculate_prevalence(data):
     candidate_count, sample_size = data
     return (candidate_count / sample_size) * 100
@@ -104,7 +106,7 @@ def estimate_prevalence(
     )
 
     logger.info(
-        "{candidate_count} candidates found among {sample_size} input sequences for a prevalence of {prevalence}%."
+        "{candidate_count} candidates found among {sample_size} input sequences ({prevalence}%)."
     )
 
     return (prevalence, sample_size)
@@ -115,23 +117,29 @@ def main() -> None:
     Main controls dataflow.
     """
 
+    # initialize new colorized logger after removing the default
     logger.remove()
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
+    # parse out early and late files
     early_file, late_file = parse_command_line_args()
 
-    if not os.path.isfile(early_file):
-        sys.exit(f"Early stats file, {early_file}, does not exist.")
-    if not os.path.isfile(early_file):
-        sys.exit(f"Late stats file, {late_file}, does not exist.")
+    # check that the provided files actually exist
+    assert os.path.isfile(
+        early_file
+    ), f"Early stats file, {early_file}, does not exist."
+    assert os.path.isfile(early_file), f"Late stats file, {late_file}, does not exist."
 
+    # scan the stats files for lazy evaluation
     early_stats = pl.scan_csv(early_file, separator="\t")
     late_stats = pl.scan_csv(late_file, separator="\t")
 
+    # compute prevalence percentage and sample size
     prevalence, sample_size = estimate_prevalence(early_stats, late_stats)
 
+    # pretty-print for forwarding up to the workflow level
     pprint(
-        f"{prevalence}% of ${sample_size} sequences were flagged as highly evolved and anachronistic."
+        f"{prevalence}% of ${sample_size} sequences were flagged as highly evolved & anachronistic."
     )
 
 
