@@ -116,7 +116,7 @@ def main():
     metadata_path, dates_path, infection_cutoff, cores = parse_command_line_args()
 
     # Memory-map arrow IPC-formatted metadata
-    with pyarrow.memory_map(metadata_path, "r") as source:
+    with pyarrow.memory_map(str(metadata_path), "r") as source:
         metadata_arrays = pyarrow.ipc.open_file(source).read_all()
         metadata = metadata_arrays.to_pandas()
 
