@@ -94,7 +94,6 @@ def add_infection_duration(
     return anachronicity
 
 
-@logger.opt(lazy=True).catch
 def main():
     """
     This script reads in filtered metadata and pango lineage dates,
@@ -121,7 +120,7 @@ def main():
         metadata = metadata_arrays.to_pandas()
 
         # read in dates
-        dates = pandas.read_csv(dates_path, na_values=["", "NA"])
+        dates = pandas.read_csv(str(dates_path), na_values=["", "NA"])
 
         # make sure the expected columns are present
         assert "Isolate Collection date" in metadata.columns

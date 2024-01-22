@@ -346,7 +346,6 @@ async def collate_metadata(
     return high_dist_meta, accessions
 
 
-@logger.opt(lazy=True).catch
 async def main():
     """
     Main function. Main ties together all the above functions if

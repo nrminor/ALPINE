@@ -106,7 +106,6 @@ async def merge_metadata(
     )
 
 
-@logger.opt(lazy=True).catch
 async def main():
     """
     This function reads in a cluster table and metadata file,
