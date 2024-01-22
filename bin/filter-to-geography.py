@@ -278,6 +278,7 @@ async def main() -> None:
         sys.exit(f"Failed to separate out accessions with:\n{acc_attempt.unwrap_err()}")
 
     # export to filtered arrow file with compression
+    logger.info("Writing filtered metadata into a compressed Arrow IPC file.")
     lz_attempt.unwrap().collect().write_ipc(
         "filtered-to-geography.arrow", compression="zstd"
     )
