@@ -181,6 +181,7 @@ async def filter_metadata(
 
     if filters.min_date is None:
         logger.info("No minimum date provided.")
+        logger.info("Filtering to {filters.geography} before {params.max_date}.")
         return Ok(
             meta_lf.filter(
                 pl.col("Geographic location").str.contains(filters.geography)
@@ -213,14 +214,24 @@ async def write_out_accessions() -> Result[None, str]:
 
     if not os.path.isfile("filtered-to-geography.arrow"):
         return Err(
-            "The filtered dataset in Apache Arrow format 'filtered-to-geography.arrow' is missing in the current working directory."
+            cleandoc(
+                """
+                The filtered dataset in Apache Arrow format 'filtered-to-geography.arrow' is
+                missing in the current working directory.
+                """
+            )
         )
 
     filtered_lf = pl.scan_ipc("filtered-to-geography.arrow", memory_map=False)
 
     if "Accession" not in filtered_lf:
         return Err(
-            "Column names may have been corrupted or otherwise interfered with after filtering; column 'Accession' is missing"
+            cleandoc(
+                """
+                Column names may have been corrupted or otherwise interfered with after filtering;
+                column 'Accession' is missing
+                """
+            )
         )
 
     (
