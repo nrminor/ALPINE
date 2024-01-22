@@ -17,6 +17,7 @@ options:
 """
 
 import argparse
+import os
 import sys
 from functools import lru_cache
 from pprint import pprint
@@ -118,6 +119,11 @@ def main() -> None:
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     early_file, late_file = parse_command_line_args()
+
+    if not os.path.isfile(early_file):
+        sys.exit(f"Early stats file, {early_file}, does not exist.")
+    if not os.path.isfile(early_file):
+        sys.exit(f"Late stats file, {late_file}, does not exist.")
 
     early_stats = pl.scan_csv(early_file, separator="\t")
     late_stats = pl.scan_csv(late_file, separator="\t")
