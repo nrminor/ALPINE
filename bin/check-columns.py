@@ -68,7 +68,7 @@ def parse_command_line_args() -> Path:
     return args.metadata_path
 
 
-@logger.catch
+@logger.catch(reraise=True)
 async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
     """
     Read metadata handles reading the metadata based on its file
@@ -93,7 +93,7 @@ async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
     )
 
 
-@logger.opt(lazy=True).catch
+@logger.opt(lazy=True).catch(reraise=True)
 async def reconcile_columns(metadata: pl.LazyFrame) -> pl.LazyFrame:
     """
     Reconcile column names between provided GISAID data and NCBI data

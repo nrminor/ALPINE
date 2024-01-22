@@ -40,13 +40,13 @@ def parse_command_line_args() -> Tuple[Path, Path]:
     return args.cluster_table_path, args.metadata_path
 
 
-@logger.catch
+@logger.catch(reraise=True)
 async def read_cluster_table(cluster_table_path: Path) -> pd.DataFrame:
     """Read the VSEARCH cluster table from a 'meta-cluster' on ALPINE candidates."""
     return pd.read_csv(cluster_table_path, sep="\t", header=None, na_values=["", "NA"])
 
 
-@logger.catch
+@logger.catch(reraise=True)
 async def get_unique_clusters(cluster_df: pd.DataFrame) -> pd.DataFrame:
     """Filter the cluster table to the members of all unique clusters"""
     unique_df = (
@@ -58,21 +58,21 @@ async def get_unique_clusters(cluster_df: pd.DataFrame) -> pd.DataFrame:
 
     # Check that each accession is only present in one cluster
     assert unique_df[8].nunique() == len(unique_df)
-    logger.debug("All clusters confirmed to be unique.")
+    logger.info("All clusters confirmed to be unique.")
 
     return unique_df
 
 
-@logger.catch
+@logger.catch(reraise=True)
 @lru_cache
 async def fasta_input(cluster: str) -> list:
     """Read the cluster FASTA and convert records to a list"""
 
-    logger.debug("Assessing repeat lineages in cluster {cluster}")
+    logger.info("Assessing repeat lineages in cluster {cluster}")
     return list(Bio.SeqIO.parse(f"meta-cluster-seqs{cluster}", "fasta"))
 
 
-@logger.catch
+@logger.catch(reraise=True)
 @lru_cache
 async def fasta_output(fasta_seq: list, cluster: str) -> None:
     """Write the cluster FASTA"""
@@ -81,14 +81,14 @@ async def fasta_output(fasta_seq: list, cluster: str) -> None:
         Bio.SeqIO.write(fasta_seq, outfile, "fasta")
 
 
-@logger.catch
+@logger.catch(reraise=True)
 async def read_metadata(metadata_path: Path) -> pd.DataFrame:
     """Read the full-dataset metadata for candidates"""
 
     return pd.read_csv(metadata_path, delimiter="\t", na_values=["", "NA"])
 
 
-@logger.catch
+@logger.catch(reraise=True)
 async def merge_metadata(
     unique_df: pd.DataFrame, metadata: pd.DataFrame
 ) -> pd.DataFrame:
@@ -134,7 +134,7 @@ async def main():
 
     # Compile FASTA sequences for each cluster
     for cluster in set(unique_df[1].tolist()):
-        logger.debug("Assessing repeat lineages in cluster {cluster}")
+        logger.info("Assessing repeat lineages in cluster {cluster}")
         fasta_seq = await fasta_input(cluster)
         await fasta_output(fasta_seq, cluster)
 

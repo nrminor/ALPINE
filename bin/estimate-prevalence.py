@@ -67,7 +67,7 @@ def _round_prevalence(prevalence):
     return np.round(prevalence, 5)
 
 
-@logger.opt(lazy=True).catch
+@logger.opt(lazy=True).catch(reraise=True)
 def estimate_prevalence(
     early_stats: pl.LazyFrame, late_stats: pl.LazyFrame
 ) -> Tuple[float, int]:
@@ -102,7 +102,7 @@ def estimate_prevalence(
         (candidate_count, sample_size), _calculate_prevalence, _round_prevalence
     )
 
-    logger.debug(
+    logger.info(
         "{candidate_count} candidates found among {sample_size} input sequences for a prevalence of {prevalence}%."
     )
 

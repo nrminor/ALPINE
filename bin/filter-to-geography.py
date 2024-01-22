@@ -126,7 +126,7 @@ def parse_command_line_args() -> Result[argparse.Namespace, str]:
     return Ok(args)
 
 
-@logger.catch
+@logger.catch(reraise=True)
 async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
     """
     Read metadata handles reading the metadata based on its file
@@ -151,7 +151,7 @@ async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
     )
 
 
-@logger.opt(lazy=True).catch
+@logger.opt(lazy=True).catch(reraise=True)
 async def filter_metadata(
     meta_lf: pl.LazyFrame, filters: FilterParams
 ) -> Result[pl.LazyFrame, str]:
@@ -180,14 +180,14 @@ async def filter_metadata(
         )
 
     if filters.min_date is None:
-        logger.debug("No minimum date provided.")
+        logger.info("No minimum date provided.")
         return Ok(
             meta_lf.filter(
                 pl.col("Geographic location").str.contains(filters.geography)
             ).filter(pl.col("Isolate Collection date") <= pl.lit(filters.max_date))
         )
 
-    logger.debug(
+    logger.info(
         "Filtering to {filters.geography} between {filters.min_date} and {filters.max_date}."
     )
     return Ok(
@@ -197,7 +197,7 @@ async def filter_metadata(
     )
 
 
-@logger.opt(lazy=True).catch
+@logger.opt(lazy=True).catch(reraise=True)
 async def write_out_accessions() -> Result[None, str]:
     """
         If the above functions complete successfully, the

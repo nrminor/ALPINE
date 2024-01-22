@@ -67,7 +67,7 @@ def parse_command_line_args() -> Tuple[str, str, str, str]:
     return args.metadata, args.sequences, args.stringency, args.workingdir
 
 
-@logger.catch
+@logger.catch(reraise=True)
 @validate_call
 async def quantify_stringency(stringency: str) -> int:
     """
@@ -93,14 +93,14 @@ async def quantify_stringency(stringency: str) -> int:
     else:
         strict_quant = 995
 
-    logger.debug(
+    logger.info(
         "Stringency of {stringency} quantified to the {strict_quant}th quantile."
     )
 
     return strict_quant
 
 
-@logger.opt(lazy=True).catch
+@logger.opt(lazy=True).catch(reraise=True)
 async def visualize_distance_scores(metadata: pl.DataFrame, threshold: float) -> None:
     """
     This function uses Matplotlib and Seaborn to visualize the distribution
@@ -152,7 +152,7 @@ async def visualize_distance_scores(metadata: pl.DataFrame, threshold: float) ->
     pyplot.savefig("distance_score_distribution.pdf")
 
 
-@logger.opt(lazy=True).catch
+@logger.opt(lazy=True).catch(reraise=True)
 @validate_call
 async def read_metadata_files(
     metadata_filename: str, yearmonths: list, workingdir: str
@@ -248,7 +248,7 @@ async def read_metadata_files(
     return (metadata, dist_scores, cluster_meta)
 
 
-@logger.opt(lazy=True).catch
+@logger.opt(lazy=True).catch(reraise=True)
 async def collate_metadata(
     metadata: pl.DataFrame,
     dist_scores: pl.DataFrame,
@@ -335,7 +335,7 @@ async def collate_metadata(
     try:
         await visualize_distance_scores(high_dist_meta, retention_threshold)
     except Exception as _e:  # pylint: disable=W0718
-        logger.debug("Plotting the distance score distribution failed: {_e}")
+        logger.info("Plotting the distance score distribution failed: {_e}")
     high_dist_meta = high_dist_meta.filter(
         pl.col("Distance Score") >= retention_threshold
     )

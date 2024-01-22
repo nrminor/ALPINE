@@ -17,7 +17,6 @@ import argparse
 import multiprocessing
 from pathlib import Path
 import sys
-from functools import lru_cache
 from typing import Optional, Tuple
 
 import numpy
@@ -47,8 +46,7 @@ def parse_command_line_args() -> Tuple[Path, Path, int, int]:
     return args.metadata_path, args.dates_path, args.infection_cutoff, args.cores
 
 
-@logger.catch
-@lru_cache
+@logger.catch(reraise=True)
 def add_designation_date(
     lineage: str, dates: pandas.DataFrame
 ) -> Optional[numpy.datetime64]:
@@ -70,8 +68,7 @@ def add_designation_date(
     return date_values[0] if date_values.size > 0 else None
 
 
-@logger.catch
-@lru_cache
+@logger.catch(reraise=True)
 def add_infection_duration(
     i: int, ncbi_dates: list, desig_dates: list
 ) -> Optional[int]:

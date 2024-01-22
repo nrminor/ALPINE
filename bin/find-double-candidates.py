@@ -20,7 +20,7 @@ from loguru import logger
 from pydantic import validate_call
 
 
-@logger.catch
+@logger.catch(reraise=True)
 @validate_call
 async def list_metadata_files() -> Tuple[str, ...]:
     """
@@ -32,7 +32,7 @@ async def list_metadata_files() -> Tuple[str, ...]:
     return tuple(glob.glob("./*.tsv"))
 
 
-@logger.catch
+@logger.catch(reraise=True)
 @validate_call
 async def list_fasta_files() -> Tuple[str, ...]:
     """
@@ -45,7 +45,7 @@ async def list_fasta_files() -> Tuple[str, ...]:
     return tuple(glob.glob("./*.fasta"))
 
 
-@logger.catch
+@logger.catch(reraise=True)
 @validate_call
 async def sort_meta_files(meta_files: Tuple[str, ...]) -> List[str]:
     """
@@ -58,7 +58,7 @@ async def sort_meta_files(meta_files: Tuple[str, ...]) -> List[str]:
     return sorted(meta_files, key=os.path.getsize, reverse=True)[0:1]
 
 
-@logger.catch
+@logger.catch(reraise=True)
 @validate_call
 async def sort_fasta_files(fasta_files: Tuple[str, ...]) -> List[str]:
     """
@@ -74,7 +74,7 @@ async def sort_fasta_files(fasta_files: Tuple[str, ...]) -> List[str]:
     return sorted(fasta_files, key=os.path.getsize, reverse=True)
 
 
-@logger.catch
+@logger.catch(reraise=True)
 async def read_metadata(sorted_meta: List[str]) -> Tuple[pl.LazyFrame, pl.LazyFrame]:
     """
     Asynchronously read metadata files.
@@ -86,7 +86,7 @@ async def read_metadata(sorted_meta: List[str]) -> Tuple[pl.LazyFrame, pl.LazyFr
     return left_meta, right_meta
 
 
-@logger.catch
+@logger.catch(reraise=True)
 async def overlap_metadata(
     left_meta: pl.LazyFrame, right_meta: pl.LazyFrame
 ) -> pl.LazyFrame:
@@ -149,13 +149,13 @@ async def overlap_metadata(
         "Anachronicity (days)" not in right_meta
         and "infection_duration" not in right_meta
     ):
-        logger.debug("No columns to allow reconciling two datasets found.")
+        logger.info("No columns to allow reconciling two datasets found.")
         return double_candidates
 
     return double_candidates
 
 
-@logger.catch
+@logger.catch(reraise=True)
 async def get_common_accessions(double_candidates: pl.LazyFrame) -> Set[str]:
     """
     Execute a Polars query to extract a unique set of double candidate
@@ -166,7 +166,7 @@ async def get_common_accessions(double_candidates: pl.LazyFrame) -> Set[str]:
     return set(double_candidates.select("Accession").collect().to_series().to_list())
 
 
-@logger.opt(lazy=True).catch
+@logger.opt(lazy=True).catch(reraise=True)
 @validate_call
 async def filter_fasta(candidate_set: Set[str], fasta_path: str) -> None:
     """
