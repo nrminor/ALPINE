@@ -138,7 +138,7 @@ async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
     file_type = FileType.determine_file_type(path_str)
 
     if file_type:
-        logger.opt(lazy=True).debug(f"{file_type.name}-formatted metadata detected.")
+        logger.info(f"{file_type.name}-formatted metadata detected.")
         return Ok(file_type.load_function(metadata_path))
 
     return Err(

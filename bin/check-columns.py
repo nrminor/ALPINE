@@ -80,7 +80,7 @@ async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
     file_type = FileType.determine_file_type(path_str)
 
     if file_type:
-        logger.opt(lazy=True).debug(f"{file_type.name}-formatted metadata detected.")
+        logger.info(f"{file_type.name}-formatted metadata detected.")
         return Ok(file_type.load_function(metadata_path))
 
     return Err(
@@ -93,7 +93,7 @@ async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
     )
 
 
-@logger.opt(lazy=True).catch(reraise=True)
+@logger.catch(reraise=True)
 async def reconcile_columns(metadata: pl.LazyFrame) -> pl.LazyFrame:
     """
     Reconcile column names between provided GISAID data and NCBI data
@@ -103,7 +103,7 @@ async def reconcile_columns(metadata: pl.LazyFrame) -> pl.LazyFrame:
 
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
-        logger.opt(lazy=True).debug("GISAID metadata detected.")
+        logger.info("GISAID metadata detected.")
         # double check that the expected column names are present
         assert "Virus name" in metadata.columns
         assert "Accession ID" in metadata.columns
@@ -134,10 +134,8 @@ async def reconcile_columns(metadata: pl.LazyFrame) -> pl.LazyFrame:
         .alias("Isolate Collection date")
     ).filter(pl.col("Isolate Collection date").is_not_null())
 
-    logger.opt(lazy=True).debug("Dates successfully formatted.")
-    logger.opt(lazy=True).debug(
-        "Now exporting as ZStandard-compressed Apache Arrow IPC file."
-    )
+    logger.info("Dates successfully formatted.")
+    logger.info("Now exporting as ZStandard-compressed Apache Arrow IPC file.")
 
     return metadata
 
