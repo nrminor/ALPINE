@@ -202,7 +202,7 @@ async def filter_metadata(
 
 
 @logger.opt(lazy=True).catch(reraise=True)
-async def write_out_accessions() -> Result[None, str]:
+async def write_out_accessions(filtered_lf: pl.LazyFrame) -> Result[None, str]:
     """
         If the above functions complete successfully, the
         function `write_out_accessions()` quickly queries the
@@ -214,18 +214,6 @@ async def write_out_accessions() -> Result[None, str]:
     Returns:
         `Result[None, str]`
     """
-
-    if not os.path.isfile("filtered-to-geography.arrow"):
-        return Err(
-            cleandoc(
-                """
-                The filtered dataset in Apache Arrow format 'filtered-to-geography.arrow' is
-                missing in the current working directory.
-                """
-            )
-        )
-
-    filtered_lf = pl.scan_ipc("filtered-to-geography.arrow", memory_map=False)
 
     if "Accession" not in filtered_lf:
         return Err(
@@ -261,6 +249,7 @@ async def main() -> None:
         sys.exit("Command line argument parsing failed.")
     args = args_attempt.unwrap()  # pylint: disable=E1111
     metadata_path = args.metadata
+    assert os.path.isfile(metadata_path), "Provided metadata file does not exist."
     run_min_date = None if args.min_date in ("null", "") else args.min_date
     filters = FilterParams(
         geography=args.geography,
@@ -269,26 +258,29 @@ async def main() -> None:
     )
 
     # Scan the metadata into a LazyFrame and return any errors
+    logger.info("Reading metadata.")
     metadata_attempt = await read_metadata(metadata_path)
     if isinstance(metadata_attempt, Err):
         sys.exit(metadata_attempt.unwrap_err())
 
     # filter the metadata
+    logger.info("Filtering metadata with provided filters.")
     lz_attempt = await filter_metadata(metadata_attempt.unwrap(), filters)
     if isinstance(lz_attempt, Err):
         sys.exit(
             f"Metadata filtering failed with the following error:\n{lz_attempt.unwrap_err()}"
         )
 
+    # write out accessions
+    logger.info("Writing out simple list of accessions as text file.")
+    acc_attempt = await write_out_accessions(lz_attempt.unwrap())
+    if isinstance(acc_attempt, Err):
+        sys.exit(f"Failed to separate out accessions with:\n{acc_attempt.unwrap_err()}")
+
     # export to filtered arrow file with compression
     lz_attempt.unwrap().collect().write_ipc(
         "filtered-to-geography.arrow", compression="zstd"
     )
-
-    # separate out accessions
-    acc_attempt = await write_out_accessions()
-    if isinstance(acc_attempt, Err):
-        sys.exit(f"Failed to separate out accessions with:\n{acc_attempt.unwrap_err()}")
 
 
 if __name__ == "__main__":
