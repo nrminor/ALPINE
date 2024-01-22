@@ -80,7 +80,7 @@ async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
     file_type = FileType.determine_file_type(path_str)
 
     if file_type:
-        logger.opt(colors=True).info(f"{file_type.name}-formatted metadata detected.")
+        logger.info(f"{file_type.name}-formatted metadata detected.")
         return Ok(file_type.load_function(metadata_path))
 
     return Err(
@@ -103,7 +103,7 @@ async def reconcile_columns(metadata: pl.LazyFrame) -> pl.LazyFrame:
 
     # Run some pseudo-eager evaluations
     if "GC-Content" in metadata.columns:
-        logger.opt(colors=True).info("GISAID metadata detected.")
+        logger.info("GISAID metadata detected.")
         # double check that the expected column names are present
         assert "Virus name" in metadata.columns
         assert "Accession ID" in metadata.columns
@@ -134,7 +134,7 @@ async def reconcile_columns(metadata: pl.LazyFrame) -> pl.LazyFrame:
         .alias("Isolate Collection date")
     ).filter(pl.col("Isolate Collection date").is_not_null())
 
-    logger.opt(colors=True).info("Dates successfully formatted.")
+    logger.info("Dates successfully formatted.")
 
     return metadata
 
@@ -158,7 +158,8 @@ async def main():
     """
 
     # set up logger
-    logger.add(sys.stderr, backtrace=True, diagnose=True)
+    logger.remove()
+    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # parse command line arguments
     metadata_path = parse_command_line_args()
@@ -172,9 +173,7 @@ async def main():
     new_cols_lf = await reconcile_columns(metadata_attempt.unwrap())
 
     # evaluate and sink into compressed Arrow file in batches
-    logger.opt(colors=True).info(
-        "Now exporting as ZStandard-compressed Apache Arrow IPC file."
-    )
+    logger.info("Now exporting as ZStandard-compressed Apache Arrow IPC file.")
     new_cols_lf.sink_ipc("validated.arrow", compression="zstd")
 
 
