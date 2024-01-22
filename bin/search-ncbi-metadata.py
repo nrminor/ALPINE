@@ -109,7 +109,7 @@ def main():
     None
     """
 
-    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
+    logger.add(sys.stderr, backtrace=False, diagnose=True, colorize=True)
 
     # parse command line arguments
     metadata_path, dates_path, infection_cutoff, cores = parse_command_line_args()
@@ -130,7 +130,7 @@ def main():
             metadata["Isolate Collection date"], errors="coerce"
         )
         dates.designation_date = pandas.to_datetime(
-            dates.designation_date, errors="ignore", format="%Y-%m-%d"
+            dates.designation_date, format="%Y-%m-%d"
         ).fillna("2021-02-18")
 
         # Parallelize looping through filtered metadata to merge designation dates
