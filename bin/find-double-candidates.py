@@ -210,10 +210,14 @@ async def main() -> None:
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # retrieve available filenames
+    logger.info("Listing all available metadata and FASTA files.")
     meta_files = await list_metadata_files()
     fasta_files = await list_fasta_files()
 
+    assert len(meta_files) >= 2, "Not enough metadata files for comparison."
+
     # find large files that will be joined to
+    logger.info("Determining two largest FASTA and metadata files to inner-join.")
     sorted_meta = await sort_meta_files(meta_files)
     sorted_fastas = await sort_fasta_files(fasta_files)
 
@@ -225,9 +229,11 @@ async def main() -> None:
     ), "Failed to find at least one FASTA files to compare."
 
     # read metadata
+    logger.info("Reading metadata files.")
     left_meta, right_meta = await read_metadata(sorted_meta)
 
     # venn-overlap metadata
+    logger.info("Venn overlapping the accessions in the provided metadata files.")
     double_candidates = await overlap_metadata(left_meta, right_meta)
 
     # exit if no data was found
@@ -245,6 +251,7 @@ async def main() -> None:
     common_accessions = await get_common_accessions(double_candidates)
 
     # filter the FASTA as the last step
+    logger.info("Filtering input FASTA records to double candidates.")
     await filter_fasta(common_accessions, sorted_fastas[0])
 
 

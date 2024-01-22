@@ -15,6 +15,7 @@ involve running Pangolin or clustering.
 # make necessary modules available
 import argparse
 import multiprocessing
+import os
 import sys
 from pathlib import Path
 from typing import Optional, Tuple
@@ -112,8 +113,15 @@ def main():
     # parse command line arguments
     metadata_path, dates_path, infection_cutoff, cores = parse_command_line_args()
 
+    # make sure necessary files exist
+    assert os.path.isfile(metadata_path), "Provided metadata file path does not exist."
+    assert os.path.isfile(
+        dates_path
+    ), "Provided lineage dates file path does not exist."
+
     # Memory-map arrow IPC-formatted metadata
     with pyarrow.memory_map(str(metadata_path), "r") as source:
+        logger.info("Reading and memory-mapping input metadata.")
         metadata_arrays = pyarrow.ipc.open_file(source).read_all()
         metadata = metadata_arrays.to_pandas()
 
@@ -124,6 +132,7 @@ def main():
         assert "Isolate Collection date" in metadata.columns
 
         # Ensure dates are properly formatted
+        logger.info("Parsing metadata and lineage dates.")
         metadata["Isolate Collection date"] = pandas.to_datetime(
             metadata["Isolate Collection date"], errors="coerce"
         )
@@ -141,20 +150,31 @@ def main():
         ]
 
         # iterate through rows in parallel
+        logger.info(
+            "Adding pangolin lineage designation dates to classified metadata rows."
+        )
         with multiprocessing.Pool(cores) as p:
             metadata["lineage_designation"] = p.starmap(add_designation_date, args1)
             ncbi_dates = metadata["Isolate Collection date"]
             desig_dates = metadata["lineage_designation"]
+            logger.info(
+                "Computing persistent infection durations for all metadata rows."
+            )
             args2 = [(i, ncbi_dates, desig_dates) for i in range(len(ncbi_dates))]
             metadata["infection_duration"] = p.starmap(add_infection_duration, args2)
 
         # Filter down to long infection candidates
+        logger.info(
+            "Filtering to infections longer than the provided cutoff of {} days.",
+            infection_cutoff,
+        )
         long_infections = metadata.loc[
             (metadata["infection_duration"] >= infection_cutoff)
             & ~metadata["Accession"].isna()
         ].sort_values("infection_duration", ascending=False)
 
         # Write anachronistic candidates to TSV
+        logger.info("Writing metadata with infection durations.")
         long_infections.to_csv(
             "anachronistic_metadata_only_candidates.tsv", index=False, sep="\t"
         )

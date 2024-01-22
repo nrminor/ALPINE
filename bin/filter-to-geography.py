@@ -138,7 +138,7 @@ async def read_metadata(metadata_path: Path) -> Result[pl.LazyFrame, str]:
     file_type = FileType.determine_file_type(path_str)
 
     if file_type:
-        logger.info(f"{file_type.name}-formatted metadata detected.")
+        logger.info("{}-formatted metadata detected.", file_type.name)
         return Ok(file_type.load_function(metadata_path))
 
     return Err(
@@ -181,7 +181,7 @@ async def filter_metadata(
 
     if filters.min_date is None:
         logger.info("No minimum date provided.")
-        logger.info("Filtering to {filters.geography} before {params.max_date}.")
+        logger.info("Filtering to {} before {}.", filters.geography, filters.max_date)
         return Ok(
             meta_lf.filter(
                 pl.col("Geographic location").str.contains(filters.geography)
@@ -189,7 +189,10 @@ async def filter_metadata(
         )
 
     logger.info(
-        "Filtering to {filters.geography} between {filters.min_date} and {filters.max_date}."
+        "Filtering to {} between {} and {}.",
+        filters.geography,
+        filters.min_date,
+        filters.max_date,
     )
     return Ok(
         meta_lf.filter(pl.col("Geographic location").str.contains(filters.geography))

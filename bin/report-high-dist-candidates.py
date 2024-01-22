@@ -94,7 +94,7 @@ async def quantify_stringency(stringency: str) -> int:
         strict_quant = 995
 
     logger.info(
-        "Stringency of {stringency} quantified to the {strict_quant}th quantile."
+        "Stringency of {} quantified to the {}th quantile.", stringency, strict_quant
     )
 
     return strict_quant
@@ -334,8 +334,8 @@ async def collate_metadata(
     )
     try:
         await visualize_distance_scores(high_dist_meta, retention_threshold)
-    except Exception as _e:  # pylint: disable=W0718
-        logger.info("Plotting the distance score distribution failed: {_e}")
+    except Exception as traceback:  # pylint: disable=W0718
+        logger.info("Plotting the distance score distribution failed: {}", traceback)
     high_dist_meta = high_dist_meta.filter(
         pl.col("Distance Score") >= retention_threshold
     )
@@ -362,21 +362,37 @@ async def main():
     # retrieve file paths and settings from keyword command line arguments
     metadata_name, fasta_path, stringency, workingdir = parse_command_line_args()
 
+    # check that the provided input files exist
+    assert os.path.isfile(
+        metadata_name
+    ), "Provided metadata path does not point to a file that exists."
+    assert os.path.isfile(
+        fasta_path
+    ), "Provided FASTA path does not point to a file that exists."
+    assert os.path.isdir(workingdir), "Provided working directory path does not exist."
+
     # Retrieve a quantile to use to define a retention threshold downstream
     strict_quant = await quantify_stringency(stringency)
 
     # List all files in current directory that end with '-dist-matrix.csv'
-    files = [f for f in os.listdir(workingdir) if f.endswith("-dist-matrix.csv")]
+    logger.info("Collecting available distance matrix files.")
+    files = [
+        file for file in os.listdir(workingdir) if file.endswith("-dist-matrix.csv")
+    ]
 
     # Remove '-dist-matrix.csv' from each file name
-    yearmonths = [f.replace("-dist-matrix.csv", "") for f in files]
+    yearmonths = [file.replace("-dist-matrix.csv", "") for file in files]
 
     # retrieve all candidate metadata
+    logger.info("Reading candidate metadata files.")
     metadata, dist_scores, cluster_meta = await read_metadata_files(
         metadata_name, yearmonths, workingdir
     )
 
     # pile up all metadata from clustering, distance-calling, and the original database
+    logger.info(
+        "Piling up all metadata from clustering, distance-calling, and the original dataset"
+    )
     high_dist_meta, accessions = await collate_metadata(
         metadata, dist_scores, cluster_meta, strict_quant
     )
@@ -385,6 +401,7 @@ async def main():
     assert accessions.shape[0] > 0, "No candidate sequences identified."
 
     # write the metadata and the accessions
+    logger.info("Writing high-distance metadata and accession.")
     high_dist_meta.write_csv(
         f"{workingdir}/high_distance_candidates.tsv", separator="\t"
     )
@@ -393,6 +410,7 @@ async def main():
     )
 
     # Use Seqkit to separate out high distance sequences based on the metadata
+    logger.info("Filtering FASTA records to high distance accessions only.")
     cmd = [
         "seqkit",
         "grep",

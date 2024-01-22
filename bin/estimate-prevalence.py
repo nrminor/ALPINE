@@ -20,13 +20,13 @@ import argparse
 import os
 import sys
 from functools import lru_cache
+from pathlib import Path
 from pprint import pprint
 from typing import Tuple
 
 import numpy as np
 import polars as pl
 from loguru import logger
-from pathlib import Path
 from pydantic import validate_call
 
 
@@ -106,7 +106,10 @@ def estimate_prevalence(
     )
 
     logger.info(
-        "{candidate_count} candidates found among {sample_size} input sequences ({prevalence}%)."
+        "{} candidates found among {} input sequences ({}%).",
+        candidate_count,
+        sample_size,
+        prevalence,
     )
 
     return (prevalence, sample_size)

@@ -15,6 +15,7 @@ are possible.
 
 import argparse
 import asyncio
+import os
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -127,7 +128,16 @@ async def main():
     # parse command line arguments
     cluster_table_path, metadata_path = parse_command_line_args()
 
+    # check that the provided input files exist
+    assert os.path.isfile(
+        cluster_table_path
+    ), "Provided cluster table path does not point to a file that exists."
+    assert os.path.isfile(
+        metadata_path
+    ), "Provided metadata path does not point to a file that exists."
+
     # read the metadata
+    logger.info("Processing VSEARCH clustering metadata.")
     cluster_df = await read_cluster_table(cluster_table_path)
 
     # make sure only unique clusters are represented
@@ -135,7 +145,7 @@ async def main():
 
     # Compile FASTA sequences for each cluster
     for cluster in set(unique_df[1].tolist()):
-        logger.info("Assessing repeat lineages in cluster {cluster}")
+        logger.info("Assessing repeat lineages in cluster {}", cluster)
         fasta_seq = await fasta_input(cluster)
         await fasta_output(fasta_seq, cluster)
 
@@ -143,9 +153,11 @@ async def main():
     metadata = await read_metadata(metadata_path)
 
     # Create new table to store accessions and repeat cluster number
+    logger.info("Merging repeat-lineage cluster metadata with dataset metadata.")
     merged_metadata = await merge_metadata(unique_df, metadata)
 
     # Write repeat lineage metadata
+    logger.info("Writing repeat lineage metadata.")
     merged_metadata.to_csv(
         "repeat-lineage-metadata.tsv", na_rep="", index=False, sep="\t"
     )
