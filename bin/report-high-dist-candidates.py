@@ -22,12 +22,12 @@ import subprocess
 import sys
 from typing import Tuple
 
-import matplotlib.pyplot as pyplot
 import numpy
 import polars as pl
-import seaborn
+import seaborn  # type: ignore
 from loguru import logger
-from pl.testing import assert_frame_equal
+from matplotlib import pyplot
+from polars.testing import assert_frame_equal  # type: ignore
 from pydantic import validate_call
 
 
@@ -355,7 +355,9 @@ async def main():
     numbers of FASTA records than Python).
     """
 
-    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
+    # initialize logger
+    logger.remove()
+    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True, enqueue=True)
 
     # retrieve file paths and settings from keyword command line arguments
     metadata_name, fasta_path, stringency, workingdir = parse_command_line_args()

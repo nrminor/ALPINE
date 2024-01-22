@@ -206,6 +206,7 @@ async def main() -> None:
     the above defined functions.
     """
 
+    logger.remove()
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # retrieve available filenames

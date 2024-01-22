@@ -238,6 +238,7 @@ async def main() -> None:
     """
 
     # initialize logger
+    logger.remove()
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # parse desired filters out of command line arguments

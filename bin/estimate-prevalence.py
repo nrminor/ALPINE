@@ -114,6 +114,7 @@ def main() -> None:
     Main controls dataflow.
     """
 
+    logger.remove()
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     early_file, late_file = parse_command_line_args()

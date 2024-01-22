@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Tuple
 
 import Bio.SeqIO
-import pandas as pd
+import pandas as pd  # type: ignore
 from loguru import logger
 from pydantic import validate_call
 
@@ -121,7 +121,8 @@ async def main():
     """
 
     # initialize logger settings
-    logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
+    logger.remove()
+    logger.add(sys.stderr, colorize=True, backtrace=True, diagnose=True)
 
     # parse command line arguments
     cluster_table_path, metadata_path = parse_command_line_args()

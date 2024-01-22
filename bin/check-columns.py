@@ -159,6 +159,7 @@ async def main():
     """
 
     # set up logger
+    logger.remove()
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
     # parse command line arguments

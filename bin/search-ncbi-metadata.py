@@ -15,13 +15,13 @@ involve running Pangolin or clustering.
 # make necessary modules available
 import argparse
 import multiprocessing
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Optional, Tuple
 
 import numpy
-import pandas
-import pyarrow
+import pandas  # type: ignore
+import pyarrow  # type: ignore
 from loguru import logger
 from pydantic import validate_call
 
@@ -106,7 +106,8 @@ def main():
     None
     """
 
-    logger.add(sys.stderr, backtrace=False, diagnose=True, colorize=True)
+    logger.remove()
+    logger.add(sys.stderr, backtrace=False, diagnose=False, colorize=True, enqueue=True)
 
     # parse command line arguments
     metadata_path, dates_path, infection_cutoff, cores = parse_command_line_args()
