@@ -5,12 +5,12 @@ nextflow.enable.dsl = 2
 
 // prints to the screen and to the log
 log.info	"""
-			_______  ___      _______  ___   __    _  _______ 
+			_______  ___      _______  ___   __    _  _______
 			|   _   ||   |    |       ||   | |  |  | ||       |
 			|  |_|  ||   |    |    _  ||   | |   |_| ||    ___|
-			|       ||   |    |   |_| ||   | |       ||   |___ 
+			|       ||   |    |   |_| ||   | |       ||   |___
 			|       ||   |___ |    ___||   | |  _    ||    ___|
-			|   _   ||       ||   |    |   | | | |   ||   |___ 
+			|   _   ||       ||   |    |   | | | |   ||   |___
 			|__| |__||_______||___|    |___| |_|  |__||_______|
 
 			ALPINE: Anachronistic Lineage and Persistent INfection Explorer
@@ -56,7 +56,7 @@ workflow {
 
 	ch_gisaid_token = Channel
 		.fromPath ( params.gisaid_token )
-	
+
 	ch_still_schemas = Channel
 		.fromPath( "${params.resources}/*.schema" )
 		.collect()
@@ -162,16 +162,16 @@ workflow {
 	/* This workflow uses three orthogonal methods for identifying prolonged
 	infection candidates:
 		1 - Running a clustering algorithm on the sequences from each month to reduce
-		the dimensionality of the data, creating a distance matrix of nucleotide 
-		differences between clusters, and then flagging the sequences from the 
+		the dimensionality of the data, creating a distance matrix of nucleotide
+		differences between clusters, and then flagging the sequences from the
 		highest-distance clusters.
 		2 - Reclassifying sequences using with the most up-to-date version
-		of Pangolin and comparing each isolate's collection date with 
+		of Pangolin and comparing each isolate's collection date with
 		lineage prevalence estimates from outbreak.info
-		3 - The fastest option: trusting pango lineages in the metadata 
-		as being mostly up-to-date and comparing those lineages' collection 
+		3 - The fastest option: trusting pango lineages in the metadata
+		as being mostly up-to-date and comparing those lineages' collection
 		dates with outbreak.info prevalence estimates.
-	We suggest users run all of these methods (see nextflow.config) and 
+	We suggest users run all of these methods (see nextflow.config) and
 	cross reference the results from each.
 	*/
 
@@ -222,7 +222,7 @@ workflow {
 		REPORT_HIGH_DIST_CANDIDATES.out.metadata,
 		RUN_META_CLUSTER.out.whether_repeats
 	)
-	
+
 	// Steps for re-running pangolin and comparing dates
 	RECLASSIFY_SC2_WITH_PANGOLIN (
 		FILTER_SEQS_TO_GEOGRAPHY.out.fasta
@@ -237,7 +237,7 @@ workflow {
 	)
 
 	// Steps for inspecting NCBI metadata
-	SEARCH_NCBI_METADATA ( 
+	SEARCH_NCBI_METADATA (
 		FILTER_META_TO_GEOGRAPHY.out.metadata,
 		FILTER_SEQS_TO_GEOGRAPHY.out.fasta,
 		GET_DESIGNATION_DATES.out
@@ -418,7 +418,7 @@ params.double_candidates = params.results_subdir + "/double_candidates"
 process DOWNLOAD_REFSEQ {
 
 	/*
-	Here the NCBI RefSeq for the selected pathogen, if 
+	Here the NCBI RefSeq for the selected pathogen, if
 	available, is downloaded for downstream usage.
 	*/
 
@@ -442,22 +442,22 @@ process DOWNLOAD_REFSEQ {
 }
 
 process GET_DESIGNATION_DATES {
-	
+
 	/*
 	This process downloads a table of pangolin lineage designation dates
 	from Cornelius Roemer's GitHub. These dates represent when each lineage was
-	added to pangolin, after which point sequences could be classified as such 
+	added to pangolin, after which point sequences could be classified as such
 	*/
 
 	label "alpine_container"
 	publishDir params.resources, mode: 'copy', overwrite: true
-	
+
 	output:
 	path "lineage_designation_dates.csv"
 
 	when:
 	params.pathogen == "SARS-CoV-2"
-	
+
 	script:
 	"""
 	curl -fsSL ${params.lineage_dates} > lineage_designation_dates.csv
@@ -467,13 +467,13 @@ process GET_DESIGNATION_DATES {
 process DOWNLOAD_NCBI_PACKAGE {
 
 	/*
-	Here we download two, large files from NCBI: the FASTA of all 
+	Here we download two, large files from NCBI: the FASTA of all
 	pathogen consensus sequences in GenBank, and a tab-delimited
-	table of metadata for all those sequences. Depending on the 
+	table of metadata for all those sequences. Depending on the
 	settings specified in nextflow.config, various processing
 	will be performed on these files downstream.
 	*/
-	
+
 	tag "${params.pathogen}"
 	storeDir params.ncbi_storedir
 
@@ -486,7 +486,7 @@ process DOWNLOAD_NCBI_PACKAGE {
 	script:
 	"""
 	datasets download virus genome taxon ${pathogen}
-	"""	
+	"""
 
 }
 
@@ -499,7 +499,7 @@ process UNZIP_NCBI_METADATA {
 	data normalization issues the users may run into here, but it
 	remains possible that others will appear in the future.
 	*/
-	
+
 	label "alpine_container"
 	tag "${params.pathogen}"
 	storeDir params.ncbi_storedir
@@ -536,7 +536,7 @@ process UNZIP_NCBI_METADATA {
 process EXTRACT_NCBI_FASTA {
 
 	/*
-	Here the pathogen sequences in FASTA format are extracted 
+	Here the pathogen sequences in FASTA format are extracted
 	from the lightweight NCBI zip archive.
 	*/
 
@@ -600,8 +600,8 @@ process NORMALIZE_METADATA {
 process VALIDATE_METADATA {
 
 	/*
-	This step checks the typing and column header names 
-	for the input metadata, ensuring in particular that 
+	This step checks the typing and column header names
+	for the input metadata, ensuring in particular that
 	GISAID metadata are compatible with the scripts used
 	in this workflow.
 	*/
@@ -750,7 +750,7 @@ process FILTER_META_TO_GEOGRAPHY {
 process FILTER_SEQS_TO_GEOGRAPHY {
 
 	/*
-	This process takes the aceessions list from 
+	This process takes the aceessions list from
 	FILTER_META_TO_GEOGRAPHY and filters down the full FASTA
 	to those accessions, ensuring that both the metadata and
 	the sequences reflect the same geography filtering.
@@ -792,7 +792,7 @@ process EARLY_STATS {
 	attempt to use it here as a proxy for the prevalence of
 	these pathogens in the general population.
 	*/
-	
+
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
@@ -854,9 +854,9 @@ process SEPARATE_BY_MONTH {
 
 	/*
 	In this process, we get ready to parallelize by splitting the big
-	NCBI FASTA into one for each year-month combination. This will 
-	allow us to identify particularly advanced viruses in each 
-	month instead of simply flagging the newest variants as the 
+	NCBI FASTA into one for each year-month combination. This will
+	allow us to identify particularly advanced viruses in each
+	month instead of simply flagging the newest variants as the
 	most evolved (which, almost by definition, they are!)
 	*/
 
@@ -885,9 +885,9 @@ process SEPARATE_BY_MONTH {
 process CLUSTER_BY_IDENTITY {
 
 	/*
-	Here we run a version of Robert Edgar's UCLUST algorithm that 
-	is part of the open-source VSEARCH package. This step may take 
-	a large amount of time and RAM, and thus may be better suited 
+	Here we run a version of Robert Edgar's UCLUST algorithm that
+	is part of the open-source VSEARCH package. This step may take
+	a large amount of time and RAM, and thus may be better suited
 	for a high-RAM cluster environment.
 	*/
 
@@ -908,7 +908,7 @@ process CLUSTER_BY_IDENTITY {
 	path "${yearmonth}-clusters.uc", emit: cluster_table
 	tuple path("${yearmonth}-centroids.fasta"), val(yearmonth), env(count), emit: centroid_fasta
 	path "${yearmonth}-cluster-seqs*", emit: cluster_fastas
-	
+
 	script:
 	yearmonth = fasta.getSimpleName()
 	"""
@@ -920,15 +920,15 @@ process CLUSTER_BY_IDENTITY {
 	--threads ${task.cpus} && \
 	count=\$(grep -c "^>" ${yearmonth}-centroids.fasta)
 	"""
-	
+
 }
 
 process COMPUTE_DISTANCE_MATRIX {
 
 	/*
-	In parallel to clustering each month's sequences by nucleotide 
-	identity, the workflow will also compute a cluster-size-weighted 
-	nucleotide distance matrix, which will be used to assign distances 
+	In parallel to clustering each month's sequences by nucleotide
+	identity, the workflow will also compute a cluster-size-weighted
+	nucleotide distance matrix, which will be used to assign distances
 	for each sequence in each month.
 	*/
 
@@ -961,7 +961,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	alpine distance-matrix \
 	--fasta ${fasta} \
 	--cluster-table ${cluster_table} \
-	--yearmonth "${yearmonth}" \
+	--label "${yearmonth}" \
 	--stringency "${params.strictness_mode}" \
 	--distance-method "${params.distance_method}"
 	"""
@@ -972,9 +972,9 @@ process MULTIDIMENSIONAL_SCALING {
 
 	/*
 	This plot runs multi-dimensional scaling to produce a "bee-swarm"
-	plot of the sequences in each cluster. This plot will visualize 
+	plot of the sequences in each cluster. This plot will visualize
 	the cluster's distances relative to each other, and make it more
-	intuitive to discern when a cluster is exceptionally distant, 
+	intuitive to discern when a cluster is exceptionally distant,
 	and therefore evolutionarily advanced.
 	*/
 
@@ -1012,7 +1012,7 @@ process REPORT_HIGH_DIST_CANDIDATES {
 	/*
 	In this process, the clustering results are combined with metadata
 	to provide as much information as possible with the candidate
-	evolutionarily advanced sequences. We recommend users visually 
+	evolutionarily advanced sequences. We recommend users visually
 	inspect these candidates and compare them with candidates from
 	the two additional methods used in this pipeline.
 	*/
@@ -1047,7 +1047,7 @@ process RUN_META_CLUSTER {
 
 	/*
 	This process runs clustering on the previous clustering
-	results, but with a tighter identity threshold. In doing 
+	results, but with a tighter identity threshold. In doing
 	so, the workflow can identify multiple sequences that
 	are potentially from the same prolonged infection.
 	*/
@@ -1087,7 +1087,7 @@ process RUN_META_CLUSTER {
 process META_CLUSTER_REPORT {
 
 	/*
-	In the final step of the distance matrix branch of the 
+	In the final step of the distance matrix branch of the
 	workflow, this process generates a CSV report highlighting
 	any promising results from the meta-clustering step. If
 	all high-distance sequences are in their own clusters,
@@ -1125,9 +1125,9 @@ process RECLASSIFY_SC2_WITH_PANGOLIN {
 
 	/*
 	Here, the workflow runs the filtered Genbank FASTA through
-	the Pangolin tool with its fastest settings. These updated 
+	the Pangolin tool with its fastest settings. These updated
 	pango lineage classifications are then used in conjunction
-	with the Outbreak.info API to identify anachronistic 
+	with the Outbreak.info API to identify anachronistic
 	sequences.
 	*/
 
@@ -1138,10 +1138,10 @@ process RECLASSIFY_SC2_WITH_PANGOLIN {
 	maxRetries 1
 
 	cpus params.max_cpus
-	
+
 	input:
 	path fasta
-	
+
 	output:
 	path "*.csv"
 
@@ -1175,13 +1175,13 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 	may boot out the script for making too many API calls. This
 	process will dynamically retry with longer and longer wait times
 	to address this, but in some cases the API may cause this step to
-	fail. In such cases, we recommend 
+	fail. In such cases, we recommend
 	*/
-	
+
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
 	publishDir params.anachronistic_candidates, mode: 'copy'
-	
+
 	errorStrategy { task.attempt < 3 ? 'retry' : params.errorMode }
 	maxRetries 2
 
@@ -1207,7 +1207,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 process SEARCH_NCBI_METADATA {
 
-	/* 
+	/*
 	In parallel with the distance matrix method, this pipeline also pans
 	the GenBank metadata for anachronistic sequences, which may have come
 	from evolutionarily advanced virus lineages in prolonged infections.
@@ -1220,7 +1220,7 @@ process SEARCH_NCBI_METADATA {
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
 	publishDir params.metadata_candidates, mode: 'copy'
-	
+
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
@@ -1237,7 +1237,7 @@ process SEARCH_NCBI_METADATA {
 
 	when:
 	params.search_metadata_dates == true && params.pathogen == "SARS-CoV-2"
-		
+
 	script:
 	"""
 	search-ncbi-metadata.py ${metadata} ${lineage_dates} ${params.days_of_infection} ${task.cpus} && \
@@ -1252,7 +1252,7 @@ process SEARCH_NCBI_METADATA {
 process FIND_DOUBLE_CANDIDATES {
 
 	/*
-	Check the outputs from the lineage and date-based approach with 
+	Check the outputs from the lineage and date-based approach with
 	the outputs of the distance matrix approach to find the "Venn
 	overlap" between the two, where two lines of evidence suggest
 	that a sequence comes from a prolonged infection within one host.
@@ -1261,7 +1261,7 @@ process FIND_DOUBLE_CANDIDATES {
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
 	publishDir params.double_candidates, mode: 'copy'
-	
+
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
@@ -1289,7 +1289,7 @@ process LATE_STATS {
 	process `EARLY_STATS` above. Refer to the docstring there
 	for more explanation and caveats.
 	*/
-	
+
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
@@ -1319,7 +1319,7 @@ process COMPUTE_PREVALENCE_ESTIMATE {
 	from above to estimate and print out a prevalence estimate for
 	the double-candidates identified above.
 	*/
-	
+
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
 	publishDir params.results_subdir, mode: 'copy'
@@ -1352,7 +1352,7 @@ process SUMMARIZE_RUN_RESULTS {
 	searched on this run-date and summarizes their findings in
 	a readable spreadsheet.
 	*/
-	
+
 	tag "${params.pathogen}, ${params.date}"
 	label "alpine_container"
 	publishDir params.dated_results, mode: 'copy'
