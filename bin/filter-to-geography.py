@@ -44,7 +44,7 @@ class FilterParams:
 
     geography: str
     min_date: Optional[date]
-    max_date: date
+    max_date: Optional[date]
 
 
 class FileType(Enum):
@@ -248,13 +248,14 @@ async def main() -> None:
     if isinstance(args_attempt, Err):
         sys.exit("Command line argument parsing failed.")
     args = args_attempt.unwrap()  # pylint: disable=E1111
+
+    # unpack the individual argument components and re-pack filters
     metadata_path = args.metadata
     assert os.path.isfile(metadata_path), "Provided metadata file does not exist."
-    run_min_date = None if args.min_date in ("null", "") else args.min_date
     filters = FilterParams(
         geography=args.geography,
-        min_date=run_min_date,
-        max_date=args.max_date,
+        min_date=None if args.min_date in ("null", "") else args.min_date,
+        max_date=date.today() if args.max_date in ("null", "") else args.max_date,
     )
 
     # Scan the metadata into a LazyFrame and return any errors
