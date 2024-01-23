@@ -104,12 +104,8 @@ async def overlap_metadata(
     ), "No columns found in the smaller metadata. They may either be empty or not tab-delimited."
     left_cols = left_meta.collect().columns
     right_cols = right_meta.collect().columns
-    assert "Accession" in left_cols, "Accession not found in larger metadata."
-    assert "Accession" in right_cols, "Accession not found in smaller metadata."
-    assert (
-        "Anachronicity (days)" in left_cols
-    ), "Accession not found in larger metadata."
-    assert "Accession" in right_cols, "Accession not found in smaller metadata."
+    assert "Accession" in left_cols, "Accession column not found in larger metadata."
+    assert "Accession" in right_cols, "Accession column not found in smaller metadata."
 
     # initialize double_candidates so scoping is clear
     double_candidates: pl.LazyFrame
