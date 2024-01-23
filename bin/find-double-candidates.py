@@ -161,6 +161,15 @@ async def get_common_accessions(double_candidates: pl.LazyFrame) -> Set[str]:
     return set(double_candidates.select("Accession").collect().to_series().to_list())
 
 
+async def write_metadata(double_candidates: pl.LazyFrame) -> None:
+    """
+    Asynchronously write the double candidate metadata while other
+    operations finish.
+    """
+
+    double_candidates.collect().write_csv("double_candidates.tsv", separator="\t")
+
+
 @logger.opt(lazy=True).catch(reraise=True)
 @validate_call
 async def filter_fasta(candidate_set: Set[str], fasta_path: str) -> None:
@@ -248,6 +257,9 @@ async def main() -> None:
 
     # get accessions to filter out of the FASTA
     common_accessions = await get_common_accessions(double_candidates)
+
+    # write out double-candidate metadata
+    await write_metadata(double_candidates)
 
     # filter the FASTA as the last step
     logger.info("Filtering input FASTA records to double candidates.")
