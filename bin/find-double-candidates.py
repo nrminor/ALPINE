@@ -29,7 +29,7 @@ async def list_metadata_files() -> Tuple[str, ...]:
     As such, it is potentially error-prone to use this script outside the
     context of the ALPINE Nextflow wrapper.
     """
-    return tuple(glob.glob("./*.tsv"))
+    return tuple(glob.glob("*.tsv"))
 
 
 @logger.catch(reraise=True)
@@ -42,7 +42,7 @@ async def list_fasta_files() -> Tuple[str, ...]:
     context of the ALPINE Nextflow wrapper.
     """
 
-    return tuple(glob.glob("./*.fasta"))
+    return tuple(glob.glob("*.fasta"))
 
 
 @logger.catch(reraise=True)
@@ -209,10 +209,14 @@ async def main() -> None:
     logger.remove()
     logger.add(sys.stderr, backtrace=True, diagnose=True, colorize=True)
 
-    # retrieve available filenames
+    # retrieve available metadata filenames
     logger.info("Listing all available metadata and FASTA files.")
     meta_files = await list_metadata_files()
+    logger.info("Found the following metadata files: {}", meta_files)
+
+    # retrieve available FASTA filenames
     fasta_files = await list_fasta_files()
+    logger.info("Found the following FASTA file(s): {}", fasta_files)
 
     assert len(meta_files) >= 2, "Not enough metadata files for comparison."
 
