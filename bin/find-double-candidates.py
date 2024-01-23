@@ -41,7 +41,6 @@ async def list_fasta_files() -> Tuple[str, ...]:
     As such, it is potentially error-prone to use this script outside the
     context of the ALPINE Nextflow wrapper.
     """
-
     return tuple(glob.glob("*.fasta"))
 
 
@@ -55,7 +54,7 @@ async def sort_meta_files(meta_files: Tuple[str, ...]) -> List[str]:
 
     assert len(meta_files) > 1, "Too few metadata files provided for comparison."
 
-    return sorted(meta_files, key=os.path.getsize, reverse=True)[0:1]
+    return sorted(meta_files, key=os.path.getsize, reverse=True)[0:2]
 
 
 @logger.catch(reraise=True)
@@ -69,7 +68,7 @@ async def sort_fasta_files(fasta_files: Tuple[str, ...]) -> List[str]:
     assert len(fasta_files) > 0, "Too few FASTA files provided for comparison."
 
     if len(fasta_files) > 1:
-        return sorted(fasta_files, key=os.path.getsize, reverse=True)[0:1]
+        return sorted(fasta_files, key=os.path.getsize, reverse=True)[0:2]
 
     return sorted(fasta_files, key=os.path.getsize, reverse=True)
 
