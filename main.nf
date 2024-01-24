@@ -527,7 +527,6 @@ process UNZIP_NCBI_METADATA {
 	--trim-fields --encoding-errors skip \
 	| qsv luau filter "string.len(col['Geographic Location']) > 0" \
 	| qsv luau filter "string.len(col['Isolate Collection date']) >= 10" \
-	| qsv fmt --out-delimiter "\t" \
 	--output genbank_metadata.cleaned.csv.sz
 	"""
 
@@ -592,7 +591,6 @@ process NORMALIZE_METADATA {
 	| qsv luau filter "string.len(col['Location']) > 0" \
 	| qsv luau filter "string.len(col['Collection date']) >= 10" \
 	| qsv replace --select 'Virus name' ' ' '_' \
-	| qsv fmt --out-delimiter "\t" \
 	--output gisaid_metadata.cleaned.csv.sz
 	"""
 }
@@ -608,7 +606,7 @@ process VALIDATE_METADATA {
 
 	tag "${params.pathogen}"
 	label "alpine_container"
-	storeDir params.gisaid_storedir
+	// storeDir params.storage_root
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -640,7 +638,7 @@ process VALIDATE_METADATA {
 	rm tmp.csv
 
 	# convert to parquet
-	qsv sqlp -d "\t" ${metadata} "select * from _t_1" \
+	qsv sqlp ${metadata} "select * from _t_1" \
 	--low-memory --ignore-errors \
 	--format parquet --compression 'zstd' --compress-level 6 \
 	--output ${db}_metadata.cleaned.parquet

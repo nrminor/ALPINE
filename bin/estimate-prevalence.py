@@ -142,7 +142,7 @@ def main() -> None:
 
     # pretty-print for forwarding up to the workflow level
     pprint(
-        f"{prevalence}% of ${sample_size} sequences were flagged as highly evolved & anachronistic."
+        f"{prevalence}% of {sample_size} sequences were flagged as highly evolved & anachronistic."
     )
 
 

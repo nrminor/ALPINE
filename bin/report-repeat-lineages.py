@@ -74,7 +74,6 @@ async def fasta_input(cluster: str) -> list:
 
 
 @logger.catch(reraise=True)
-@lru_cache
 async def fasta_output(fasta_seq: list, cluster: str) -> None:
     """Write the cluster FASTA"""
 
