@@ -20,6 +20,7 @@ import asyncio
 import os
 import subprocess
 import sys
+from glob import glob
 from typing import Tuple
 
 import numpy
@@ -29,6 +30,7 @@ from loguru import logger
 from matplotlib import pyplot
 from polars.testing import assert_frame_equal  # type: ignore
 from pydantic import validate_call
+from pydantic.dataclasses import dataclass
 
 
 @validate_call
@@ -152,11 +154,24 @@ async def visualize_distance_scores(metadata: pl.DataFrame, threshold: float) ->
     pyplot.savefig("distance_score_distribution.pdf")
 
 
+@dataclass(frozen=True, kw_only=True)
+class ClusterTables:
+    """
+    In-memory tables of information for all clusters/accessions, depending
+    on whether preclustering was performed
+    """
+
+    full_meta: pl.DataFrame
+    dist_scores: pl.DataFrame
+    cluster_meta: pl.DataFrame
+    whether_preclust: bool
+
+
 @logger.opt(lazy=True).catch(reraise=True)
 @validate_call
 async def read_metadata_files(
     metadata_filename: str, yearmonths: list, workingdir: str
-) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
+) -> ClusterTables:
     """
     Metadata file reading is relegated to this function so that other functions
     can be CPU-bound alone instead of interleaving IO and additional computations.
@@ -175,22 +190,33 @@ async def read_metadata_files(
     collected it, 3) the size of each cluster, and 4) the sequence accessions themselves.
     """
 
-    # Make some empty dataframes to vstack on top of
+    # start by checking if there are any VSEARCH clustering metadata files
+    precluster = len(glob("*.uc")) > 0
+
+    # prepare to compile distances
     dist_scores = pl.DataFrame(
         {"Accession": None, "Distance Score": None},
         schema={"Accession": pl.Utf8, "Distance Score": pl.Float64},
     )
     dist_scores = dist_scores.clear()
-    cluster_meta = pl.read_csv(
-        f"{workingdir}/{yearmonths[0]}-clusters.uc",
-        separator="\t",
-        has_header=False,
-        columns=[0, 1, 2, 8],
-        new_columns=["Type", "Index", "Size", "Accession"],
-        n_rows=1,
-    )
-    cluster_meta = cluster_meta.with_columns(pl.lit("2023-08").alias("Month"))
-    cluster_meta = cluster_meta.clear()
+
+    # read metadata
+    metadata = pl.read_ipc(f"{workingdir}/{metadata_filename}", use_pyarrow=True)
+
+    # conditionally prepare to compile VSEARCH cluster metadata
+    if precluster:
+        cluster_meta = pl.read_csv(
+            f"{workingdir}/{yearmonths[0]}-clusters.uc",
+            separator="\t",
+            has_header=False,
+            columns=[0, 1, 2, 8],
+            new_columns=["Type", "Index", "Size", "Accession"],
+            n_rows=1,
+        )
+        cluster_meta = cluster_meta.with_columns(pl.lit("2023-08").alias("Month"))
+        cluster_meta = cluster_meta.clear()
+    else:
+        cluster_meta = metadata.select("Accession")
 
     # go through each month of data and bring in its various files
     for yearmonth in yearmonths:
@@ -208,6 +234,11 @@ async def read_metadata_files(
             .rename({"Sequence_Name": "Accession", "Distance_Score": "Distance Score"})
             .select(pl.col(["Accession", "Distance Score"]))
         )
+        dist_scores.vstack(distmat, in_place=True)
+
+        # continue if preclustering was not performed
+        if not precluster:
+            continue
 
         # Now, bring in clustering metadata and do the same kind of thing
         cluster_table = pl.read_csv(
@@ -239,20 +270,19 @@ async def read_metadata_files(
         )
 
         # vstack (i.e., append) them onto the growing metadata dataframes
-        dist_scores.vstack(distmat, in_place=True)
         cluster_meta.vstack(cluster_table, in_place=True)
 
-    # parse the full database metadata as a data frame to return
-    metadata = pl.read_ipc(f"{workingdir}/{metadata_filename}", use_pyarrow=True)
-
-    return (metadata, dist_scores, cluster_meta)
+    return ClusterTables(
+        full_meta=metadata,
+        dist_scores=distmat,
+        cluster_meta=cluster_meta,
+        whether_preclust=precluster,
+    )
 
 
 @logger.opt(lazy=True).catch(reraise=True)
 async def collate_metadata(
-    metadata: pl.DataFrame,
-    dist_scores: pl.DataFrame,
-    cluster_meta: pl.DataFrame,
+    cluster_tables: ClusterTables,
     stringency: int,
 ) -> tuple[pl.DataFrame, pl.DataFrame]:
     """
@@ -275,57 +305,68 @@ async def collate_metadata(
                 clustering algorithm.
     """
 
+    # unpack required inputs
+    metadata = cluster_tables.full_meta
+    dist_scores = cluster_tables.dist_scores
+    cluster_meta = cluster_tables.cluster_meta
+
     # join distance scores onto the cluster metadata, which will add
     # scores to the centroids from each cluster
     assert "Accession" in cluster_meta.columns
     cluster_meta = cluster_meta.join(dist_scores, on="Accession", how="left")
 
-    # merge the month and cluster index columns to make a unique identifier
-    cluster_meta = cluster_meta.with_columns(
-        [pl.format("{}_{}", "Month", "Index").alias("Month Index")]
-    )
-
-    # Use a series of Polars expressions to:
-    # 1 - replace sequence length entries in "H" entries with the cluster
-    # size entries from the associated "C" entries.
-    # 2 - Spread the distance scores from each centroid to all the hit
-    # sequences in their clusters, and
-    # 3 - select only the cluster size, distance, accession, and month
-    # columns for joining with the big metadata
-    assert "Type" in cluster_meta.columns
-    assert "Month Index" in cluster_meta.columns
-    assert "Size" in cluster_meta.columns
-    assert "Distance Score" in cluster_meta.columns
-    centroid_data = cluster_meta.filter(pl.col("Type") == "C").select(
-        ["Month Index", "Size", "Distance Score"]
-    )
-    cluster_meta = (
-        cluster_meta.join(centroid_data, on="Month Index", how="left", suffix="_right")
-        .select(["Accession", "Month Index", "Size_right", "Distance Score_right"])
-        .rename(
-            {"Size_right": "Cluster Size", "Distance Score_right": "Distance Score"}
+    # Expand cluster centroid distance to all cluster members if preclustering was performed
+    if cluster_tables.whether_preclust:
+        # merge the month and cluster index columns to make a unique identifier
+        cluster_meta = cluster_meta.with_columns(
+            [pl.format("{}_{}", "Month", "Index").alias("Month Index")]
         )
-    )
 
-    # filter out any clusters with only one entry (this shouldn't
-    # be necessary when run in the context of the pipeline, but
-    # we include it here just to be safe.)
-    cluster_meta = (
-        cluster_meta.group_by("Month Index")
-        .agg(pl.col("Month Index").count().alias("count"))
-        .join(cluster_meta, on="Month Index", how="left")
-        .filter(pl.col("count") > 1)
-        .select(cluster_meta.columns)
-    )
+        # Use a series of Polars expressions to:
+        # 1 - replace sequence length entries in "H" entries with the cluster
+        # size entries from the associated "C" entries.
+        # 2 - Spread the distance scores from each centroid to all the hit
+        # sequences in their clusters, and
+        # 3 - select only the cluster size, distance, accession, and month
+        # columns for joining with the big metadata
+        assert "Type" in cluster_meta.columns
+        assert "Month Index" in cluster_meta.columns
+        assert "Size" in cluster_meta.columns
+        assert "Distance Score" in cluster_meta.columns
+        centroid_data = cluster_meta.filter(pl.col("Type") == "C").select(
+            ["Month Index", "Size", "Distance Score"]
+        )
+        cluster_meta = (
+            cluster_meta.join(
+                centroid_data, on="Month Index", how="left", suffix="_right"
+            )
+            .select(["Accession", "Month Index", "Size_right", "Distance Score_right"])
+            .rename(
+                {"Size_right": "Cluster Size", "Distance Score_right": "Distance Score"}
+            )
+        )
+
+        # filter out any clusters with only one entry (this shouldn't
+        # be necessary when run in the context of the pipeline, but
+        # we include it here just to be safe.)
+        cluster_meta = (
+            cluster_meta.group_by("Month Index")
+            .agg(pl.col("Month Index").count().alias("count"))
+            .join(cluster_meta, on="Month Index", how="left")
+            .filter(pl.col("count") > 1)
+            .select(cluster_meta.columns)
+        )
 
     # join with the big metadata
     high_dist_meta = metadata.join(cluster_meta, on="Accession", how="left")
 
     # sort the new high distance metadata by distance score
     # in descending order and remove any null rows
-    high_dist_meta = high_dist_meta.sort(
-        by="Distance Score", descending=True, nulls_last=True
-    ).filter(pl.col("Distance Score").is_not_null())
+    high_dist_meta = (
+        high_dist_meta.sort(by="Distance Score", descending=True, nulls_last=True)
+        .filter(pl.col("Distance Score").is_not_null())
+        .unique()
+    )
 
     # And finally, filter down to distances above the retention threshold while
     # also visualizing the distance score distribution
@@ -385,16 +426,15 @@ async def main():
 
     # retrieve all candidate metadata
     logger.info("Reading candidate metadata files.")
-    metadata, dist_scores, cluster_meta = await read_metadata_files(
-        metadata_name, yearmonths, workingdir
-    )
+    cluster_tables = await read_metadata_files(metadata_name, yearmonths, workingdir)
 
     # pile up all metadata from clustering, distance-calling, and the original database
     logger.info(
         "Piling up all metadata from clustering, distance-calling, and the original dataset"
     )
     high_dist_meta, accessions = await collate_metadata(
-        metadata, dist_scores, cluster_meta, strict_quant
+        cluster_tables,
+        strict_quant,
     )
 
     # Use an assertion to spare the computer some effort if no candidates were found
