@@ -380,8 +380,8 @@ async def main() -> None:
             args.or_inclusions
         ), "Provided or inclusion list file not found."
     inclusions = ExplicitInclusions(
-        and_inclusions=args.and_inclusions,
-        or_inclusions=args.or_inclusions,
+        and_inclusions=args.and_include,
+        or_inclusions=args.or_include,
     )
 
     # re-pack filter parameters provided in the command line
