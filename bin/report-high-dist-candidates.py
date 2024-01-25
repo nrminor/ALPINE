@@ -447,7 +447,7 @@ async def main():
         f"{workingdir}/high_distance_candidates.tsv", separator="\t"
     )
     accessions.write_csv(
-        f"{workingdir}/high-dist-accessions.txt", has_header=False, separator="\t"
+        f"{workingdir}/high-dist-accessions.txt", include_header=False, separator="\t"
     )
 
     # Use Seqkit to separate out high distance sequences based on the metadata
