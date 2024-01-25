@@ -192,6 +192,7 @@ async def read_metadata_files(
 
     # start by checking if there are any VSEARCH clustering metadata files
     precluster = len(glob("*.uc")) > 0
+    logger.info("Whether preclustering was performed: {}", precluster)
 
     # prepare to compile distances
     dist_scores = pl.DataFrame(
