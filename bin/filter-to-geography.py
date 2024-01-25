@@ -375,7 +375,7 @@ async def main() -> None:
         assert os.path.isfile(
             args.and_inclusions
         ), "Provided and inclusion list file not found."
-    if args.or_incluce is not None:
+    if args.or_include is not None:
         assert os.path.isfile(
             args.or_inclusions
         ), "Provided or inclusion list file not found."
