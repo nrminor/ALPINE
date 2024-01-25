@@ -36,6 +36,7 @@ log.info	"""
 			Download only?     : ${params.download_only}
 			Search metadata    : ${params.search_metadata_dates}
 			Pango-reclassify   : ${params.reclassify_sc2_lineages}
+			Pre-cluster        : ${params.precluster}
 			Distance matrix    : ${params.make_distance_matrix}
 			Debug mode         : ${params.debugmode}
 			Cleanup mode       : ${params.cleanup}
