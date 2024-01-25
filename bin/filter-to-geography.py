@@ -371,11 +371,11 @@ async def main() -> None:
     assert os.path.isfile(metadata_path), "Provided metadata file does not exist."
 
     # unpack any inclusion lists
-    if args.and_inclusions is not None:
+    if args.and_include is not None:
         assert os.path.isfile(
             args.and_inclusions
         ), "Provided and inclusion list file not found."
-    if args.or_inclusions is not None:
+    if args.or_incluce is not None:
         assert os.path.isfile(
             args.or_inclusions
         ), "Provided or inclusion list file not found."
