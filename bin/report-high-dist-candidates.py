@@ -30,7 +30,7 @@ from loguru import logger
 from matplotlib import pyplot
 from polars.testing import assert_frame_equal  # type: ignore
 from pydantic import validate_call
-from pydantic.dataclasses import dataclass
+from dataclasses import dataclass
 
 
 @validate_call
@@ -154,7 +154,7 @@ async def visualize_distance_scores(metadata: pl.DataFrame, threshold: float) ->
     pyplot.savefig("distance_score_distribution.pdf")
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass
 class ClusterTables:
     """
     In-memory tables of information for all clusters/accessions, depending
