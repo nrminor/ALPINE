@@ -187,16 +187,33 @@ workflow {
 		FILTER_META_TO_GEOGRAPHY.out.metadata
 	)
 
-	CLUSTER_BY_IDENTITY (
-		SEPARATE_BY_MONTH.out.flatten()
-	)
+	if ( params.precluster == false) {
 
-	COMPUTE_DISTANCE_MATRIX (
-		CLUSTER_BY_IDENTITY.out.cluster_table,
-		CLUSTER_BY_IDENTITY.out.centroid_fasta
-			.filter { it[2].toInteger() > 2 }
-			.map { fasta, yearmonth, count -> file(fasta) }
-	)
+		COMPUTE_DISTANCE_MATRIX (
+			FILTER_META_TO_GEOGRAPHY.out.metadata,
+			SEPARATE_BY_MONTH.out.flatten()
+				.map { fasta -> tuple( file(fasta), file(fasta).countFasta() )}
+				.filter { it[1].toInteger() > 2 }
+				.map { fasta, count -> file(fasta) }
+		)
+
+	} else {
+
+		CLUSTER_BY_IDENTITY (
+			SEPARATE_BY_MONTH.out.flatten()
+				.map { fasta -> tuple( file(fasta), file(fasta).countFasta() )}
+				.filter { it[1].toInteger() > 2 }
+				.map { fasta, count -> file(fasta) }
+		)
+
+		COMPUTE_DISTANCE_MATRIX (
+			CLUSTER_BY_IDENTITY.out.cluster_table,
+			CLUSTER_BY_IDENTITY.out.centroid_fasta
+				.filter { it[2].toInteger() > 2 }
+				.map { fasta, yearmonth, count -> file(fasta) }
+		)
+
+	}
 
 	// MULTIDIMENSIONAL_SCALING (
 	// 	CLUSTER_BY_IDENTITY.out.cluster_table,
@@ -947,6 +964,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	path "${yearmonth}-dist-matrix.csv"
 
 	when:
+	cluster_table.getBaseName() == "filtered-to-geography.arrow" ||
 	file(fasta.toString())
 		.getSimpleName()
 		.contains(file(cluster_table.toString())
@@ -954,15 +972,24 @@ process COMPUTE_DISTANCE_MATRIX {
 		.replace("-clusters", ""))
 
 	script:
-	yearmonth = file(cluster_table.toString()).getSimpleName().replace("-clusters", "")
-	"""
-	alpine distance-matrix \
-	--fasta ${fasta} \
-	--cluster-table ${cluster_table} \
-	--label "${yearmonth}" \
-	--stringency "${params.strictness_mode}" \
-	--distance-method "${params.distance_method}"
-	"""
+	yearmonth = fasta.getSimpleName()
+	if params.precluster == true
+		"""
+		alpine distance-matrix \
+		--fasta ${fasta} \
+		--cluster-table ${cluster_table} \
+		--label "${yearmonth}" \
+		--stringency "${params.strictness_mode}" \
+		--distance-method "${params.distance_method}"
+		"""
+	else
+		"""
+		alpine distance-matrix \
+		--fasta ${fasta} \
+		--label "${yearmonth}" \
+		--stringency "${params.strictness_mode}" \
+		--distance-method "${params.distance_method}"
+		"""
 
 }
 
