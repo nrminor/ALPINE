@@ -441,7 +441,7 @@ process DOWNLOAD_REFSEQ {
 	*/
 
 	tag "${params.pathogen}"
-	publishDir params.resources, mode: 'copy'
+	publishDir params.resources, mode: 'copy', overwrite: true
 	storeDir "$launchDir/work/ncbi"
 
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 1000 as long); return 'retry' }
@@ -740,7 +740,7 @@ process FILTER_META_TO_GEOGRAPHY {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
-	publishDir params.results_subdir, pattern: "filtered-to-geography.arrow", mode: 'copy'
+	publishDir params.results_subdir, pattern: "filtered-to-geography.arrow", mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -774,7 +774,7 @@ process FILTER_SEQS_TO_GEOGRAPHY {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
-	publishDir params.results_subdir, mode: 'copy'
+	publishDir params.results_subdir, mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -811,7 +811,7 @@ process EARLY_STATS {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
-	publishDir params.results_subdir, mode: 'copy'
+	publishDir params.results_subdir, mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 1 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -953,7 +953,7 @@ process COMPUTE_DISTANCE_MATRIX {
 
 	tag "${yearmonth}"
 	label "alpine_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', overwrite: true
 
 	errorStrategy 'retry' // { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -1009,7 +1009,7 @@ process MULTIDIMENSIONAL_SCALING {
 
 	tag "${yearmonth}"
 	label "alpine_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -1047,7 +1047,7 @@ process REPORT_HIGH_DIST_CANDIDATES {
 	*/
 
 	label "alpine_container"
-	publishDir params.high_distance_candidates, mode: 'copy'
+	publishDir params.high_distance_candidates, mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -1129,7 +1129,7 @@ process META_CLUSTER_REPORT {
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
 
-	publishDir params.repeat_lineages, mode: 'copy'
+	publishDir params.repeat_lineages, mode: 'copy', overwrite: true
 
 	input:
 	path cluster_table
@@ -1209,7 +1209,7 @@ process FIND_CANDIDATE_LINEAGES_BY_DATE {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
-	publishDir params.anachronistic_candidates, mode: 'copy'
+	publishDir params.anachronistic_candidates, mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 3 ? 'retry' : params.errorMode }
 	maxRetries 2
@@ -1248,7 +1248,7 @@ process SEARCH_NCBI_METADATA {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
-	publishDir params.metadata_candidates, mode: 'copy'
+	publishDir params.metadata_candidates, mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -1289,7 +1289,7 @@ process FIND_DOUBLE_CANDIDATES {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
-	publishDir params.double_candidates, mode: 'copy'
+	publishDir params.double_candidates, mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -1321,7 +1321,7 @@ process LATE_STATS {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
-	publishDir params.results_subdir, mode: 'copy'
+	publishDir params.results_subdir, mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 1 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -1351,7 +1351,7 @@ process COMPUTE_PREVALENCE_ESTIMATE {
 
 	tag "${params.pathogen}, ${params.geography}"
 	label "alpine_container"
-	publishDir params.results_subdir, mode: 'copy'
+	publishDir params.results_subdir, mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 1 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -1384,7 +1384,7 @@ process SUMMARIZE_RUN_RESULTS {
 
 	tag "${params.pathogen}, ${params.date}"
 	label "alpine_container"
-	publishDir params.dated_results, mode: 'copy'
+	publishDir params.dated_results, mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 1 ? 'retry' : params.errorMode }
 	maxRetries 1
