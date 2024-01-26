@@ -282,9 +282,9 @@ workflow {
 
 		COMPUTE_PREVALENCE_ESTIMATE.out.view()
 
-		SUMMARIZE_RUN_RESULTS (
-			LATE_STATS.out
-		)
+		// SUMMARIZE_RUN_RESULTS (
+		// 	LATE_STATS.out
+		// )
 
 	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
 
@@ -310,9 +310,9 @@ workflow {
 
 		COMPUTE_PREVALENCE_ESTIMATE.out.view()
 
-		SUMMARIZE_RUN_RESULTS (
-			LATE_STATS.out
-		)
+		// SUMMARIZE_RUN_RESULTS (
+		// 	LATE_STATS.out
+		// )
 
 	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
@@ -339,9 +339,9 @@ workflow {
 
 		COMPUTE_PREVALENCE_ESTIMATE.out.view()
 
-		SUMMARIZE_RUN_RESULTS (
-			LATE_STATS.out
-		)
+		// SUMMARIZE_RUN_RESULTS (
+		// 	LATE_STATS.out
+		// )
 
 	} else if ( params.make_distance_matrix == false && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
 
