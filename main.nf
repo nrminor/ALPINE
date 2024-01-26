@@ -366,9 +366,9 @@ workflow {
 
 		COMPUTE_PREVALENCE_ESTIMATE.out.view()
 
-		SUMMARIZE_RUN_RESULTS (
-			LATE_STATS.out
-		)
+		// SUMMARIZE_RUN_RESULTS (
+		// 	LATE_STATS.out
+		// )
 
 	}
 

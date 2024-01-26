@@ -20,6 +20,7 @@ import asyncio
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 from glob import glob
 from typing import Tuple
 
@@ -28,9 +29,7 @@ import polars as pl
 import seaborn  # type: ignore
 from loguru import logger
 from matplotlib import pyplot
-from polars.testing import assert_frame_equal  # type: ignore
 from pydantic import validate_call
-from dataclasses import dataclass
 
 
 @validate_call
@@ -120,24 +119,16 @@ async def visualize_distance_scores(metadata: pl.DataFrame, threshold: float) ->
 
     # retrieve the distance scores from the metadata dateframe
     metadata_pd = metadata.to_pandas()
+    assert "Distance Score" in metadata_pd.columns
+    assert metadata_pd["Distance Score"].nunique() > 1
 
-    # Check for unique values in "Distance Score"
-    unique_values = metadata_pd["Distance Score"].nunique()
-
-    # Set the style and size of the plot
+    # Set the style and size of the plot and generate the histogram
     pyplot.figure(figsize=(7, 5.5))
     seaborn.set_style("whitegrid")
-
-    # handle a couple of edge cases that could otherwise cause errors
-    assert "Distance Score" in metadata_pd.columns
-    if unique_values > 1:
-        seaborn.barplot(x=["Distance Score"], y=[metadata_pd["Distance Score"].iloc[0]])
-        max_count = 1
-    else:
-        seaborn.histplot(
-            metadata_pd["Distance Score"], kde=True, color="lightblue", element="step"
-        )
-        max_count = max(pyplot.hist(metadata_pd["Distance_Score"], bins=10, alpha=0)[0])
+    seaborn.histplot(
+        metadata_pd["Distance Score"], kde=True, color="lightblue", element="step"
+    )
+    max_count = max(pyplot.hist(metadata_pd["Distance Score"], bins=10, alpha=0)[0])
 
     # Add a vertical line at the retention threshold
     pyplot.axvline(x=threshold, color="red", lw=3)
@@ -194,45 +185,45 @@ async def read_metadata_files(
     precluster = len(glob("*.uc")) > 0
     logger.info("Whether preclustering was performed: {}", precluster)
 
-    # prepare to compile distances
+    # prepare to compile distances with an empty dataframe
     dist_scores = pl.DataFrame(
         {"Accession": None, "Distance Score": None},
         schema={"Accession": pl.Utf8, "Distance Score": pl.Float64},
-    )
-    dist_scores = dist_scores.clear()
+    ).clear()
 
-    # read metadata
+    # read full input metadata
     metadata = pl.read_ipc(f"{workingdir}/{metadata_filename}", use_pyarrow=True)
 
     # conditionally prepare to compile VSEARCH cluster metadata
     if precluster:
-        cluster_meta = pl.read_csv(
-            f"{workingdir}/{yearmonths[0]}-clusters.uc",
-            separator="\t",
-            has_header=False,
-            columns=[0, 1, 2, 8],
-            new_columns=["Type", "Index", "Size", "Accession"],
-            n_rows=1,
+        cluster_meta = (
+            pl.read_csv(
+                f"{workingdir}/{yearmonths[0]}-clusters.uc",
+                separator="\t",
+                has_header=False,
+                columns=[0, 1, 2, 8],
+                new_columns=["Type", "Index", "Size", "Accession"],
+                n_rows=1,
+            )
+            .with_columns(pl.lit("2023-08").alias("Month"))
+            .clear()
         )
-        cluster_meta = cluster_meta.with_columns(pl.lit("2023-08").alias("Month"))
-        cluster_meta = cluster_meta.clear()
     else:
         cluster_meta = metadata.select("Accession")
 
     # go through each month of data and bring in its various files
     for yearmonth in yearmonths:
+        distmat = pl.read_csv(f"{workingdir}/{yearmonth}-dist-matrix.csv")
+
         # sum up distance score for each accession and prep to vstack on
         # the distance score data frame, which we will use in some joins
         # in a later, non-IO-bound function.
-        distmat = pl.read_csv(f"{workingdir}/{yearmonth}-dist-matrix.csv")
         assert "Sequence_Name" in distmat.columns
+        samples = [sample for sample in distmat.columns if sample != "Sequence_Name"]
+        sums = [distmat[sample].sum() for sample in samples]
         distmat = (
-            distmat.with_columns(
-                Distance_Score=pl.Series(
-                    [distmat.select(col).sum().item() for col in distmat.columns[1:]]
-                )
-            )
-            .rename({"Sequence_Name": "Accession", "Distance_Score": "Distance Score"})
+            distmat.with_columns(pl.Series(sums).alias("Distance Score"))
+            .rename({"Sequence_Name": "Accession"})
             .select(pl.col(["Accession", "Distance Score"]))
         )
         dist_scores.vstack(distmat, in_place=True)
@@ -242,16 +233,17 @@ async def read_metadata_files(
             continue
 
         # Now, bring in clustering metadata and do the same kind of thing
-        cluster_table = pl.read_csv(
-            f"{workingdir}/{yearmonth}-clusters.uc",
-            separator="\t",
-            has_header=False,
-            columns=[0, 1, 2, 8],
-            new_columns=["Type", "Index", "Size", "Accession"],
+        cluster_table = (
+            pl.read_csv(
+                f"{workingdir}/{yearmonth}-clusters.uc",
+                separator="\t",
+                has_header=False,
+                columns=[0, 1, 2, 8],
+                new_columns=["Type", "Index", "Size", "Accession"],
+            )
+            .with_columns(pl.lit(yearmonth).alias("Month"))
+            .filter(pl.col("Type") != "S")
         )
-        cluster_table = cluster_table.with_columns(
-            Month=pl.repeat(yearmonth, n=cluster_table.shape[0])
-        ).filter(pl.col("Type") != "S")
 
         # correct any corrupted rows so the indices can be properly typed
         if cluster_table.dtypes[1] == pl.Utf8:
@@ -260,22 +252,12 @@ async def read_metadata_files(
                 | (pl.col("Type") == "H") & (pl.col("Index") != "*")
             ).with_columns(pl.col("Index").cast(pl.Int64))
 
-        # Use an assertion to check for possible silent errors before vstacking and
-        # returning the dataframes
-        assert_frame_equal(
-            left=distmat.select(pl.col("Accession")).unique().sort(by="Accession"),
-            right=cluster_table.filter(pl.col("Type") == "C")
-            .select(pl.col("Accession"))
-            .unique()
-            .sort(by="Accession"),
-        )
-
         # vstack (i.e., append) them onto the growing metadata dataframes
         cluster_meta.vstack(cluster_table, in_place=True)
 
     return ClusterTables(
         full_meta=metadata,
-        dist_scores=distmat,
+        dist_scores=dist_scores,
         cluster_meta=cluster_meta,
         whether_preclust=precluster,
     )
@@ -377,7 +359,12 @@ async def collate_metadata(
     try:
         await visualize_distance_scores(high_dist_meta, retention_threshold)
     except Exception as traceback:  # pylint: disable=W0718
-        logger.info("Plotting the distance score distribution failed: {}", traceback)
+        logger.debug("Plotting the distance score distribution failed: {}", traceback)
+    logger.info("Distance score retention threshold: {}", retention_threshold)
+    logger.info(
+        "Max-observed distance score: {}",
+        max(high_dist_meta.select("Distance Score").to_series().to_list()),
+    )
     high_dist_meta = high_dist_meta.filter(
         pl.col("Distance Score") >= retention_threshold
     )
@@ -415,6 +402,7 @@ async def main():
 
     # Retrieve a quantile to use to define a retention threshold downstream
     strict_quant = await quantify_stringency(stringency)
+    logger.info("Selected quantile stringency: {}", strict_quant)
 
     # List all files in current directory that end with '-dist-matrix.csv'
     logger.info("Collecting available distance matrix files.")
