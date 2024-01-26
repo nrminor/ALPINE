@@ -226,7 +226,7 @@ async def read_metadata_files(
             "Found {} sequences for {}, with a median distance score of {}",
             sample_size,
             yearmonth,
-            numpy.median(sums),
+            (numpy.median(sums) / sample_size),
         )
         distmat = (
             distmat.with_columns(pl.Series(sums).alias("Distance Score"))
