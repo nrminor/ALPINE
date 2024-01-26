@@ -968,7 +968,7 @@ process COMPUTE_DISTANCE_MATRIX {
 	path "${yearmonth}-dist-matrix.csv"
 
 	when:
-	cluster_table.getBaseName() == "filtered-to-geography.arrow" ||
+	cluster_table.getName() == "filtered-to-geography.arrow" ||
 	file(fasta.toString())
 		.getSimpleName()
 		.contains(file(cluster_table.toString())
