@@ -188,7 +188,23 @@ workflow {
 		FILTER_META_TO_GEOGRAPHY.out.metadata
 	)
 
-	if ( params.precluster == false) {
+	CLUSTER_BY_IDENTITY (
+		SEPARATE_BY_MONTH.out.flatten()
+			.map { fasta -> tuple( file(fasta), file(fasta).countFasta() )}
+			.filter { it[1].toInteger() > 2 }
+			.map { fasta, count -> file(fasta) }
+	)
+
+	if ( params.precluster == true) {
+
+		COMPUTE_DISTANCE_MATRIX (
+			CLUSTER_BY_IDENTITY.out.cluster_table,
+			CLUSTER_BY_IDENTITY.out.centroid_fasta
+				.filter { it[2].toInteger() > 2 }
+				.map { fasta, yearmonth, count -> file(fasta) }
+		)
+
+	} else {
 
 		COMPUTE_DISTANCE_MATRIX (
 			FILTER_META_TO_GEOGRAPHY.out.metadata,
@@ -196,22 +212,6 @@ workflow {
 				.map { fasta -> tuple( file(fasta), file(fasta).countFasta() )}
 				.filter { it[1].toInteger() > 2 }
 				.map { fasta, count -> file(fasta) }
-		)
-
-	} else {
-
-		CLUSTER_BY_IDENTITY (
-			SEPARATE_BY_MONTH.out.flatten()
-				.map { fasta -> tuple( file(fasta), file(fasta).countFasta() )}
-				.filter { it[1].toInteger() > 2 }
-				.map { fasta, count -> file(fasta) }
-		)
-
-		COMPUTE_DISTANCE_MATRIX (
-			CLUSTER_BY_IDENTITY.out.cluster_table,
-			CLUSTER_BY_IDENTITY.out.centroid_fasta
-				.filter { it[2].toInteger() > 2 }
-				.map { fasta, yearmonth, count -> file(fasta) }
 		)
 
 	}
@@ -925,6 +925,9 @@ process CLUSTER_BY_IDENTITY {
 	tuple path("${yearmonth}-centroids.fasta"), val(yearmonth), env(count), emit: centroid_fasta
 	path "${yearmonth}-cluster-seqs*", emit: cluster_fastas
 
+	when:
+	params.precluster == true
+
 	script:
 	yearmonth = fasta.getSimpleName()
 	"""
@@ -974,7 +977,7 @@ process COMPUTE_DISTANCE_MATRIX {
 
 	script:
 	yearmonth = fasta.getSimpleName()
-	if params.precluster == true
+	if ( params.precluster == true )
 		"""
 		alpine distance-matrix \
 		--fasta ${fasta} \
