@@ -228,12 +228,9 @@ async def read_metadata_files(
             yearmonth,
             (numpy.median(sums) / sample_size),
         )
-        distmat = (
-            distmat.with_columns(pl.Series(sums).alias("Distance Score"))
-            .rename({"Sequence_Name": "Accession"})
-            .select(pl.col(["Accession", "Distance Score"]))
+        distmat = distmat.with_columns(pl.Series(sums).alias("Distance Score")).rename(
+            {"Sequence_Name": "Accession"}
         )
-        dist_scores.vstack(distmat, in_place=True)
 
         # continue if preclustering was not performed
         if not precluster:
