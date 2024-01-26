@@ -195,16 +195,7 @@ workflow {
 			.map { fasta, count -> file(fasta) }
 	)
 
-	if ( params.precluster == true) {
-
-		COMPUTE_DISTANCE_MATRIX (
-			CLUSTER_BY_IDENTITY.out.cluster_table,
-			CLUSTER_BY_IDENTITY.out.centroid_fasta
-				.filter { it[2].toInteger() > 2 }
-				.map { fasta, yearmonth, count -> file(fasta) }
-		)
-
-	} else {
+	if ( params.precluster == false ) {
 
 		COMPUTE_DISTANCE_MATRIX (
 			FILTER_META_TO_GEOGRAPHY.out.metadata,
@@ -212,6 +203,15 @@ workflow {
 				.map { fasta -> tuple( file(fasta), file(fasta).countFasta() )}
 				.filter { it[1].toInteger() > 2 }
 				.map { fasta, count -> file(fasta) }
+		)
+
+	} else {
+
+		COMPUTE_DISTANCE_MATRIX (
+			CLUSTER_BY_IDENTITY.out.cluster_table,
+			CLUSTER_BY_IDENTITY.out.centroid_fasta
+				.filter { it[2].toInteger() > 2 }
+				.map { fasta, yearmonth, count -> file(fasta) }
 		)
 
 	}
