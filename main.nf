@@ -420,10 +420,10 @@ if( params.geography == "" ){
 // creating results subfolders for the three orthogonal anachronistic
 // sequence search methods
 params.clustering_results = params.results_subdir + "/all_clustering_results"
-params.high_distance_candidates = params.results_subdir + "/high_distance_clusters"
+params.high_distance_candidates = params.results_subdir + "/high_distance_candidates"
 params.repeat_lineages = params.high_distance_candidates + "/repeat_lineages"
 params.anachronistic_candidates = params.results_subdir + "/anachronistic_candidates"
-params.metadata_candidates = params.results_subdir + "/metadata_candidates"
+params.metadata_candidates = params.anachronistic_candidates + "/metadata_candidates"
 params.double_candidates = params.results_subdir + "/double_candidates"
 
 // --------------------------------------------------------------- //
