@@ -909,8 +909,8 @@ process CLUSTER_BY_IDENTITY {
 
 	tag "${yearmonth}"
 	label "alpine_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*.uc"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*-cluster-seqs*"
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*.uc", enabled: params.debugmode
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*-cluster-seqs*", enabled: params.debugmode
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
