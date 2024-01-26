@@ -99,11 +99,9 @@ async def merge_metadata(
     )
     merged_metadata = pd.merge(metadata, repeat_clusts, on="Accession", how="inner")
 
-    return (
-        merged_metadata.loc[~merged_metadata["Repeat Cluster Number"].isna()]
-        .sort_values("Repeat Cluster Number")
-        .drop(["Distance Score", "Cluster Size"], axis=1)
-    )
+    return merged_metadata.loc[
+        ~merged_metadata["Repeat Cluster Number"].isna()
+    ].sort_values("Repeat Cluster Number")
 
 
 async def main():
