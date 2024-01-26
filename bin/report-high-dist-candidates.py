@@ -220,6 +220,7 @@ async def read_metadata_files(
         # in a later, non-IO-bound function.
         assert "Sequence_Name" in distmat.columns
         samples = [sample for sample in distmat.columns if sample != "Sequence_Name"]
+        sample_size = len(samples)
         sums = [distmat[sample].sum() for sample in samples]
         distmat = (
             distmat.with_columns(pl.Series(sums).alias("Distance Score"))
@@ -230,7 +231,19 @@ async def read_metadata_files(
 
         # continue if preclustering was not performed
         if not precluster:
+            distmat = distmat.with_columns(
+                pl.lit(sample_size).alias("Sample Size"),
+                (pl.col("Distance Score") / pl.col("Sample Size")).alias(
+                    "Distance Score"
+                ),
+            ).select(pl.col(["Accession", "Distance Score"]))
+
+            dist_scores.vstack(distmat, in_place=True)
             continue
+
+        dist_scores.vstack(
+            distmat.select(pl.col(["Accession", "Distance Score"])), in_place=True
+        )
 
         # Now, bring in clustering metadata and do the same kind of thing
         cluster_table = (
