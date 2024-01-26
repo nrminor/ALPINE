@@ -1061,7 +1061,7 @@ process REPORT_HIGH_DIST_CANDIDATES {
 	output:
 	path "high_distance_candidates.tsv", emit: metadata
 	path "high_distance_candidates.fasta", emit: high_dist_seqs
-	// path "*.pdf", emit: plots
+	path "*.pdf", emit: plots
 
 	script:
 	"""
