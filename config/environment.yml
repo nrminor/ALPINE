@@ -182,7 +182,7 @@ dependencies:
   - nbformat=5.9.2=py311h06a4308_0
   - ncbi-datasets-cli=16.2.0
   - ncurses=6.4=h6a678d5_0
-  - nextclade=3.1.0=h527b516_0
+  - nextclade=3.1.0
   - nextflow=23.04.4=h2a3209d_0
   - nspr=4.35=h6a678d5_0
   - nss=3.89.1=h6a678d5_0
