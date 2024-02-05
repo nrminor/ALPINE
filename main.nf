@@ -428,7 +428,7 @@ if( params.geography == "" ){
 
 // creating results subfolders for the three orthogonal anachronistic
 // sequence search methods
-params.clustering_results = params.results_subdir + "/all_clustering_results"
+params.per_month_results = params.results_subdir + "/per_month_results"
 params.high_distance_candidates = params.results_subdir + "/high_distance_candidates"
 params.repeat_lineages = params.high_distance_candidates + "/repeat_lineages"
 params.anachronistic_candidates = params.results_subdir + "/anachronistic_candidates"
@@ -938,7 +938,7 @@ process RUN_NEXTCLADE {
 	tag "${yearmonth}"
 	label "alpine_container"
 
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+	publishDir "${params.per_month_results}/${yearmonth}", mode: 'copy'
 
 	params.max_cpus
 
@@ -973,8 +973,8 @@ process CLUSTER_BY_IDENTITY {
 
 	tag "${yearmonth}"
 	label "alpine_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*.uc", enabled: params.debugmode
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', pattern: "*-cluster-seqs*", enabled: params.debugmode
+	publishDir "${params.per_month_results}/${yearmonth}", mode: 'copy', pattern: "*.uc", enabled: params.debugmode
+	publishDir "${params.per_month_results}/${yearmonth}", mode: 'copy', pattern: "*-cluster-seqs*", enabled: params.debugmode
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -1017,7 +1017,7 @@ process COMPUTE_DISTANCE_MATRIX {
 
 	tag "${yearmonth}"
 	label "alpine_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', overwrite: true
+	publishDir "${params.per_month_results}/${yearmonth}", mode: 'copy', overwrite: true
 
 	errorStrategy 'retry' // { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
@@ -1073,7 +1073,7 @@ process MULTIDIMENSIONAL_SCALING {
 
 	tag "${yearmonth}"
 	label "alpine_container"
-	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy', overwrite: true
+	publishDir "${params.per_month_results}/${yearmonth}", mode: 'copy', overwrite: true
 
 	errorStrategy { task.attempt < 2 ? 'retry' : params.errorMode }
 	maxRetries 1
