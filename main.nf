@@ -65,6 +65,8 @@ workflow {
 	// Data setup steps
 	GET_DESIGNATION_DATES ( )
 
+	DOWNLOAD_NEXTCLADE_DB ( )
+
 	DOWNLOAD_REFSEQ ( )
 
 	if ( params.fasta_path == "" || params.metadata_path == "" ) {
@@ -183,9 +185,16 @@ workflow {
 	)
 
 	SEPARATE_BY_MONTH (
-		FILTER_BY_MASKED_BASES.out
-			.collectFile( name: "${params.pathogen}_prepped.fasta", newLine: true ),
+		FILTER_BY_MASKED_BASES.out,
 		FILTER_META_TO_GEOGRAPHY.out.metadata
+	)
+
+	RUN_NEXTCLADE (
+		DOWNLOAD_NEXTCLADE_DB.out,
+		SEPARATE_BY_MONTH.out.flatten()
+			.map { fasta -> tuple( file(fasta), file(fasta).countFasta() )}
+			.filter { it[1].toInteger() > 2 }
+			.map { fasta, count -> file(fasta) }
 	)
 
 	CLUSTER_BY_IDENTITY (
@@ -457,6 +466,29 @@ process DOWNLOAD_REFSEQ {
 	unzip ncbi_dataset.zip
 	mv ncbi_dataset/data/genomic.fna ./${params.pathogen}_refseq.fasta
 	"""
+}
+
+process DOWNLOAD_NEXTCLADE_DB {
+
+	/*
+	*/
+
+	label "alpine_container"
+	storeDir params.resources
+
+	output:
+	path "nextclade_sc2"
+
+	when:
+	params.pathogen == "SARS-CoV-2"
+
+	script:
+	"""
+	nextclade dataset get \
+    --name 'nextstrain/sars-cov-2/wuhan-hu-1' \
+    --output-dir 'nextclade_sc2'
+	"""
+
 }
 
 process GET_DESIGNATION_DATES {
@@ -894,6 +926,38 @@ process SEPARATE_BY_MONTH {
 	alpine separate-by-month \
 	--fasta ${fasta} \
 	--metadata ${metadata}
+	"""
+
+}
+
+process RUN_NEXTCLADE {
+
+	/*
+	*/
+
+	tag "${yearmonth}"
+	label "alpine_container"
+
+	publishDir "${params.clustering_results}/${yearmonth}", mode: 'copy'
+
+	params.max_cpus
+
+	input:
+	each path(nextclade_dir)
+	path fasta
+
+	output:
+	path "${yearmonth}_nextclade"
+
+	script:
+	yearmonth = fasta.getSimpleName()
+	"""
+	nextclade run \
+    --input-dataset ${nextclade_dir} \
+    --output-all ${yearmonth}_nextclade \
+    --retry-reverse-complement true \
+    --jobs ${task.cpus} \
+    ${fasta}
 	"""
 
 }
