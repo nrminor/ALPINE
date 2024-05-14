@@ -16,9 +16,10 @@ log.info	"""
 			ALPINE: Anachronistic Lineage and Persistent INfection Explorer
 			(version v0.2.0-alpha)
 			===============================================================
-			fastq dir          : ${params.fasta_path}
+			fasta dir          : ${params.fasta_path}
 			metadata dir       : ${params.metadata_path}
 			results dir        : ${params.results}
+                        gisaid token       : ${params.gisaid_token}
 
 			Filtering parameters:
 			-----------------------------------
