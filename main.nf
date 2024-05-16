@@ -19,7 +19,7 @@ log.info	"""
 			fasta dir          : ${params.fasta_path}
 			metadata dir       : ${params.metadata_path}
 			results dir        : ${params.results}
-                        gisaid token       : ${params.gisaid_token}
+            gisaid token       : ${params.gisaid_token}
 
 			Filtering parameters:
 			-----------------------------------
@@ -56,8 +56,9 @@ log.info	"""
 // --------------------------------------------------------------- //
 workflow {
 
-	ch_gisaid_token = Channel
-		.fromPath ( params.gisaid_token )
+	ch_gisaid_token = params.gisaid_token ? 
+		Channel.fromPath ( params.gisaid_token ) :
+		Channel.empty()
 
 	ch_still_schemas = Channel
 		.fromPath( "${params.resources}/*.schema" )
@@ -70,7 +71,7 @@ workflow {
 
 	DOWNLOAD_REFSEQ ( )
 
-	if ( params.fasta_path == "" || params.metadata_path == "" ) {
+	if ( !params.fasta_path || !params.metadata_path ) {
 
 		println()
 		println("Remote NCBI input branch selected")
@@ -205,7 +206,7 @@ workflow {
 			.map { fasta, count -> file(fasta) }
 	)
 
-	if ( params.precluster == false ) {
+	if ( !params.precluster ) {
 
 		COMPUTE_DISTANCE_MATRIX (
 			FILTER_META_TO_GEOGRAPHY.out.metadata,
@@ -271,7 +272,7 @@ workflow {
 		GET_DESIGNATION_DATES.out
 	)
 
-	if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == false ){
+	if ( params.make_distance_matrix && params.search_metadata_dates && !params.reclassify_sc2_lineages ){
 
 		FIND_DOUBLE_CANDIDATES (
 			REPORT_HIGH_DIST_CANDIDATES.out.metadata
@@ -296,7 +297,7 @@ workflow {
 		// 	LATE_STATS.out
 		// )
 
-	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == false && params.reclassify_sc2_lineages == true ){
+	} else if ( params.make_distance_matrix && !params.search_metadata_dates && params.reclassify_sc2_lineages ){
 
 		FIND_DOUBLE_CANDIDATES (
 			REPORT_HIGH_DIST_CANDIDATES.out.metadata
@@ -324,7 +325,7 @@ workflow {
 		// 	LATE_STATS.out
 		// )
 
-	} else if ( params.make_distance_matrix == true && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
+	} else if ( params.make_distance_matrix && params.search_metadata_dates && params.reclassify_sc2_lineages ){
 
 		FIND_DOUBLE_CANDIDATES (
 			REPORT_HIGH_DIST_CANDIDATES.out.metadata
@@ -353,7 +354,7 @@ workflow {
 		// 	LATE_STATS.out
 		// )
 
-	} else if ( params.make_distance_matrix == false && params.search_metadata_dates == true && params.reclassify_sc2_lineages == true ){
+	} else if ( !params.make_distance_matrix && params.search_metadata_dates && params.reclassify_sc2_lineages ){
 
 		FIND_DOUBLE_CANDIDATES (
 			SEARCH_NCBI_METADATA.out.metadata
@@ -391,7 +392,7 @@ workflow {
 // --------------------------------------------------------------- //
 
 // Using debugmode setting to decide how to handle errors
-if ( params.debugmode == true ){
+if ( params.debugmode ){
 	params.errorMode = 'terminate'
 } else {
 	params.errorMode = 'ignore'
@@ -672,7 +673,7 @@ process VALIDATE_METADATA {
 	path "${db}*.parquet"
 
 	when:
-	params.download_only == false
+	!params.download_only
 
 	script:
 	db = metadata.toString().split("_")[0]
@@ -745,7 +746,7 @@ process VALIDATE_SEQUENCES {
 	path "validated.fasta.zst"
 
 	when:
-	params.download_only == false
+	!params.download_only
 
 	script:
 	"""
@@ -886,7 +887,7 @@ process FILTER_BY_MASKED_BASES {
 	path "filtered-by-n.fasta.gz"
 
 	when:
-	params.make_distance_matrix == true
+	params.make_distance_matrix
 
 	script:
 	"""
@@ -991,7 +992,7 @@ process CLUSTER_BY_IDENTITY {
 	path "${yearmonth}-cluster-seqs*", emit: cluster_fastas
 
 	when:
-	params.precluster == true
+	params.precluster
 
 	script:
 	yearmonth = fasta.getSimpleName()
@@ -1042,7 +1043,7 @@ process COMPUTE_DISTANCE_MATRIX {
 
 	script:
 	yearmonth = fasta.getSimpleName()
-	if ( params.precluster == true )
+	if ( params.precluster )
 		"""
 		alpine distance-matrix \
 		--fasta ${fasta} \
@@ -1240,12 +1241,12 @@ process RECLASSIFY_SC2_WITH_PANGOLIN {
 	path "*.csv"
 
 	when:
-	params.reclassify_sc2_lineages == true && params.pathogen == "SARS-CoV-2"
+	params.reclassify_sc2_lineages && params.pathogen == "SARS-CoV-2"
 
 	script:
 	"""
 	pangolin --update --update-data && \
-	zstd -d `realpath ${fasta}` -o ./decompressed_genbank.fasta && \
+	cat `realpath ${fasta}` | gzip -c -d > decompressed_genbank.fasta && \
 	pangolin \
 	--skip-scorpio --skip-designation-cache \
 	--threads ${task.cpus} \
@@ -1330,7 +1331,7 @@ process SEARCH_NCBI_METADATA {
 	path "anachronistic_metadata_only_candidates.fasta", emit: fasta
 
 	when:
-	params.search_metadata_dates == true && params.pathogen == "SARS-CoV-2"
+	params.search_metadata_dates && params.pathogen == "SARS-CoV-2"
 
 	script:
 	"""
